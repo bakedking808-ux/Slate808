@@ -14,6 +14,7 @@ from engine.travel_brief import (
     extract_traveller_count,
     extract_timing,
     get_missing_critical_fields,
+    is_contaminated_destination,
     is_timing_usable,
     summarize_timing,
 )
@@ -258,6 +259,9 @@ def _looks_like_destination_candidate(candidate: str) -> bool:
         return False
 
     if _looks_like_new_request(candidate):
+        return False
+
+    if is_contaminated_destination(candidate):
         return False
 
     return True

@@ -226,6 +226,32 @@ WEAK_DESTINATION_VALUES = {
     "location",
 }
 
+SUPPORTED_FLEXIBLE_DESTINATION_PATTERNS = (
+    r"^(?:the\s+)?coast$",
+    r"^somewhere\s+\w+$",
+    r"^outside\s+kenya$",
+    r"^near\s+nairobi$",
+)
+
+CONTAMINATED_DESTINATION_VALUES = {
+    "help me",
+    "me and",
+    "me on",
+    "new request",
+    "plan",
+}
+
+CONTAMINATED_DESTINATION_PATTERNS = (
+    r"^(?:could|can|would)\s+you\b",
+    r"\bhelp\s+me\b",
+    r"^(?:set\s+up|book|plan|make|create|organize|arrange|sort\s+out|do)"
+    r"\b.*\b(?:trip|travel|getaway|retreat|vacation|holiday|journey|escape)\b",
+    r"^i\s+want\b.*\b"
+    r"(?:trip|travel|getaway|retreat|vacation|holiday|journey|escape)\b",
+    r"^travel\s+from\b",
+    r"^me\s+(?:and|on)\b",
+)
+
 
 def _strip_malformed_destination_prefix(candidate: str) -> str:
     candidate = re.sub(r"^(?:(?:travel|trip|journey|getaway|holiday|retreat|vacation|escape)to\s+)+", "", candidate)
@@ -264,6 +290,30 @@ def _clean_destination_candidate(candidate: str) -> Optional[str]:
     return cleaned or None
 
 
+def _is_supported_flexible_destination(candidate: str) -> bool:
+    return any(
+        re.fullmatch(pattern, candidate)
+        for pattern in SUPPORTED_FLEXIBLE_DESTINATION_PATTERNS
+    )
+
+
+def is_contaminated_destination(candidate: Optional[str]) -> bool:
+    if not candidate:
+        return False
+
+    candidate = re.sub(r"\s+", " ", candidate.strip().lower())
+    if _is_supported_flexible_destination(candidate):
+        return False
+
+    if candidate in CONTAMINATED_DESTINATION_VALUES:
+        return True
+
+    return any(
+        re.search(pattern, candidate)
+        for pattern in CONTAMINATED_DESTINATION_PATTERNS
+    )
+
+
 def _is_valid_destination(candidate: Optional[str]) -> bool:
     if not candidate:
         return False
@@ -271,6 +321,9 @@ def _is_valid_destination(candidate: Optional[str]) -> bool:
     candidate = candidate.strip().lower()
 
     if candidate in WEAK_DESTINATION_VALUES:
+        return False
+
+    if is_contaminated_destination(candidate):
         return False
 
     if candidate in {

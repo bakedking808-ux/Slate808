@@ -806,6 +806,41 @@ def test_malformed_destination_prefix_cleanup_works():
     assert brief["timing"]["state"] == "month_only"
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Could you help me do like a small getaway for us",
+        "Set up a trip for 2 Jan.",
+        "I want to travel from Jan 18-20",
+        "Plan a trip to book a solo trip for 1 people at tomorrow",
+    ],
+)
+def test_contaminated_destination_routes_to_destination_clarification(text):
+    result = run(text)
+
+    assert "Where would you like to go?" in result
+    assert "Slate808 Output" not in result
+
+
+@pytest.mark.parametrize("destination", ["somewhere warm", "coast"])
+def test_supported_flexible_destinations_still_plan(destination):
+    result = run(f"Plan a trip to {destination} for 2 people tomorrow")
+
+    assert "Slate808 Output" in result
+    assert f"Destination: {destination}" in result
+    assert "Where would you like to go?" not in result
+
+
+def test_destination_contamination_repeated_calls_are_deterministic():
+    text = "Plan a trip to book a solo trip for 1 people at tomorrow"
+
+    first = build_travel_brief(text)
+    second = build_travel_brief(text)
+
+    assert first == second
+    assert first["destination"] is None
+
+
 def test_planning_policy_logs_decision_trace(monkeypatch):
     logged = []
 
