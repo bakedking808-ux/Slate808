@@ -1,0 +1,229 @@
+SLATE808 — FULL SYSTEM EVOLUTION LOG (COMPILED)
+Scope: April 8 → April 21 (Current State)
+Format: Phase-by-phase, deterministic, timestamped
+
+==================================================
+PHASE 0 — INTENT & IDENTITY
+Timestamp: ~2026-04-05
+==================================================
+
+OBJECTIVE:
+Build a system that improves thinking quality, not output speed.
+
+CORE PRINCIPLE:
+Slate808 is not an assistant.
+It is a filter against bad reasoning.
+
+TRAITS DEFINED:
+- process-first
+- assumption-aware
+- resistant to premature answers
+- calm and structured
+
+==================================================
+PHASE 1 — FOUNDATION RESET
+Timestamp: 2026-04-14
+==================================================
+
+STATUS:
+Slate808v1 discarded. System rebuilt from scratch.
+
+OBJECTIVE:
+- enforce structure
+- eliminate ambiguity
+- introduce deterministic reasoning
+
+ACTIONS:
+- strict output schema (Goal, Assumptions, Checks, Risks, Answer)
+- fail loudly rule enforced
+
+LESSONS:
+Structure must come before intelligence.
+
+==================================================
+PHASE 2 — CONTRACT ARCHITECTURE
+Timestamp: 2026-04-15 → 2026-04-16
+==================================================
+
+OBJECTIVE:
+Separate system into clear layers.
+
+ACTIONS:
+- Pydantic contracts introduced
+- TravelBrief schema built
+- input / decision / output layers separated
+
+LESSONS:
+Contracts define reality. Logic must not live inside them.
+
+==================================================
+PHASE 2.5 — BEHAVIOR & REASONING TUNING
+Timestamp: 2026-04-16 → 2026-04-18
+==================================================
+
+OBJECTIVE:
+Improve reasoning discipline.
+
+ACTIONS:
+- ambiguity handling introduced
+- evaluation rubrics created
+- structured reasoning enforced
+
+KEY PRINCIPLE:
+Reward the reasoning process, not just the answer.
+
+==================================================
+PHASE 3 — INTAKE HARDENING
+Timestamp: 2026-04-19
+==================================================
+
+OBJECTIVE:
+Handle messy real-world input.
+
+ACTIONS:
+- normalization layer
+- priority resolution hierarchy
+
+==================================================
+PHASE 3 — VALIDATION LAYER
+Timestamp: 2026-04-20
+==================================================
+
+OBJECTIVE:
+Block invalid system states.
+
+ACTIONS:
+- cross-field validation
+- contamination checks
+
+==================================================
+PHASE 3 — TIMING ENGINE
+Timestamp: 2026-04-20 → 2026-04-21
+==================================================
+
+OBJECTIVE:
+Deterministic time parsing.
+
+ACTIONS:
+- full timing parser
+- precision preservation
+
+==================================================
+PHASE 3 — CLARIFICATION SYSTEM
+Timestamp: 2026-04-21
+==================================================
+
+OBJECTIVE:
+Preserve and refine user state.
+
+ACTIONS:
+- clarification state tracking
+- non-redundant questioning
+
+==================================================
+PHASE 3 — SYSTEM STABILIZATION
+Timestamp: 2026-04-21
+==================================================
+
+STATUS:
+Stable baseline achieved.
+
+TESTS:
+375+ passing
+
+==================================================
+PHASE 4 — CONTROLLED RUNTIME INTEGRATION (NEW)
+Timestamp: 2026-04-21 (Latest)
+==================================================
+
+STATUS:
+Live runtime behavior introduced safely.
+
+OBJECTIVE:
+Move from static reasoning to controlled execution.
+
+--------------------------------
+STEP 1 — OPERATOR ADMISSION
+--------------------------------
+- runtime admission guard introduced
+- state-shaping allowed pre-readiness
+- execution blocked until ready
+
+--------------------------------
+STEP 2 — GUARDED EXECUTION PATH
+--------------------------------
+- complete_flow wired as first execution path
+- strict gating enforced
+
+--------------------------------
+STEP 3 — ACTION GUARD HARDENING
+--------------------------------
+- only complete_flow allowed for execution
+- all other execution actions rejected loudly
+
+--------------------------------
+STEP 4 — EXECUTION TRANSITION VISIBILITY
+--------------------------------
+- transitions introduced:
+  blocked
+  rejected_by_action_guard
+  failed
+  succeeded
+
+--------------------------------
+STEP 5 — STATE-SHAPING LIVE PATH
+--------------------------------
+- supply_field integrated pre-readiness
+- updates clarification state only
+- no execution leakage
+
+--------------------------------
+STEP 6 — INVALID INPUT HARDENING
+--------------------------------
+- mismatch / invalid field input tested
+- structured failure guaranteed
+
+--------------------------------
+FINAL TEST STATE
+--------------------------------
+- 396 tests passing
+- full system stable
+
+==================================================
+CURRENT SYSTEM CAPABILITIES
+==================================================
+
+- deterministic intake
+- structured validation
+- precise timing parsing
+- controlled clarification flow
+- runtime admission guard
+- pre-readiness state shaping
+- post-readiness execution path
+- execution visibility
+- full regression test protection
+
+==================================================
+KNOWN LIMITATIONS
+==================================================
+
+- only one execution path (complete_flow)
+- limited state-shaping actions
+- no external calendar execution yet
+- reasoning depth still under tuning
+
+==================================================
+CURRENT PHASE
+==================================================
+
+Phase 4 — Controlled Runtime Integration
+
+==================================================
+CORE SYSTEM LAW
+==================================================
+
+Do not let poetry outrun structure.
+
+==================================================
+END OF DOCUMENT
+==================================================
