@@ -304,6 +304,31 @@ def test_travel_intent_keywords_route_to_trip_classification(travel_request):
     assert detect_task_type(travel_request) == "trip"
 
 
+@pytest.mark.parametrize(
+    "travel_request",
+    [
+        "Help me plan a 3-day break in early July.",
+        "I’m thinking of a long weekend in November.",
+        "Arrange a getaway for 3-5 Jan.",
+        "Help me organise a family holiday.",
+        "Create a 2-night trip this coming weekend.",
+    ],
+)
+def test_natural_travel_intent_phrasing_passes_gate_safely(travel_request):
+    assert detect_task_type(travel_request) == "trip"
+
+    result = run(travel_request)
+    assert "Slate808 currently supports travel planning only." not in result
+    assert "Destination: None" not in result
+    assert "Traveller Count: None" not in result
+
+
+def test_natural_travel_intent_gate_is_deterministic():
+    request = "Help me plan a 3-day break in early July."
+
+    assert detect_task_type(request) == detect_task_type(request) == "trip"
+
+
 def test_build_travel_brief_returns_validated_dict_shape_for_engine_compatibility():
     brief = build_travel_brief("Plan a trip to diani for 2 people next weekend")
 

@@ -17,6 +17,14 @@ TRAVEL_INTENT_KEYWORDS = (
     "escape",
     "staycation",
 )
+NATURAL_TRAVEL_INTENT_PATTERNS = (
+    r"\b(?:help me\s+)?(?:plan|arrange|organize|organise|create|prepare|book)\b.*\b(?:break|weekend away)\b",
+    r"\b(?:thinking of|considering|looking at|want)\b.*\b(?:long weekend|weekend away)\b",
+    r"\b\d+\s*-\s*day\s+break\b|\b\d+\s+day\s+break\b",
+    r"\b\d+\s*-\s*night\s+break\b|\b\d+\s+night\s+break\b",
+    r"\blong weekend\b",
+    r"\bweekend away\b",
+)
 TRAVEL_ONLY_ERROR = "Slate808 currently supports travel planning only."
 
 
@@ -255,6 +263,9 @@ def is_travel_intent(request: str) -> bool:
     text = normalize_request(request)
 
     if any(keyword in text for keyword in TRAVEL_INTENT_KEYWORDS):
+        return True
+
+    if any(re.search(pattern, text) for pattern in NATURAL_TRAVEL_INTENT_PATTERNS):
         return True
 
     return _looks_like_trip_shorthand(text)
