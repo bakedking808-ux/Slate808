@@ -5,6 +5,9 @@ from operator_runtime_state_shaping_contract import apply_admitted_supply_field_
 from operator_state_contract import OperatorStateAction
 
 
+_RESULT_KEYS = ["status", "transition", "admission", "state", "result", "error"]
+
+
 def _manager() -> ClarificationStateManager:
     manager = ClarificationStateManager()
     manager.start(
@@ -47,8 +50,11 @@ def test_admitted_supply_field_state_shaping_allowed_before_readiness():
     )
 
     assert result.status == "success"
+    assert list(result.model_dump().keys()) == _RESULT_KEYS
     assert result.transition == "succeeded"
     assert result.state is not None
+    assert result.result is None
+    assert result.error is None
     assert result.state["collected_fields"]["traveller_count"] == 2
 
 
@@ -102,6 +108,8 @@ def test_unsupported_state_shaping_action_is_rejected_loudly():
 
     assert result.status == "failure"
     assert result.transition == "rejected_by_action_guard"
+    assert result.state is None
+    assert result.result is None
     assert result.error == "Unsupported state-shaping operator action."
     assert manager.get_state()["collected_fields"] == {"destination": "mara"}
 
@@ -138,8 +146,10 @@ def test_invalid_state_update_input_returns_structured_failure(monkeypatch):
     )
 
     assert result.status == "failure"
+    assert list(result.model_dump().keys()) == _RESULT_KEYS
     assert result.transition == "failed"
     assert result.state is None
+    assert result.result is None
     assert (
         result.error
         == "State-shaping update failed: Field mismatch. Expected 'traveller_count', got 'timing'."
@@ -177,6 +187,10 @@ def test_execution_triggering_before_readiness_remains_blocked():
     )
 
     assert result.status == "blocked"
+    assert list(result.model_dump().keys()) == _RESULT_KEYS
     assert result.transition == "blocked"
     assert result.admission.allowed is False
+    assert result.state is None
+    assert result.result is None
+    assert result.error is None
     assert manager.get_state()["collected_fields"] == {"destination": "mara"}

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -18,7 +18,14 @@ class OperatorRuntimeExecutionResult(BaseModel):
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
     status: Literal["blocked", "success", "failure"]
+    transition: Literal[
+        "blocked",
+        "rejected_by_action_guard",
+        "failed",
+        "succeeded",
+    ]
     admission: OperatorRuntimeAdmissionResult
+    state: dict[str, Any] | None = None
     result: ItineraryPlan | None = None
     error: str | None = None
 
@@ -30,11 +37,16 @@ def execute_admitted_itinerary_operator(
 ) -> OperatorRuntimeExecutionResult:
     admission = admit_operator_runtime(admission_request)
     if admission.allowed is not True:
-        return OperatorRuntimeExecutionResult(status="blocked", admission=admission)
+        return OperatorRuntimeExecutionResult(
+            status="blocked",
+            transition="blocked",
+            admission=admission,
+        )
 
     if admission.action != "complete_flow":
         return OperatorRuntimeExecutionResult(
             status="failure",
+            transition="rejected_by_action_guard",
             admission=admission,
             error="Unsupported execution-triggering operator action.",
         )
@@ -44,6 +56,7 @@ def execute_admitted_itinerary_operator(
     except Exception as exc:
         return OperatorRuntimeExecutionResult(
             status="failure",
+            transition="failed",
             admission=admission,
             error=f"Downstream operator invocation failed: {exc}",
         )
@@ -51,12 +64,14 @@ def execute_admitted_itinerary_operator(
     if not isinstance(result, ItineraryPlan):
         return OperatorRuntimeExecutionResult(
             status="failure",
+            transition="failed",
             admission=admission,
             error="Downstream operator returned invalid result.",
         )
 
     return OperatorRuntimeExecutionResult(
         status="success",
+        transition="succeeded",
         admission=admission,
         result=result,
     )

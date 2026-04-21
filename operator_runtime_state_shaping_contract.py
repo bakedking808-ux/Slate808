@@ -27,6 +27,7 @@ class OperatorRuntimeStateShapeResult(BaseModel):
     transition: OperatorRuntimeStateTransition
     admission: OperatorRuntimeAdmissionResult
     state: dict[str, Any] | None = None
+    result: None = None
     error: str | None = None
 
 

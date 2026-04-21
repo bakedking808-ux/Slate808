@@ -5,6 +5,9 @@ from operator_runtime_execution_contract import execute_admitted_itinerary_opera
 from operator_state_contract import OperatorStateAction
 
 
+_RESULT_KEYS = ["status", "transition", "admission", "state", "result", "error"]
+
+
 def _operator_action() -> OperatorStateAction:
     return OperatorStateAction(
         action="complete_flow",
@@ -53,7 +56,12 @@ def test_blocked_admission_prevents_operator_invocation():
     )
 
     assert result.status == "blocked"
+    assert list(result.model_dump().keys()) == _RESULT_KEYS
+    assert result.transition == "blocked"
     assert result.admission.allowed is False
+    assert result.state is None
+    assert result.result is None
+    assert result.error is None
     assert calls == []
 
 
@@ -99,6 +107,9 @@ def test_admitted_non_complete_flow_action_does_not_invoke_downstream():
     )
 
     assert result.status == "failure"
+    assert result.transition == "rejected_by_action_guard"
+    assert result.state is None
+    assert result.result is None
     assert result.error == "Unsupported execution-triggering operator action."
     assert calls == []
 
@@ -110,6 +121,9 @@ def test_admitted_path_returns_structured_success_result():
     )
 
     assert result.status == "success"
+    assert list(result.model_dump().keys()) == _RESULT_KEYS
+    assert result.transition == "succeeded"
+    assert result.state is None
     assert result.error is None
     assert result.result is not None
     assert result.result.title == "Trip Plan: destination_fixed"
@@ -126,6 +140,9 @@ def test_downstream_operator_failure_returns_structured_failure():
     )
 
     assert result.status == "failure"
+    assert list(result.model_dump().keys()) == _RESULT_KEYS
+    assert result.transition == "failed"
+    assert result.state is None
     assert result.result is None
     assert result.error == "Downstream operator invocation failed: operator failed"
 
@@ -141,6 +158,8 @@ def test_downstream_invalid_result_returns_structured_failure():
     )
 
     assert result.status == "failure"
+    assert result.transition == "failed"
+    assert result.state is None
     assert result.result is None
     assert result.error == "Downstream operator returned invalid result."
 
