@@ -117,6 +117,11 @@ def _resume(user_input: str, normalized_input: str) -> str:
         state_manager.increment_retry()
         return _retry_prompt(current_field, state_manager.get_state())
 
+    if current_field == "timing" and _needs_exact_timing_refinement(value):
+        state_manager.merge_fields({"timing": value})
+        state_manager.increment_retry()
+        return _retry_prompt(current_field, state_manager.get_state())
+
     if current_field == "timing" and _duration_conflicts_with_exact_range(state, value):
         state_manager.increment_retry()
         prompt = _timing_prompt(state_manager.get_state(), retry=True)
@@ -210,6 +215,13 @@ def _day_month_pair(value: str) -> tuple[int, str] | None:
     if not match:
         return None
     return int(match.group(1)), match.group(2)
+
+
+def _needs_exact_timing_refinement(timing: dict) -> bool:
+    if timing.get("state") != "relative_timing":
+        return False
+
+    return timing.get("raw_text", "").strip().lower() in {"next month"}
 
 
 def _extract_single(field: str, text: str):
@@ -338,6 +350,9 @@ def _timing_prompt(state: dict | None, retry: bool = False) -> str:
     if timing_state == "duration_only" and timing_summary != "timing not specified":
         duration_label = timing_summary.removeprefix("for ")
         return f"What exact dates are you planning for those {duration_label}?"
+
+    if timing_state == "relative_timing" and timing_summary != "timing not specified":
+        return f"What exact dates are you planning for {timing_summary}?"
 
     prompt = "What exact dates are you planning?"
     if retry:

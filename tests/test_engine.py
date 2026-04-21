@@ -399,10 +399,14 @@ def test_clarification_with_partial_trip_continues_from_next_missing_field():
     assert "What exact dates are you planning?" in result_2
 
     result_3 = run("next month")
-    assert "Slate808 Output" in result_3
-    assert "Destination: watamu" in result_3
-    assert "Traveller Count: 2" in result_3
-    assert "Timing: next month" in result_3
+    assert "What exact dates are you planning for next month?" in result_3
+    assert "Slate808 Output" not in result_3
+
+    result_4 = run("10-12 April")
+    assert "Slate808 Output" in result_4
+    assert "Destination: watamu" in result_4
+    assert "Traveller Count: 2" in result_4
+    assert "Timing: 10 april to 12 april" in result_4
 
 
 def test_destination_clarification_reply_is_routed_to_active_trip():
@@ -427,6 +431,51 @@ def test_timing_clarification_reply_is_routed_to_active_trip():
 
     assert "Slate808 Output" in result
     assert "Timing: tomorrow" in result
+
+
+def test_clarification_does_not_reask_known_destination():
+    result = run("Plan a trip to Diani next weekend")
+
+    assert "How many travellers?" in result
+    assert "Where would you like to go?" not in result
+    assert result.count("?") == 1
+
+
+def test_clarification_does_not_reask_known_travellers_for_month_timing():
+    result = run("Plan a trip to Mauritius for 2 people sometime in June")
+
+    assert "Which exact dates in June are you planning?" in result
+    assert "How many travellers?" not in result
+    assert "Where would you like to go?" not in result
+    assert result.count("?") == 1
+
+
+def test_clarification_asks_destination_when_timing_and_travellers_known():
+    result = run("I want a getaway next month for 2 people")
+
+    assert "Where would you like to go?" in result
+    assert "How many travellers?" not in result
+    assert "What exact dates are you planning?" not in result
+    assert result.count("?") == 1
+
+
+def test_relative_timing_followup_refines_to_exact_dates_only():
+    run("Plan a trip to naivasha for 3 people")
+    result = run("next month")
+
+    assert "What exact dates are you planning for next month?" in result
+    assert "Where would you like to go?" not in result
+    assert "How many travellers?" not in result
+    assert result.count("?") == 1
+
+
+def test_clarification_quality_repeated_calls_are_deterministic():
+    reset_state()
+    first = run("Plan a trip to Mauritius for 2 people sometime in June")
+    reset_state()
+    second = run("Plan a trip to Mauritius for 2 people sometime in June")
+
+    assert first == second
 
 
 def test_clarification_preserves_budget_from_followup_answer():
