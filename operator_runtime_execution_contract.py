@@ -32,6 +32,13 @@ def execute_admitted_itinerary_operator(
     if admission.allowed is not True:
         return OperatorRuntimeExecutionResult(status="blocked", admission=admission)
 
+    if admission.action != "complete_flow":
+        return OperatorRuntimeExecutionResult(
+            status="failure",
+            admission=admission,
+            error="Unsupported execution-triggering operator action.",
+        )
+
     try:
         result = downstream_operator(itinerary_request)
     except Exception as exc:

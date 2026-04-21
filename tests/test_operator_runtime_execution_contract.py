@@ -74,6 +74,35 @@ def test_admitted_path_invokes_downstream_operator_exactly_once():
     assert len(calls) == 1
 
 
+def test_admitted_non_complete_flow_action_does_not_invoke_downstream():
+    calls: list[ItineraryRequest] = []
+    action = OperatorStateAction(
+        action="shift_goal",
+        target_field=None,
+        reset_required=True,
+        resume_allowed=False,
+        reason="test action",
+    )
+
+    def downstream(request: ItineraryRequest) -> ItineraryPlan:
+        calls.append(request)
+        return build_itinerary_plan(request)
+
+    result = execute_admitted_itinerary_operator(
+        OperatorRuntimeAdmissionRequest(
+            operator_action=action,
+            operator_class="execution_triggering",
+            readiness="ready",
+        ),
+        _itinerary_request(),
+        downstream,
+    )
+
+    assert result.status == "failure"
+    assert result.error == "Unsupported execution-triggering operator action."
+    assert calls == []
+
+
 def test_admitted_path_returns_structured_success_result():
     result = execute_admitted_itinerary_operator(
         _admission_request("ready"),
