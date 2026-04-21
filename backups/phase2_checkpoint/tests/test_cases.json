@@ -1,0 +1,816 @@
+[
+  {
+    "name": "core_01_complete_direct_couple",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a couple next weekend",
+        "expect_contains": [
+          "Goal:",
+          "Brief:",
+          "destination: diani",
+          "traveller_count: 2",
+          "timing: next weekend",
+          "Status:",
+          "ready"
+        ],
+        "expect_not_contains": [
+          "{",
+          "Clarification Needed:"
+        ],
+        "expect_state": {
+          "active": false,
+          "retry_count": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "core_02_missing_timing_triggers_clarification",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a couple",
+        "expect_contains": [
+          "Goal:",
+          "Clarification Needed:",
+          "timing is missing",
+          "Question:",
+          "What dates are you considering?"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["timing"],
+          "current_index": 0,
+          "retry_count": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "core_03_resume_success_after_timing_answer",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a couple",
+        "expect_contains": [
+          "timing is missing"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["timing"],
+          "current_index": 0
+        }
+      },
+      {
+        "input": "next weekend",
+        "expect_contains": [
+          "Brief:",
+          "destination: diani",
+          "traveller_count: 2",
+          "timing: next weekend",
+          "Status:",
+          "ready"
+        ],
+        "expect_state": {
+          "active": false,
+          "missing_fields": [],
+          "current_index": 0,
+          "retry_count": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "core_04_non_answer_reask",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a couple",
+        "expect_contains": [
+          "timing is missing"
+        ]
+      },
+      {
+        "input": "maybe",
+        "expect_contains": [
+          "timing is still missing",
+          "Question:",
+          "What dates are you considering?",
+          "Note:",
+          "Provide a specific answer.",
+          "Retry Count:",
+          "1"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["timing"],
+          "current_index": 0,
+          "retry_count": 1
+        }
+      }
+    ]
+  },
+  {
+    "name": "core_05_state_clears_after_success",
+    "conversation": [
+      {
+        "input": "plan a trip to watamu for my family next weekend",
+        "expect_contains": [
+          "traveller_count is missing"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["traveller_count"],
+          "current_index": 0
+        }
+      },
+      {
+        "input": "5 people",
+        "expect_contains": [
+          "destination: watamu",
+          "traveller_count: 5",
+          "Status:",
+          "ready"
+        ],
+        "expect_state": {
+          "active": false,
+          "missing_fields": [],
+          "current_index": 0,
+          "partial_brief": null,
+          "original_goal": null,
+          "retry_count": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "core_06_complete_direct_composite_group",
+    "conversation": [
+      {
+        "input": "plan a trip to naivasha for 2 adults and 3 kids next weekend",
+        "expect_contains": [
+          "destination: naivasha",
+          "traveller_count: 5",
+          "timing: next weekend",
+          "Status:",
+          "ready"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "core_07_complete_direct_three_couples",
+    "conversation": [
+      {
+        "input": "plan a trip to mara for 3 couples next weekend",
+        "expect_contains": [
+          "destination: mara",
+          "traveller_count: 6",
+          "timing: next weekend",
+          "Status:",
+          "ready"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "core_08_family_requires_count",
+    "conversation": [
+      {
+        "input": "plan a trip to watamu for my family next weekend",
+        "expect_contains": [
+          "traveller_count is missing",
+          "How many travellers are going?"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["traveller_count"],
+          "current_index": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "core_09_resume_after_family_count",
+    "conversation": [
+      {
+        "input": "plan a trip to watamu for my family next weekend",
+        "expect_contains": [
+          "traveller_count is missing"
+        ]
+      },
+      {
+        "input": "seven people",
+        "expect_contains": [
+          "destination: watamu",
+          "traveller_count: 7",
+          "timing: next weekend",
+          "Status:",
+          "ready"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "core_10_repeated_non_answers_increment_retry",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a couple",
+        "expect_contains": [
+          "timing is missing"
+        ]
+      },
+      {
+        "input": "maybe",
+        "expect_contains": [
+          "Retry Count:",
+          "1"
+        ],
+        "expect_state": {
+          "active": true,
+          "retry_count": 1
+        }
+      },
+      {
+        "input": "later",
+        "expect_contains": [
+          "Retry Count:",
+          "2"
+        ],
+        "expect_state": {
+          "active": true,
+          "retry_count": 2
+        }
+      }
+    ]
+  },
+  {
+    "name": "extract_01_destination_diani",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a couple next weekend",
+        "expect_contains": [
+          "destination: diani"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_02_destination_naivasha",
+    "conversation": [
+      {
+        "input": "plan a trip to naivasha for 4 people next weekend",
+        "expect_contains": [
+          "destination: naivasha"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_03_destination_watamu",
+    "conversation": [
+      {
+        "input": "plan a trip to watamu for 5 people tomorrow",
+        "expect_contains": [
+          "destination: watamu"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_04_traveller_count_couple",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a couple next weekend",
+        "expect_contains": [
+          "traveller_count: 2"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_05_traveller_count_duo",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a duo next weekend",
+        "expect_contains": [
+          "traveller_count: 2"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_06_traveller_count_trio",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a trio next weekend",
+        "expect_contains": [
+          "traveller_count: 3"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_07_traveller_count_number_word",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for five people next weekend",
+        "expect_contains": [
+          "traveller_count: 5"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_08_traveller_count_direct_number",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for 8 people next weekend",
+        "expect_contains": [
+          "traveller_count: 8"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_09_traveller_count_composite",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for 2 adults and 3 kids next weekend",
+        "expect_contains": [
+          "traveller_count: 5"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_10_traveller_count_couples",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for 4 couples next weekend",
+        "expect_contains": [
+          "traveller_count: 8"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_11_ambiguous_family",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for my family next weekend",
+        "expect_contains": [
+          "traveller_count is missing"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_12_timing_next_weekend",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for 2 people next weekend",
+        "expect_contains": [
+          "timing: next weekend"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_13_timing_this_weekend",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for 2 people this weekend",
+        "expect_contains": [
+          "timing: this weekend"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_14_timing_tomorrow",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for 2 people tomorrow",
+        "expect_contains": [
+          "timing: tomorrow"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_15_timing_next_week",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for 2 people next week",
+        "expect_contains": [
+          "timing: next week"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_16_timing_exact_range",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for 2 people 12th to 14th",
+        "expect_contains": [
+          "timing: 12th to 14th"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "extract_17_timing_reject_month_only",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for 2 people in april",
+        "expect_contains": [
+          "timing is missing"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "normalize_01_formy_repairs",
+    "conversation": [
+      {
+        "input": "plan a trip to watamu formy family next weekend",
+        "expect_contains": [
+          "traveller_count is missing"
+        ],
+        "expect_not_contains": [
+          "watamu formy family"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "normalize_02_nextweekend_repairs",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for 2 people nextweekend",
+        "expect_contains": [
+          "timing: next weekend"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "normalize_03_thisweekend_repairs",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for 2 people thisweekend",
+        "expect_contains": [
+          "timing: this weekend"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "normalize_04_casing_cleanup",
+    "conversation": [
+      {
+        "input": "PLAN A TRIP TO DIANI FOR A COUPLE NEXT WEEKEND",
+        "expect_contains": [
+          "destination: diani",
+          "traveller_count: 2",
+          "timing: next weekend"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "normalize_05_spacing_cleanup",
+    "conversation": [
+      {
+        "input": "   plan   a   trip   to   diani   for   2   people   next   weekend   ",
+        "expect_contains": [
+          "destination: diani",
+          "traveller_count: 2",
+          "timing: next weekend"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "edge_01_empty_input",
+    "conversation": [
+      {
+        "input": "",
+        "expect_contains": [
+          "destination is missing"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["destination", "traveller_count", "timing"],
+          "current_index": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "edge_02_junk_input",
+    "conversation": [
+      {
+        "input": "asdfgh qwerty 12345",
+        "expect_contains": [
+          "destination is missing"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "edge_03_bad_answer_to_destination_question",
+    "conversation": [
+      {
+        "input": "plan a trip",
+        "expect_contains": [
+          "destination is missing"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["destination", "traveller_count", "timing"],
+          "current_index": 0
+        }
+      },
+      {
+        "input": "whatever",
+        "expect_contains": [
+          "destination is still missing",
+          "Retry Count:",
+          "1"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "edge_04_resume_with_destination_answer",
+    "conversation": [
+      {
+        "input": "plan a trip",
+        "expect_contains": [
+          "destination is missing"
+        ]
+      },
+      {
+        "input": "to diani",
+        "expect_contains": [
+          "traveller_count is missing"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["traveller_count", "timing"],
+          "current_index": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "edge_05_invalid_clarification_then_valid",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a couple",
+        "expect_contains": [
+          "timing is missing"
+        ]
+      },
+      {
+        "input": "someday maybe",
+        "expect_contains": [
+          "timing is still missing"
+        ],
+        "expect_state": {
+          "active": true
+        }
+      },
+      {
+        "input": "tomorrow",
+        "expect_contains": [
+          "timing: tomorrow",
+          "Status:",
+          "ready"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "format_01_clarification_headings_present",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a couple",
+        "expect_contains": [
+          "Goal:",
+          "Clarification Needed:",
+          "Question:"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "format_02_ready_plan_headings_present",
+    "conversation": [
+      {
+        "input": "plan a trip to naivasha for 2 adults and 3 kids next weekend",
+        "expect_contains": [
+          "Goal:",
+          "Brief:",
+          "Plan:",
+          "Status:"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "format_03_no_raw_dict_leak",
+    "conversation": [
+      {
+        "input": "plan a trip to naivasha for 2 adults and 3 kids next weekend",
+        "expect_not_contains": [
+          "{",
+          "}",
+          "'goal'",
+          "'brief'"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "format_04_plan_numbering_present",
+    "conversation": [
+      {
+        "input": "plan a trip to naivasha for 2 adults and 3 kids next weekend",
+        "expect_contains": [
+          "1. ",
+          "2. ",
+          "3. ",
+          "4. ",
+          "5. "
+        ]
+      }
+    ]
+  },
+  {
+    "name": "format_05_retry_output_contains_note_and_retry_count",
+    "conversation": [
+      {
+        "input": "plan a trip to diani for a couple",
+        "expect_contains": [
+          "timing is missing"
+        ]
+      },
+      {
+        "input": "help me decide",
+        "expect_contains": [
+          "Note:",
+          "Provide a specific answer.",
+          "Retry Count:",
+          "1"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "queue_01_three_missing_fields_full_flow",
+    "conversation": [
+      {
+        "input": "plan a trip",
+        "expect_contains": [
+          "destination is missing",
+          "Where would you like to go?"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["destination", "traveller_count", "timing"],
+          "current_index": 0,
+          "retry_count": 0
+        }
+      },
+      {
+        "input": "to diani",
+        "expect_contains": [
+          "traveller_count is missing",
+          "How many travellers are going?"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["traveller_count", "timing"],
+          "current_index": 0,
+          "retry_count": 0
+        }
+      },
+      {
+        "input": "2 people",
+        "expect_contains": [
+          "timing is missing",
+          "What dates are you considering?"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["timing"],
+          "current_index": 0,
+          "retry_count": 0
+        }
+      },
+      {
+        "input": "next weekend",
+        "expect_contains": [
+          "Brief:",
+          "destination: diani",
+          "traveller_count: 2",
+          "timing: next weekend",
+          "Status:",
+          "ready"
+        ],
+        "expect_state": {
+          "active": false,
+          "missing_fields": [],
+          "current_index": 0,
+          "retry_count": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "queue_02_reask_during_multi_field_flow",
+    "conversation": [
+      {
+        "input": "plan a trip",
+        "expect_contains": [
+          "destination is missing"
+        ]
+      },
+      {
+        "input": "whatever",
+        "expect_contains": [
+          "destination is still missing",
+          "Retry Count:",
+          "1"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["destination", "traveller_count", "timing"],
+          "current_index": 0,
+          "retry_count": 1
+        }
+      },
+      {
+        "input": "to coast",
+        "expect_contains": [
+          "traveller_count is missing"
+        ],
+        "expect_state": {
+          "active": true,
+          "missing_fields": ["traveller_count", "timing"],
+          "current_index": 0,
+          "retry_count": 0
+        }
+      }
+    ]
+  }
+,
+  {
+    "name": "engine_queue_01_plan_a_trip_needs_destination_first",
+    "conversation": [
+      {
+        "input": "plan a trip",
+        "expect_contains": [
+          "destination is missing",
+          "Where would you like to go?"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "engine_queue_02_trip_to_coast_skips_destination_and_asks_traveller_count",
+    "conversation": [
+      {
+        "input": "plan a trip to coast",
+        "expect_contains": [
+          "traveller_count is missing",
+          "How many travellers are going?"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "engine_queue_03_family_trip_next_weekend_only_needs_traveller_count",
+    "conversation": [
+      {
+        "input": "plan a trip to watamu for my family next weekend",
+        "expect_contains": [
+          "traveller_count is missing",
+          "How many travellers are going?"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "engine_queue_04_month_only_still_flags_timing",
+    "conversation": [
+      {
+        "input": "plan a trip to masai mara for a group of 6, budget is 45000 and we are to stay for the whole of april",
+        "expect_contains": [
+          "timing is missing",
+          "What dates are you considering?"
+        ]
+      }
+    ]
+  }]

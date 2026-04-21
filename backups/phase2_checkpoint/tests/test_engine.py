@@ -1,0 +1,1056 @@
+import re
+
+import pytest
+from pydantic import ValidationError
+
+import engine.checker as checker
+from engine.clarification_runner import run, reset_state
+from engine.formatter import format_output
+from engine.generator import detect_task_type, generate_plan
+from engine.planning_policy import derive_planning_constraints
+from engine.runner import run_engine
+from engine.travel_brief import (
+    TimingModel,
+    TravelBriefModel,
+    extract_traveller_count,
+    summarize_timing,
+    extract_timing,
+    extract_budget_info,
+    build_travel_brief,
+    get_missing_critical_fields,
+    extract_trip_mood,
+)
+
+
+def setup_function():
+    reset_state()
+
+
+def _extract_numbered_steps(output: str) -> list[str]:
+    return re.findall(r"^\d+\.\s+(.+)$", output, re.MULTILINE)
+
+
+def test_timing_model_exact_timing_payload_validates():
+    timing = TimingModel(
+        raw_text="10 april to 14 april",
+        start_date="10 april",
+        end_date="14 april",
+        date_flexibility="fixed",
+        state="exact_timing",
+        confidence="high",
+    )
+
+    assert timing.start_date == "10 april"
+    assert timing.end_date == "14 april"
+
+
+def test_timing_model_relative_timing_payload_validates():
+    timing = TimingModel(
+        raw_text="next weekend",
+        date_flexibility="fixed",
+        state="relative_timing",
+        confidence="medium",
+    )
+
+    assert timing.state == "relative_timing"
+    assert timing.raw_text == "next weekend"
+
+
+def test_timing_model_duration_only_payload_validates():
+    timing = TimingModel(
+        raw_text="for 3 days",
+        duration_days=3,
+        date_flexibility="unknown",
+        state="duration_only",
+        confidence="medium",
+    )
+
+    assert timing.duration_days == 3
+
+
+def test_timing_model_month_only_payload_validates():
+    timing = TimingModel(
+        raw_text="april",
+        date_flexibility="flexible",
+        state="month_only",
+        confidence="low",
+    )
+
+    assert timing.raw_text == "april"
+
+
+def test_timing_model_missing_timing_payload_validates():
+    timing = TimingModel()
+
+    assert timing.state == "missing_timing"
+    assert timing.raw_text == ""
+
+
+def test_timing_model_vague_timing_payload_validates():
+    timing = TimingModel(
+        raw_text="soon",
+        date_flexibility="unknown",
+        state="vague_timing",
+        confidence="low",
+    )
+
+    assert timing.state == "vague_timing"
+
+
+def test_timing_model_duration_only_without_duration_fails():
+    with pytest.raises(ValidationError):
+        TimingModel(
+            raw_text="for a while",
+            date_flexibility="unknown",
+            state="duration_only",
+            confidence="low",
+        )
+
+
+def test_timing_model_end_date_without_start_date_fails():
+    with pytest.raises(ValidationError):
+        TimingModel(
+            raw_text="14 april",
+            end_date="14 april",
+            date_flexibility="fixed",
+            state="exact_timing",
+            confidence="high",
+        )
+
+
+def test_timing_model_unsupported_state_fails():
+    with pytest.raises(ValidationError):
+        TimingModel(
+            raw_text="next year",
+            date_flexibility="unknown",
+            state="annual_timing",
+            confidence="low",
+        )
+
+
+def test_timing_model_unsupported_confidence_and_flexibility_fail():
+    with pytest.raises(ValidationError):
+        TimingModel(
+            raw_text="april",
+            date_flexibility="semi_flexible",
+            state="month_only",
+            confidence="certain",
+        )
+
+
+def test_travel_brief_model_completed_payload_validates():
+    brief = TravelBriefModel(
+        destination="diani",
+        traveller_count=2,
+        timing=TimingModel(
+            raw_text="next weekend",
+            date_flexibility="fixed",
+            state="relative_timing",
+            confidence="medium",
+        ),
+        budget_amount=45000,
+        budget_level="medium",
+        trip_mood="relaxed",
+    )
+
+    assert brief.destination == "diani"
+    assert brief.timing.state == "relative_timing"
+
+
+def test_travel_brief_model_partial_clarification_payload_validates():
+    brief = TravelBriefModel(
+        destination=None,
+        traveller_count=None,
+        timing=TimingModel(),
+        budget_amount=None,
+        budget_level="unspecified",
+        trip_mood=None,
+    )
+
+    assert brief.timing.state == "missing_timing"
+    assert brief.destination is None
+
+
+def test_travel_brief_model_negative_traveller_count_fails():
+    with pytest.raises(ValidationError):
+        TravelBriefModel(
+            destination="diani",
+            traveller_count=-1,
+            timing=TimingModel(),
+            budget_level="unspecified",
+        )
+
+
+def test_travel_brief_model_negative_budget_amount_fails():
+    with pytest.raises(ValidationError):
+        TravelBriefModel(
+            destination="diani",
+            traveller_count=2,
+            timing=TimingModel(),
+            budget_amount=-100,
+            budget_level="low",
+        )
+
+
+def test_travel_brief_model_unsupported_budget_level_fails():
+    with pytest.raises(ValidationError):
+        TravelBriefModel(
+            destination="diani",
+            traveller_count=2,
+            timing=TimingModel(),
+            budget_level="premium",
+        )
+
+
+def test_travel_brief_model_unsupported_trip_mood_fails():
+    with pytest.raises(ValidationError):
+        TravelBriefModel(
+            destination="diani",
+            traveller_count=2,
+            timing=TimingModel(),
+            budget_level="low",
+            trip_mood="party",
+        )
+
+
+def test_travel_brief_model_timing_field_must_validate_as_timing_model():
+    with pytest.raises(ValidationError):
+        TravelBriefModel(
+            destination="diani",
+            traveller_count=2,
+            timing={"state": "duration_only", "raw_text": "for some time"},
+            budget_level="low",
+        )
+
+
+def test_clarification_flow_trip():
+    result_1 = run("Plan a trip")
+    assert "Where would you like to go?" in result_1
+
+    result_2 = run("Naivasha")
+    assert "How many travellers?" in result_2
+
+    result_3 = run("3 people")
+    assert "What exact dates are you planning?" in result_3
+
+    result_4 = run("next weekend")
+    assert "Slate808 Output" in result_4
+    assert "Destination: naivasha" in result_4
+    assert "Traveller Count: 3" in result_4
+    assert "Timing: next weekend" in result_4
+
+
+def test_bare_number_word_reply_supported():
+    assert extract_traveller_count("four") == 4
+    assert extract_traveller_count("7") == 7
+
+
+def test_timing_range_dash_format_supported():
+    timing = extract_timing("10-28 April")
+    assert summarize_timing(timing) == "10 april to 28 april"
+
+
+def test_direct_complete_trip_request():
+    result = run("Plan a trip to diani for 3 couples next weekend")
+    assert "Slate808 Output" in result
+    assert "Destination: diani" in result
+    assert "Traveller Count: 6" in result
+    assert "Timing: next weekend" in result
+
+
+def test_staycation_routes_to_trip_pipeline():
+    result = run_engine("Plan a staycation in nairobi for 2 people next weekend")
+
+    assert "Slate808 Output" in result
+    assert "Status: pass" in result
+    assert "Travel Brief:" in result
+    assert "Traveller Count: 2" in result
+    assert "Timing: next weekend" in result
+    assert "Slate808 currently supports travel planning only." not in result
+
+
+def test_relaxed_staycation_routes_to_trip_pipeline():
+    result = run_engine("Plan a relaxed staycation to kisumu for 2 people next weekend")
+
+    assert "Slate808 Output" in result
+    assert "Status: pass" in result
+    assert "Travel Brief:" in result
+    assert "Destination: kisumu" in result
+    assert "Timing: next weekend" in result
+
+
+def test_staycation_without_destination_restarts_trip_clarification():
+    result = run("Plan a staycation for my family of 6")
+
+    assert "Where would you like to go?" in result
+    assert "Slate808 currently supports travel planning only." not in result
+
+
+@pytest.mark.parametrize(
+    "travel_request",
+    [
+        "Plan a trip to diani for 2 people next weekend",
+        "Plan a travel to naivasha for 2 people next weekend",
+        "Plan a journey to watamu for 2 people next weekend",
+        "Plan a getaway to ukunda for 2 people next weekend",
+        "Plan a holiday to diani for 2 people next weekend",
+        "Plan a vacation to diani for 2 people next weekend",
+        "Plan a retreat to naivasha for 4 people next weekend",
+        "Plan an escape to watamu for 2 people next weekend",
+        "Plan a staycation in nairobi for 2 people next weekend",
+    ],
+)
+def test_travel_intent_keywords_route_to_trip_classification(travel_request):
+    assert detect_task_type(travel_request) == "trip"
+
+
+def test_build_travel_brief_returns_validated_dict_shape_for_engine_compatibility():
+    brief = build_travel_brief("Plan a trip to diani for 2 people next weekend")
+
+    assert isinstance(brief, dict)
+    assert isinstance(brief["timing"], dict)
+    assert brief["destination"] == "diani"
+    assert brief["timing"]["state"] == "relative_timing"
+
+
+def test_budget_extraction_numeric_amount_supported():
+    brief = build_travel_brief("Plan a trip to diani for 2 people next weekend budget is 45000")
+    assert brief["budget_amount"] == 45000
+    assert brief["budget_level"] == "medium"
+
+
+def test_budget_extraction_numeric_k_format_supported():
+    brief = build_travel_brief("Plan a trip to diani for 2 people next weekend budget is 25k")
+    assert brief["budget_amount"] == 25000
+    assert brief["budget_level"] == "low"
+
+
+def test_budget_extraction_signal_cheap_supported():
+    brief = build_travel_brief("Plan a cheap trip to diani for 2 people next weekend")
+    assert brief["budget_amount"] is None
+    assert brief["budget_level"] == "low"
+
+
+def test_budget_extraction_signal_luxury_supported():
+    brief = build_travel_brief("Plan a luxury trip to diani for 2 people next weekend")
+    assert brief["budget_amount"] is None
+    assert brief["budget_level"] == "high"
+
+
+def test_budget_extraction_signal_affordable_supported():
+    brief = build_travel_brief("Plan an affordable trip to diani for 2 people next weekend")
+    assert brief["budget_amount"] is None
+    assert brief["budget_level"] == "low"
+
+
+def test_budget_extraction_real_world_family_request_supported():
+    brief = build_travel_brief(
+        "Plana 2 day trip to ukunda for 4 couples and 2 children, budget is 40000"
+    )
+
+    assert brief["destination"] == "ukunda"
+    assert brief["traveller_count"] == 10
+    assert brief["budget_amount"] == 40000
+    assert brief["budget_level"] == "medium"
+
+
+def test_budget_and_destination_extraction_with_interleaved_currency_context():
+    brief = build_travel_brief(
+        "plan a trip with Kes 60000 for paris next week, a group of 6"
+    )
+
+    assert brief["destination"] == "paris"
+    assert brief["traveller_count"] == 6
+    assert brief["budget_amount"] == 60000
+    assert brief["budget_level"] == "medium"
+    assert brief["timing"]["raw_text"] == "next week"
+
+
+def test_clarification_with_partial_trip_continues_from_next_missing_field():
+    result_1 = run("Plan a trip to watamu")
+    assert "How many travellers?" in result_1
+
+    result_2 = run("2 people")
+    assert "What exact dates are you planning?" in result_2
+
+    result_3 = run("next month")
+    assert "Slate808 Output" in result_3
+    assert "Destination: watamu" in result_3
+    assert "Traveller Count: 2" in result_3
+    assert "Timing: next month" in result_3
+
+
+def test_destination_clarification_reply_is_routed_to_active_trip():
+    run("Plan a trip")
+    result = run("Naivasha")
+
+    assert "How many travellers?" in result
+    assert "Where would you like to go?" not in result
+
+
+def test_traveller_count_clarification_reply_is_routed_to_active_trip():
+    run("Plan a trip to naivasha")
+    result = run("3 people")
+
+    assert "What exact dates are you planning?" in result
+    assert "How many travellers?" not in result
+
+
+def test_timing_clarification_reply_is_routed_to_active_trip():
+    run("Plan a trip to naivasha for 3 people")
+    result = run("tomorrow")
+
+    assert "Slate808 Output" in result
+    assert "Timing: tomorrow" in result
+
+
+def test_clarification_preserves_budget_from_followup_answer():
+    result_1 = run("Plan a trip to Paris")
+    assert "How many travellers?" in result_1
+
+    result_2 = run("7 people and a budget of 600000")
+    assert "What exact dates are you planning?" in result_2
+
+    result_3 = run("next week")
+    assert "Slate808 Output" in result_3
+    assert "Destination: paris" in result_3
+    assert "Traveller Count: 7" in result_3
+    assert "Timing: next week" in result_3
+    assert "- Budget: 600000 (high)" in result_3
+
+
+def test_clarification_cancel_clears_active_state():
+    run("Plan a trip")
+    cancel_result = run("cancel")
+
+    assert "Session reset. What would you like to plan?" in cancel_result
+
+    follow_up = run("Plan a trip to naivasha")
+    assert "Where would you like to go?" not in follow_up
+    assert "How many travellers?" in follow_up
+
+
+def test_clarification_restart_clears_active_state():
+    run("Plan a trip to naivasha")
+    restart_result = run("restart")
+
+    assert "Session reset. What would you like to plan?" in restart_result
+
+    fresh_request = run("Plan a trip")
+    assert "Where would you like to go?" in fresh_request
+
+
+def test_unrelated_new_request_during_clarification_is_not_treated_as_answer():
+    run("Plan a trip")
+    result = run("Plan a meeting agenda for Monday")
+
+    assert "Slate808 Output" in result
+    assert "Status: fail" in result
+    assert "Slate808 currently supports travel planning only." in result
+    assert "How many travellers?" not in result
+    assert "What exact dates are you planning?" not in result
+    assert "Break down the task into components" not in result
+    assert "Travel Brief:" not in result
+
+
+def test_exit_command_does_not_become_destination():
+    run("Plan a trip")
+    exit_result = run("exit")
+
+    assert "Session reset. What would you like to plan?" in exit_result
+
+    next_trip = run("Plan a trip to diani for 2 people next weekend")
+    assert "Destination: diani" in next_trip
+    assert "Destination: exit" not in next_trip
+
+
+def test_restart_command_clears_active_state():
+    run("Plan a trip to naivasha")
+    restart_result = run("restart")
+
+    assert "Session reset. What would you like to plan?" in restart_result
+
+    fresh_request = run("Plan a trip")
+    assert "Where would you like to go?" in fresh_request
+
+
+def test_new_task_override_during_clarification():
+    run("Plan a trip")
+    result = run("Plan a meeting agenda for Monday")
+
+    assert "Slate808 Output" in result
+    assert "Status: fail" in result
+    assert "Slate808 currently supports travel planning only." in result
+    assert "How many travellers?" not in result
+    assert "What exact dates are you planning?" not in result
+    assert "Gather necessary resources" not in result
+
+
+def test_non_travel_override_exits_clarification_state_cleanly():
+    run("Plan a trip")
+    override_result = run("Plan a meeting agenda for Monday")
+
+    assert "Slate808 currently supports travel planning only." in override_result
+
+    follow_up = run("Plan a trip to naivasha for 2 people next weekend")
+    assert "Status: pass" in follow_up
+    assert "Destination: naivasha" in follow_up
+
+
+def test_incomplete_travel_override_restarts_clarification_safely():
+    run("Plan a trip to diani")
+    override_result = run("plan a journey")
+
+    assert "Where would you like to go?" in override_result
+    assert "Status: pass" not in override_result
+    assert "Destination: None" not in override_result
+    assert "Timing: timing not specified" not in override_result
+
+
+@pytest.mark.parametrize(
+    ("text", "expected_state", "expected_summary"),
+    [
+        ("next month", "relative_timing", "next month"),
+        ("april", "month_only", "april"),
+        ("for 3 days", "duration_only", "for 3 days"),
+        ("2 nights", "duration_only", "2 nights"),
+        ("10-23rd april", "exact_timing", "10 april to 23rd april"),
+        ("20-10th may", "exact_timing", "20 april to 10 may"),
+        ("10-20 may", "exact_timing", "10 may to 20 may"),
+        ("20th-14th may", "exact_timing", "20 april to 14 may"),
+        ("20 april to 10 may", "exact_timing", "20 april to 10 may"),
+        ("3rd to 4th jan", "exact_timing", "3rd january to 4th january"),
+        ("jan 14th to february 14th", "exact_timing", "14th january to 14th february"),
+        ("jan 14th to febuary 14th", "exact_timing", "14th january to 14th february"),
+    ],
+)
+def test_timing_current_behavior_matches_engine_behavior(text, expected_state, expected_summary):
+    timing = extract_timing(text)
+
+    assert timing["state"] == expected_state
+    assert summarize_timing(timing) == expected_summary
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "4th july - 31st september",
+        "31st september",
+        "3rd to 4th",
+        "30th february",
+    ],
+)
+def test_invalid_or_ambiguous_timing_inputs_remain_unusable(text):
+    timing = extract_timing(text)
+
+    assert timing["state"] == "missing_timing"
+    assert summarize_timing(timing) == "timing not specified"
+
+
+def test_timing_month_only_is_detected_but_requires_clarification():
+    brief = build_travel_brief("Plan a trip to diani for 2 people in april")
+
+    assert brief["timing"]["state"] == "month_only"
+    assert get_missing_critical_fields(brief) == ["timing"]
+
+
+def test_month_only_timing_in_april_triggers_state_aware_clarification():
+    result = run("Plan a trip to diani for 2 people in April")
+
+    assert "Which exact dates in April are you planning?" in result
+    assert "Slate808 Output" not in result
+
+
+def test_month_only_timing_answer_is_accepted_in_clarification():
+    run("Plan a trip to naivasha for 3 people")
+    result = run("April")
+
+    assert "Which exact dates in April are you planning?" in result
+    assert "Slate808 Output" not in result
+
+
+def test_short_destination_reply_does_not_trigger_new_task_override():
+    run("Plan a trip")
+    result = run("travel to nairobi")
+
+    assert "How many travellers?" in result
+    assert "Where would you like to go?" not in result
+
+
+def test_timing_duration_only_is_detected_but_requires_clarification():
+    brief = build_travel_brief("Plan a trip to diani for 2 people for 3 days")
+
+    assert brief["timing"]["state"] == "duration_only"
+    assert get_missing_critical_fields(brief) == ["timing"]
+
+
+def test_dual_duration_compatible_pair_prefers_days():
+    timing = extract_timing("3 days and 2 nights")
+
+    assert timing["state"] == "duration_only"
+    assert timing["raw_text"] == "for 3 days"
+    assert timing["duration_days"] == 3
+    assert timing["duration_nights"] is None
+
+
+@pytest.mark.parametrize("text", ["3 days and 3 nights", "3 days and 4 nights"])
+def test_dual_duration_conflicts_force_clarification(text):
+    timing = extract_timing(text)
+
+    assert timing["state"] == "missing_timing"
+    assert summarize_timing(timing) == "timing not specified"
+
+
+def test_timing_vague_reasks_in_clarification():
+    run("Plan a trip to naivasha for 2 people")
+    result = run("soon")
+
+    assert "What exact dates are you planning?" in result
+    assert "Slate808 Output" not in result
+
+
+def test_duration_only_timing_triggers_state_aware_clarification():
+    result = run("Plan a trip to diani for 2 people for 4 days")
+
+    assert "What exact dates are you planning for those 4 days?" in result
+    assert "Slate808 Output" not in result
+
+
+def test_duration_only_timing_answer_is_accepted_but_still_requires_exact_dates():
+    run("Plan a trip to diani for 2 people")
+    result = run("for 4 days")
+
+    assert "What exact dates are you planning for those 4 days?" in result
+    assert "Slate808 Output" not in result
+
+
+def test_numeric_separation_people_budget_and_duration():
+    brief = build_travel_brief(
+        "Plan a trip to diani for 5 people with a budget of 20000 for 3 days"
+    )
+
+    assert brief["traveller_count"] == 5
+    assert brief["budget_amount"] == 20000
+    assert brief["budget_level"] == "low"
+    assert brief["timing"]["state"] == "duration_only"
+    assert brief["timing"]["duration_days"] == 3
+
+
+def test_numeric_separation_couples_budget_and_duration():
+    brief = build_travel_brief(
+        "Plan a trip to naivasha for 2 couples and a budget of 30000 for 3 days"
+    )
+
+    assert brief["destination"] == "naivasha"
+    assert brief["traveller_count"] == 4
+    assert brief["budget_amount"] == 30000
+    assert brief["budget_level"] == "low"
+    assert brief["timing"]["state"] == "duration_only"
+    assert brief["timing"]["duration_days"] == 3
+
+
+def test_numeric_separation_does_not_contaminate_timing_or_budget():
+    brief = build_travel_brief(
+        "Plan a trip to diani for 4 people next weekend with a budget of 45000"
+    )
+
+    assert brief["destination"] == "diani"
+    assert brief["traveller_count"] == 4
+    assert brief["budget_amount"] == 45000
+    assert brief["timing"]["state"] == "relative_timing"
+    assert brief["timing"]["raw_text"] == "next weekend"
+
+
+def test_budget_visibility_numeric_budget_and_level_appear_in_output():
+    result = run("Plan a trip to diani for 2 people next weekend budget is 45000")
+
+    assert "- Budget: 45000 (medium)" in result
+    assert "Budget Level:" not in result
+
+
+@pytest.mark.parametrize(
+    ("trip_request", "expected_budget_line"),
+    [
+        ("Plan a cheap trip to diani for 2 people next weekend", "- Budget Level: low"),
+        ("Plan a luxury trip to diani for 2 people next weekend", "- Budget Level: high"),
+    ],
+)
+def test_budget_visibility_signal_based_levels_appear_in_output(trip_request, expected_budget_line):
+    result = run(trip_request)
+
+    assert expected_budget_line in result
+
+
+def test_formatter_shows_zero_budget_amount():
+    final_output = {
+        "status": "pass",
+        "goal": "Test",
+        "steps": [],
+        "checks": [],
+        "risks": [],
+        "brief": {
+            "destination": "diani",
+            "traveller_count": 2,
+            "timing": {"state": "relative_timing", "raw_text": "next weekend"},
+            "budget_amount": 0,
+            "budget_level": "low",
+            "trip_mood": None,
+        },
+    }
+
+    output = format_output(final_output)
+    assert "- Budget: 0 (low)" in output
+
+
+def test_trip_output_regressions_stay_fixed():
+    result = run_engine("Plan a trip to naivasha for 2 people next weekend")
+    steps = _extract_numbered_steps(result)
+
+    assert "Travel Brief:" in result
+    assert "Destination: naivasha" in result
+    assert "transport" in result.lower()
+    assert "Gather necessary resources" not in result
+    assert "Define a smooth arrival" not in result
+    assert "Shape the timing of the journey" not in result
+    assert len(steps) == len(set(step.lower() for step in steps))
+
+
+def test_family_relative_timing_step_is_checker_safe_and_concrete():
+    plan = generate_plan("Plan a family trip to the coast for 4 people next weekend")
+    timing_step = plan["steps"][4].lower()
+
+    assert "next weekend" in timing_step
+    assert "align bookings" in timing_step
+    assert "manageable pacing" not in timing_step
+    assert "clear transitions" not in timing_step
+    assert checker.check_plan(plan)["status"] == "pass"
+
+
+def test_duration_only_timing_step_is_concrete():
+    plan = generate_plan("Plan a family trip to diani for 4 people for 2 nights")
+    timing_step = plan["steps"][4].lower()
+
+    assert "2 nights" in timing_step
+    assert "align transport and accommodation" in timing_step
+    assert checker.check_plan(plan)["status"] == "pass"
+
+
+def test_shorthand_trip_inputs_classify_as_trip():
+    assert detect_task_type("Mt kenya for 2 night with a group of 4. Budget is 1200000") == "trip"
+    assert detect_task_type("Coast for 3 nights with a Budget of 120000") == "trip"
+
+
+def test_shorthand_trip_inputs_route_to_trip_pipeline():
+    result = run_engine("Coast for 3 nights with a Budget of 120000")
+
+    assert "Travel Brief:" in result
+    assert "Destination: coast" in result
+    assert "Timing: 3 nights" in result
+
+
+def test_non_travel_requests_fail_clearly():
+    result = run_engine("Plan a meeting agenda for Monday")
+
+    assert "Slate808 Output" in result
+    assert "Status: fail" in result
+    assert "Slate808 currently supports travel planning only." in result
+    assert "Break down the task into components" not in result
+    assert "Gather necessary resources" not in result
+
+
+def test_generate_plan_non_travel_returns_failure_without_generic_steps():
+    plan = generate_plan("Plan a meeting agenda for Monday")
+
+    assert plan["task_type"] == "unsupported"
+    assert plan["status"] == "fail"
+    assert plan["errors"] == ["Slate808 currently supports travel planning only."]
+    assert plan["steps"] == []
+
+
+def test_clarification_rebuild_does_not_insert_at_for_days():
+    run("Plan a trip to diani for 5 people")
+    result = run("for 3 days")
+
+    assert "What exact dates are you planning for those 3 days?" in result
+    assert "Slate808 Output" not in result
+    assert "at for 3 days" not in result
+
+
+def test_destination_extraction_avoids_action_prefix_capture():
+    brief = build_travel_brief("Execute a travel plan for zanzibar for 2 people next weekend")
+
+    assert brief["destination"] == "zanzibar"
+
+
+@pytest.mark.parametrize("text", ["10 april to", "10 april to may", "10 april to 12"])
+def test_incomplete_timing_range_remains_unusable(text):
+    timing = extract_timing(text)
+
+    assert timing["state"] == "missing_timing"
+    assert summarize_timing(timing) == "timing not specified"
+
+
+def test_clarification_rebuild_does_not_insert_at_for_weeks():
+    run("Plan a trip to kisumu for 6 people")
+    result = run("for 4 weeks")
+
+    assert "What exact dates are you planning for those 4 weeks?" in result
+    assert "Slate808 Output" not in result
+    assert "at for 4 weeks" not in result
+
+
+def test_malformed_destination_prefix_cleanup_works():
+    brief = build_travel_brief("Plan a trip to travelto coast for 5 people at may")
+
+    assert brief["destination"] == "coast"
+    assert brief["timing"]["state"] == "month_only"
+
+
+def test_planning_policy_logs_decision_trace(monkeypatch):
+    logged = []
+
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: logged.append((filename, line)))
+
+    brief = build_travel_brief("Plan a family trip to the coast for 4 people next weekend with a budget of 45000")
+    constraints = derive_planning_constraints(brief)
+
+    assert logged
+    assert logged[0][0] == "decisions.log"
+    assert "constraint_policy" in logged[0][1]
+    assert "conflict_flags" in logged[0][1]
+    assert "refinement_flags" in logged[0][1]
+    assert constraints["timing_policy"]["is_timing_usable"] is True
+
+
+def test_rules_loading_is_path_safe(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    rules = checker.load_rules()
+
+    assert rules["min_steps"] == 3
+
+
+def test_runner_does_not_call_llm_when_disabled(monkeypatch):
+    called = {"count": 0}
+
+    def fake_llm(request):
+        called["count"] += 1
+        return None
+
+    monkeypatch.setattr("engine.runner.generate_with_llm", fake_llm)
+    monkeypatch.setattr("engine.runner.is_llm_enabled", lambda: False)
+
+    result = run_engine("Plan a trip to diani for 2 people next weekend")
+
+    assert called["count"] == 0
+    assert "Slate808 Output" in result
+
+
+def test_runner_falls_back_to_deterministic_when_llm_enabled_but_fails(monkeypatch):
+    called = {"count": 0}
+
+    def fail_llm(request):
+        called["count"] += 1
+        raise RuntimeError("LLM failed")
+
+    monkeypatch.setattr("engine.runner.generate_with_llm", fail_llm)
+    monkeypatch.setattr("engine.runner.is_llm_enabled", lambda: True)
+
+    result = run_engine("Plan a trip to diani for 2 people next weekend")
+
+    assert called["count"] == 0
+    assert "Slate808 Output" in result
+    assert "Destination: diani" in result
+
+
+def test_mood_driven_relaxed_plan_content():
+    result = run_engine("Plan a relaxed trip to diani for 2 people next weekend")
+    steps = _extract_numbered_steps(result)
+
+    assert "transport" in steps[2].lower()
+    assert "smooth" in steps[2].lower() or "low-friction" in steps[2].lower()
+    assert "restful" in steps[3].lower()
+    assert "timing" in steps[4].lower()
+    assert "relaxed" in steps[4].lower()
+
+
+def test_mood_driven_adventure_plan_content():
+    result = run_engine("Plan an adventure trip to mara for 3 people for 5 days")
+    steps = _extract_numbered_steps(result)
+
+    assert "transport" in steps[2].lower()
+    assert "active" in steps[2].lower()
+    assert "adventur" in steps[3].lower()
+    assert "timing" in steps[4].lower()
+    assert "active" in steps[4].lower()
+
+
+def test_mood_driven_luxury_plan_content():
+    result = run_engine("Plan a luxury trip to zanzibar for 2 people next month")
+    steps = _extract_numbered_steps(result)
+
+    assert "budget" in steps[1].lower()
+    assert "premium" in steps[1].lower()
+    assert "transport" in steps[2].lower()
+    assert "comfortable" in steps[2].lower()
+    assert "high-quality" in steps[3].lower() or "curated" in steps[3].lower()
+
+
+def test_mood_driven_romantic_plan_content():
+    result = run_engine("Plan a romantic getaway to nairobi for 2 people for 3 days")
+    steps = _extract_numbered_steps(result)
+
+    assert "intimate" in steps[3].lower() or "shared" in steps[3].lower()
+    assert "timing" in steps[4].lower()
+    assert "unrushed" in steps[4].lower() or "special" in steps[4].lower()
+
+
+def test_mood_driven_family_plan_content():
+    result = run_engine("Plan a family trip to the coast for 4 people next weekend")
+    steps = _extract_numbered_steps(result)
+
+    assert "transport" in steps[2].lower()
+    assert "family" in steps[2].lower()
+    assert "family-friendly" in steps[3].lower()
+    assert "timing" in steps[4].lower()
+    assert "next weekend" in steps[4].lower()
+    assert "align bookings" in steps[4].lower()
+
+
+def test_mood_driven_corporate_plan_content():
+    result = run_engine("Plan a corporate team retreat to nairobi for 10 people for 2 days")
+    steps = _extract_numbered_steps(result)
+
+    assert "budget" in steps[1].lower()
+    assert "team" in steps[1].lower() or "logistics" in steps[1].lower()
+    assert "transport" in steps[2].lower()
+    assert "coordination" in steps[2].lower() or "efficien" in steps[2].lower()
+    assert "structured" in steps[3].lower()
+    assert "timing" in steps[4].lower()
+    assert "efficient" in steps[4].lower()
+
+
+def test_mood_influence_preserves_transport_and_timing_coverage():
+    result = run_engine("Plan a corporate retreat to nairobi for 8 people next month")
+    steps = _extract_numbered_steps(result)
+    joined = " ".join(steps).lower()
+
+    assert "transport" in joined
+    assert "timing" in joined
+    assert len(steps) == 5
+    assert len(steps) == len(set(step.lower() for step in steps))
+
+
+def test_no_mood_preserves_default_plan_behavior():
+    result = run_engine("Plan a trip to diani for 2 people next weekend")
+    steps = _extract_numbered_steps(result)
+    joined = " ".join(steps).lower()
+
+    for forbidden in ["calm", "restful", "active", "premium", "intimate", "family-friendly", "efficient", "team"]:
+        assert forbidden not in joined
+
+
+@pytest.mark.parametrize(
+    ("trip_request", "expected_mood", "expected_phrase"),
+    [
+        ("Plan a cheap relaxed trip to diani for 2 people next weekend", "relaxed", "smooth"),
+        ("Plan a romantic luxury getaway to zanzibar for 2 people next month", "romantic", "intimate"),
+        ("Plan a family trip to mombasa for 5 people next weekend", "family", "family-friendly"),
+        ("Plan a corporate retreat to nairobi for 12 people next month", "corporate", "efficient"),
+        ("Plan an adventure trip to mara for 3 people 10-14 April", "adventure", "adventur"),
+    ],
+)
+def test_mood_regressions_for_special_inputs(trip_request, expected_mood, expected_phrase):
+    brief = build_travel_brief(trip_request)
+    assert brief["trip_mood"] == expected_mood
+
+    result = run_engine(trip_request)
+    steps = _extract_numbered_steps(result)
+    joined = " ".join(steps).lower()
+    assert expected_phrase in joined
+
+
+def test_mood_extraction_relaxed():
+    brief = build_travel_brief("Plan a relaxed trip to diani for 2 people next weekend")
+    assert brief["trip_mood"] == "relaxed"
+
+
+def test_mood_extraction_adventure():
+    brief = build_travel_brief("Plan an adventure trip to mara for 3 people for 5 days")
+    assert brief["trip_mood"] == "adventure"
+
+
+def test_mood_extraction_luxury():
+    brief = build_travel_brief("Plan a luxury getaway to zanzibar for 2 people")
+    assert brief["trip_mood"] == "luxury"
+
+
+def test_mood_extraction_romantic():
+    brief = build_travel_brief("Plan a romantic getaway to nairobi for 2 people next month")
+    assert brief["trip_mood"] == "romantic"
+
+
+def test_mood_extraction_family():
+    brief = build_travel_brief("Plan a family trip to the coast for 5 people next weekend")
+    assert brief["trip_mood"] == "family"
+
+
+def test_mood_extraction_corporate():
+    brief = build_travel_brief("Plan a corporate team retreat for 20 people next month")
+    assert brief["trip_mood"] == "corporate"
+
+
+def test_mood_extraction_none_when_no_signal():
+    brief = build_travel_brief("Plan a trip to diani for 2 people next weekend")
+    assert brief["trip_mood"] is None
+
+
+def test_mood_extraction_none_when_only_budget_signal():
+    brief = build_travel_brief("Plan a trip to diani for 2 people next weekend with a budget of 50000")
+    assert brief["trip_mood"] is None
+
+
+def test_mood_extraction_priority_romantic_over_family():
+    brief = build_travel_brief("Plan a romantic family getaway for 2 people next weekend")
+    assert brief["trip_mood"] == "romantic"
+
+
+def test_mood_extraction_priority_corporate_over_relaxed():
+    brief = build_travel_brief("Plan a corporate team retreat for a relaxed atmosphere")
+    assert brief["trip_mood"] == "corporate"
+
+
+def test_mood_extraction_does_not_break_budget_extraction():
+    brief = build_travel_brief("Plan a luxury trip to diani for 2 people with a budget of 100000")
+    assert brief["trip_mood"] == "luxury"
+    assert brief["budget_amount"] == 100000
+    assert brief["budget_level"] == "medium"
+
+
+def test_mood_extraction_does_not_break_traveller_extraction():
+    brief = build_travel_brief("Plan an adventure trip for 5 couples next weekend")
+    assert brief["trip_mood"] == "adventure"
+    assert brief["traveller_count"] == 10
+
+
+def test_mood_extraction_does_not_break_timing_extraction():
+    brief = build_travel_brief("Plan a relaxed trip to mara for 2 people for 4 days")
+    assert brief["trip_mood"] == "relaxed"
+    assert brief["timing"]["state"] == "duration_only"
+    assert brief["timing"]["duration_days"] == 4
+
+
+def test_mood_extraction_all_moods_visible_in_output():
+    reset_state()
+    moods_and_requests = [
+        ("relaxed", "Plan a relaxed trip to diani for 2 people next weekend"),
+        ("adventure", "Plan an adventure trip to mara for 3 people for 5 days"),
+        ("luxury", "Plan a luxury trip to zanzibar for 2 people next month"),
+        ("romantic", "Plan a romantic getaway to nairobi for 2 people for 3 days"),
+        ("family", "Plan a family trip to the coast for 4 people next weekend"),
+        ("corporate", "Plan a corporate team retreat to nairobi for 10 people for 2 days"),
+    ]
+
+    for mood, request in moods_and_requests:
+        reset_state()
+        result = run(request)
+        assert f"- Trip Mood: {mood}" in result, f"Expected mood '{mood}' not found in output for request: {request}"

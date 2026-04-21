@@ -1,0 +1,24 @@
+{
+  "required_fields": [
+    "destination",
+    "traveller_count",
+    "timing",
+    "budget_level",
+    "trip_mood"
+  ],
+  "optional_fields": [
+    "transport_preference",
+    "accommodation_style",
+    "special_notes"
+  ],
+  "field_prompts": {
+    "destination": "Where is the trip going?",
+    "traveller_count": "How many travelers is this for?",
+    "timing": "When is the trip happening?",
+    "budget_level": "What budget level fits this journey?",
+    "trip_mood": "What kind of feeling should the journey create?",
+    "transport_preference": "Any preferred transport style?",
+    "accommodation_style": "What kind of stay fits the experience?",
+    "special_notes": "Any special requests or constraints?"
+  }
+}

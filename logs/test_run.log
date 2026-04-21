@@ -1,0 +1,1396 @@
+
+======================================================================
+TEST: core_01_complete_direct_couple
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a couple next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple next weekend
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: core_02_missing_timing_triggers_clarification
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a couple'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is missing
+
+Question:
+What dates are you considering?
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=0)
+
+======================================================================
+TEST: core_03_resume_success_after_timing_answer
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a couple'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is missing
+
+Question:
+What dates are you considering?
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=0)
+
+TURN 2
+INPUT: 'next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: core_04_non_answer_reask
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a couple'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is missing
+
+Question:
+What dates are you considering?
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=0)
+
+TURN 2
+INPUT: 'maybe'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is still missing
+
+Question:
+What dates are you considering?
+
+Note:
+Provide a specific answer.
+
+Retry Count:
+1
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=1)
+
+======================================================================
+TEST: core_05_state_clears_after_success
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to watamu for my family next weekend'
+OUTPUT:
+Goal:
+plan a trip to watamu for my family next weekend
+
+Clarification Needed:
+traveller_count is missing
+
+Question:
+How many travellers are going?
+STATE: ClarificationState(active=True, missing_fields=['traveller_count'], current_index=0, partial_brief={'destination': 'watamu', 'traveller_count': None, 'timing': 'next weekend', 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to watamu for my family next weekend', retry_count=0)
+
+TURN 2
+INPUT: '5 people'
+OUTPUT:
+Goal:
+plan a trip to watamu for my family next weekend
+
+Brief:
+destination: watamu
+traveller_count: 5
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → watamu
+2. Travellers → 5
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: core_06_complete_direct_composite_group
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to naivasha for 2 adults and 3 kids next weekend'
+OUTPUT:
+Goal:
+plan a trip to naivasha for 2 adults and 3 kids next weekend
+
+Brief:
+destination: naivasha
+traveller_count: 5
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → naivasha
+2. Travellers → 5
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: core_07_complete_direct_three_couples
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to mara for 3 couples next weekend'
+OUTPUT:
+Goal:
+plan a trip to mara for 3 couples next weekend
+
+Brief:
+destination: mara
+traveller_count: 6
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → mara
+2. Travellers → 6
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: core_08_family_requires_count
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to watamu for my family next weekend'
+OUTPUT:
+Goal:
+plan a trip to watamu for my family next weekend
+
+Clarification Needed:
+traveller_count is missing
+
+Question:
+How many travellers are going?
+STATE: ClarificationState(active=True, missing_fields=['traveller_count'], current_index=0, partial_brief={'destination': 'watamu', 'traveller_count': None, 'timing': 'next weekend', 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to watamu for my family next weekend', retry_count=0)
+
+======================================================================
+TEST: core_09_resume_after_family_count
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to watamu for my family next weekend'
+OUTPUT:
+Goal:
+plan a trip to watamu for my family next weekend
+
+Clarification Needed:
+traveller_count is missing
+
+Question:
+How many travellers are going?
+STATE: ClarificationState(active=True, missing_fields=['traveller_count'], current_index=0, partial_brief={'destination': 'watamu', 'traveller_count': None, 'timing': 'next weekend', 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to watamu for my family next weekend', retry_count=0)
+
+TURN 2
+INPUT: 'seven people'
+OUTPUT:
+Goal:
+plan a trip to watamu for my family next weekend
+
+Brief:
+destination: watamu
+traveller_count: 7
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → watamu
+2. Travellers → 7
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: core_10_repeated_non_answers_increment_retry
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a couple'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is missing
+
+Question:
+What dates are you considering?
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=0)
+
+TURN 2
+INPUT: 'maybe'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is still missing
+
+Question:
+What dates are you considering?
+
+Note:
+Provide a specific answer.
+
+Retry Count:
+1
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=1)
+
+TURN 3
+INPUT: 'later'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is still missing
+
+Question:
+What dates are you considering?
+
+Note:
+Provide a specific answer.
+
+Retry Count:
+2
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=2)
+
+======================================================================
+TEST: extract_01_destination_diani
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a couple next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple next weekend
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_02_destination_naivasha
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to naivasha for 4 people next weekend'
+OUTPUT:
+Goal:
+plan a trip to naivasha for 4 people next weekend
+
+Brief:
+destination: naivasha
+traveller_count: 4
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → naivasha
+2. Travellers → 4
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_03_destination_watamu
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to watamu for 5 people tomorrow'
+OUTPUT:
+Goal:
+plan a trip to watamu for 5 people tomorrow
+
+Brief:
+destination: watamu
+traveller_count: 5
+timing: tomorrow
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → watamu
+2. Travellers → 5
+3. Timing → tomorrow
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_04_traveller_count_couple
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a couple next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple next weekend
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_05_traveller_count_duo
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a duo next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for a duo next weekend
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_06_traveller_count_trio
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a trio next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for a trio next weekend
+
+Brief:
+destination: diani
+traveller_count: 3
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 3
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_07_traveller_count_number_word
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for five people next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for five people next weekend
+
+Brief:
+destination: diani
+traveller_count: 5
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 5
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_08_traveller_count_direct_number
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for 8 people next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for 8 people next weekend
+
+Brief:
+destination: diani
+traveller_count: 8
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 8
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_09_traveller_count_composite
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for 2 adults and 3 kids next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for 2 adults and 3 kids next weekend
+
+Brief:
+destination: diani
+traveller_count: 5
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 5
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_10_traveller_count_couples
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for 4 couples next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for 4 couples next weekend
+
+Brief:
+destination: diani
+traveller_count: 8
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 8
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_11_ambiguous_family
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for my family next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for my family next weekend
+
+Clarification Needed:
+traveller_count is missing
+
+Question:
+How many travellers are going?
+STATE: ClarificationState(active=True, missing_fields=['traveller_count'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': None, 'timing': 'next weekend', 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for my family next weekend', retry_count=0)
+
+======================================================================
+TEST: extract_12_timing_next_weekend
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for 2 people next weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for 2 people next weekend
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_13_timing_this_weekend
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for 2 people this weekend'
+OUTPUT:
+Goal:
+plan a trip to diani for 2 people this weekend
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: this weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → this weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_14_timing_tomorrow
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for 2 people tomorrow'
+OUTPUT:
+Goal:
+plan a trip to diani for 2 people tomorrow
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: tomorrow
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → tomorrow
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_15_timing_next_week
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for 2 people next week'
+OUTPUT:
+Goal:
+plan a trip to diani for 2 people next week
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: next week
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → next week
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_16_timing_exact_range
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for 2 people 12th to 14th'
+OUTPUT:
+Goal:
+plan a trip to diani for 2 people 12th to 14th
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: 12th to 14th
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → 12th to 14th
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: extract_17_timing_reject_month_only
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for 2 people in april'
+OUTPUT:
+Goal:
+plan a trip to diani for 2 people in april
+
+Clarification Needed:
+timing is missing
+
+Question:
+What dates are you considering?
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for 2 people in april', retry_count=0)
+
+======================================================================
+TEST: normalize_01_formy_repairs
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to watamu formy family next weekend'
+OUTPUT:
+Goal:
+plan a trip to watamu for my family next weekend
+
+Clarification Needed:
+traveller_count is missing
+
+Question:
+How many travellers are going?
+STATE: ClarificationState(active=True, missing_fields=['traveller_count'], current_index=0, partial_brief={'destination': 'watamu', 'traveller_count': None, 'timing': 'next weekend', 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to watamu for my family next weekend', retry_count=0)
+
+======================================================================
+TEST: normalize_02_nextweekend_repairs
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for 2 people nextweekend'
+OUTPUT:
+Goal:
+plan a trip to diani for 2 people next weekend
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: normalize_03_thisweekend_repairs
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for 2 people thisweekend'
+OUTPUT:
+Goal:
+plan a trip to diani for 2 people this weekend
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: this weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → this weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: normalize_04_casing_cleanup
+======================================================================
+
+TURN 1
+INPUT: 'PLAN A TRIP TO DIANI FOR A COUPLE NEXT WEEKEND'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple next weekend
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: normalize_05_spacing_cleanup
+======================================================================
+
+TURN 1
+INPUT: '   plan   a   trip   to   diani   for   2   people   next   weekend   '
+OUTPUT:
+Goal:
+plan a trip to diani for 2 people next weekend
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: edge_01_empty_input
+======================================================================
+
+TURN 1
+INPUT: ''
+OUTPUT:
+Goal:
+
+
+Clarification Needed:
+destination is missing
+
+Question:
+Where would you like to go?
+STATE: ClarificationState(active=True, missing_fields=['destination', 'traveller_count', 'timing'], current_index=0, partial_brief={'destination': None, 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='', retry_count=0)
+
+======================================================================
+TEST: edge_02_junk_input
+======================================================================
+
+TURN 1
+INPUT: 'asdfgh qwerty 12345'
+OUTPUT:
+Goal:
+asdfgh qwerty 12345
+
+Clarification Needed:
+destination is missing
+
+Question:
+Where would you like to go?
+STATE: ClarificationState(active=True, missing_fields=['destination', 'traveller_count', 'timing'], current_index=0, partial_brief={'destination': None, 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='asdfgh qwerty 12345', retry_count=0)
+
+======================================================================
+TEST: edge_03_bad_answer_to_destination_question
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip'
+OUTPUT:
+Goal:
+plan a trip
+
+Clarification Needed:
+destination is missing
+
+Question:
+Where would you like to go?
+STATE: ClarificationState(active=True, missing_fields=['destination', 'traveller_count', 'timing'], current_index=0, partial_brief={'destination': None, 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip', retry_count=0)
+
+TURN 2
+INPUT: 'whatever'
+OUTPUT:
+Goal:
+plan a trip
+
+Clarification Needed:
+destination is still missing
+
+Question:
+Where would you like to go?
+
+Note:
+Provide a specific answer.
+
+Retry Count:
+1
+STATE: ClarificationState(active=True, missing_fields=['destination', 'traveller_count', 'timing'], current_index=0, partial_brief={'destination': None, 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip', retry_count=1)
+
+======================================================================
+TEST: edge_04_resume_with_destination_answer
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip'
+OUTPUT:
+Goal:
+plan a trip
+
+Clarification Needed:
+destination is missing
+
+Question:
+Where would you like to go?
+STATE: ClarificationState(active=True, missing_fields=['destination', 'traveller_count', 'timing'], current_index=0, partial_brief={'destination': None, 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip', retry_count=0)
+
+TURN 2
+INPUT: 'to diani'
+OUTPUT:
+Goal:
+plan a trip
+
+Clarification Needed:
+traveller_count is missing
+
+Question:
+How many travellers are going?
+STATE: ClarificationState(active=True, missing_fields=['traveller_count', 'timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip', retry_count=0)
+
+======================================================================
+TEST: edge_05_invalid_clarification_then_valid
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a couple'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is missing
+
+Question:
+What dates are you considering?
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=0)
+
+TURN 2
+INPUT: 'someday maybe'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is still missing
+
+Question:
+What dates are you considering?
+
+Note:
+Provide a specific answer.
+
+Retry Count:
+1
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=1)
+
+TURN 3
+INPUT: 'tomorrow'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: tomorrow
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → tomorrow
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: format_01_clarification_headings_present
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a couple'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is missing
+
+Question:
+What dates are you considering?
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=0)
+
+======================================================================
+TEST: format_02_ready_plan_headings_present
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to naivasha for 2 adults and 3 kids next weekend'
+OUTPUT:
+Goal:
+plan a trip to naivasha for 2 adults and 3 kids next weekend
+
+Brief:
+destination: naivasha
+traveller_count: 5
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → naivasha
+2. Travellers → 5
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: format_03_no_raw_dict_leak
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to naivasha for 2 adults and 3 kids next weekend'
+OUTPUT:
+Goal:
+plan a trip to naivasha for 2 adults and 3 kids next weekend
+
+Brief:
+destination: naivasha
+traveller_count: 5
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → naivasha
+2. Travellers → 5
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: format_04_plan_numbering_present
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to naivasha for 2 adults and 3 kids next weekend'
+OUTPUT:
+Goal:
+plan a trip to naivasha for 2 adults and 3 kids next weekend
+
+Brief:
+destination: naivasha
+traveller_count: 5
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → naivasha
+2. Travellers → 5
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: format_05_retry_output_contains_note_and_retry_count
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to diani for a couple'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is missing
+
+Question:
+What dates are you considering?
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=0)
+
+TURN 2
+INPUT: 'help me decide'
+OUTPUT:
+Goal:
+plan a trip to diani for a couple
+
+Clarification Needed:
+timing is still missing
+
+Question:
+What dates are you considering?
+
+Note:
+Provide a specific answer.
+
+Retry Count:
+1
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to diani for a couple', retry_count=1)
+
+======================================================================
+TEST: queue_01_three_missing_fields_full_flow
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip'
+OUTPUT:
+Goal:
+plan a trip
+
+Clarification Needed:
+destination is missing
+
+Question:
+Where would you like to go?
+STATE: ClarificationState(active=True, missing_fields=['destination', 'traveller_count', 'timing'], current_index=0, partial_brief={'destination': None, 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip', retry_count=0)
+
+TURN 2
+INPUT: 'to diani'
+OUTPUT:
+Goal:
+plan a trip
+
+Clarification Needed:
+traveller_count is missing
+
+Question:
+How many travellers are going?
+STATE: ClarificationState(active=True, missing_fields=['traveller_count', 'timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip', retry_count=0)
+
+TURN 3
+INPUT: '2 people'
+OUTPUT:
+Goal:
+plan a trip
+
+Clarification Needed:
+timing is missing
+
+Question:
+What dates are you considering?
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'diani', 'traveller_count': 2, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip', retry_count=0)
+
+TURN 4
+INPUT: 'next weekend'
+OUTPUT:
+Goal:
+plan a trip
+
+Brief:
+destination: diani
+traveller_count: 2
+timing: next weekend
+budget_level: unspecified
+trip_mood: None
+
+Plan:
+1. Transport → diani
+2. Travellers → 2
+3. Timing → next weekend
+4. Accommodation
+5. Finalize
+
+Status:
+ready
+STATE: ClarificationState(active=False, missing_fields=[], current_index=0, partial_brief=None, original_goal=None, retry_count=0)
+
+======================================================================
+TEST: queue_02_reask_during_multi_field_flow
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip'
+OUTPUT:
+Goal:
+plan a trip
+
+Clarification Needed:
+destination is missing
+
+Question:
+Where would you like to go?
+STATE: ClarificationState(active=True, missing_fields=['destination', 'traveller_count', 'timing'], current_index=0, partial_brief={'destination': None, 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip', retry_count=0)
+
+TURN 2
+INPUT: 'whatever'
+OUTPUT:
+Goal:
+plan a trip
+
+Clarification Needed:
+destination is still missing
+
+Question:
+Where would you like to go?
+
+Note:
+Provide a specific answer.
+
+Retry Count:
+1
+STATE: ClarificationState(active=True, missing_fields=['destination', 'traveller_count', 'timing'], current_index=0, partial_brief={'destination': None, 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip', retry_count=1)
+
+TURN 3
+INPUT: 'to coast'
+OUTPUT:
+Goal:
+plan a trip
+
+Clarification Needed:
+traveller_count is missing
+
+Question:
+How many travellers are going?
+STATE: ClarificationState(active=True, missing_fields=['traveller_count', 'timing'], current_index=0, partial_brief={'destination': 'coast', 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip', retry_count=0)
+
+======================================================================
+TEST: engine_queue_01_plan_a_trip_needs_destination_first
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip'
+OUTPUT:
+Goal:
+plan a trip
+
+Clarification Needed:
+destination is missing
+
+Question:
+Where would you like to go?
+STATE: ClarificationState(active=True, missing_fields=['destination', 'traveller_count', 'timing'], current_index=0, partial_brief={'destination': None, 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip', retry_count=0)
+
+======================================================================
+TEST: engine_queue_02_trip_to_coast_skips_destination_and_asks_traveller_count
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to coast'
+OUTPUT:
+Goal:
+plan a trip to coast
+
+Clarification Needed:
+traveller_count is missing
+
+Question:
+How many travellers are going?
+STATE: ClarificationState(active=True, missing_fields=['traveller_count', 'timing'], current_index=0, partial_brief={'destination': 'coast', 'traveller_count': None, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to coast', retry_count=0)
+
+======================================================================
+TEST: engine_queue_03_family_trip_next_weekend_only_needs_traveller_count
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to watamu for my family next weekend'
+OUTPUT:
+Goal:
+plan a trip to watamu for my family next weekend
+
+Clarification Needed:
+traveller_count is missing
+
+Question:
+How many travellers are going?
+STATE: ClarificationState(active=True, missing_fields=['traveller_count'], current_index=0, partial_brief={'destination': 'watamu', 'traveller_count': None, 'timing': 'next weekend', 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to watamu for my family next weekend', retry_count=0)
+
+======================================================================
+TEST: engine_queue_04_month_only_still_flags_timing
+======================================================================
+
+TURN 1
+INPUT: 'plan a trip to masai mara for a group of 6, budget is 45000 and we are to stay for the whole of april'
+OUTPUT:
+Goal:
+plan a trip to masai mara for a group of 6, budget is 45000 and we are to stay for the whole of april
+
+Clarification Needed:
+timing is missing
+
+Question:
+What dates are you considering?
+STATE: ClarificationState(active=True, missing_fields=['timing'], current_index=0, partial_brief={'destination': 'masai mara', 'traveller_count': 6, 'timing': None, 'budget_level': 'unspecified', 'trip_mood': None}, original_goal='plan a trip to masai mara for a group of 6, budget is 45000 and we are to stay for the whole of april', retry_count=0)

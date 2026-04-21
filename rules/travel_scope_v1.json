@@ -1,0 +1,37 @@
+{
+  "primary_task_types": [
+    "trip",
+    "journey",
+    "vacation",
+    "getaway",
+    "retreat"
+  ],
+  "supported_fields": [
+    "destination",
+    "traveller_count",
+    "timing",
+    "budget_level",
+    "trip_mood",
+    "transport_preference",
+    "accommodation_style",
+    "pacing",
+    "closing_moment"
+  ],
+  "core_outputs": [
+    "travel brief",
+    "structured trip plan",
+    "curated journey flow",
+    "task-aware checks",
+    "operational review support"
+  ],
+  "out_of_scope_for_now": [
+    "study planning",
+    "meeting planning",
+    "shopping planning",
+    "cleaning planning",
+    "generic life assistant behavior",
+    "customer-facing autonomy",
+    "live booking execution"
+  ],
+  "decision_rule": "If it does not improve Eskapades travel operations, freeze it."
+}
