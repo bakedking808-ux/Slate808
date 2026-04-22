@@ -342,6 +342,8 @@ def test_natural_travel_intent_gate_is_deterministic():
         "Thinking maybe a chilled coast thing for me and my partner sometime in July",
         "I want something romantic, maybe Mara, maybe coast, for two in August",
         "Can you sort a quiet break in Watamu for 3 people, low budget, probably mid June",
+        "Somewhere warm next month for 2 people",
+        "We could use a break in Watamu 22 May to 24 May",
     ],
 )
 def test_natural_operational_travel_requests_enter_controlled_flow(text):

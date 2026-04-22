@@ -25,6 +25,8 @@ NATURAL_TRAVEL_INTENT_PATTERNS = (
     r"\blong weekend\b",
     r"\bweekend away\b",
     rf"\b(?:(?:i|we)\s+(?:really\s+)?need|need|i\s+could\s+use|i\s+want)\s+a\s+(?:little\s+|short\s+)?break\b.*\b(?:{MONTHS}|next month|this month|next week|this weekend|next weekend|sometime|coast)\b",
+    r"^somewhere\s+\w+\b.*\b(?:next month|this month|next week|this weekend|next weekend|for\s+\d+)\b",
+    rf"\bwe\s+could\s+use\s+a\s+break\b.*\b(?:diani|watamu|naivasha|nairobi|coast|mara|{MONTHS})\b",
     rf"\bplan\s+something\s+\w+\b.*\b(?:for\s+\d+|{MONTHS})\b",
     r"^near\s+\w+\b.*\bfor\s+\d+\b",
     rf"\bthinking\s+maybe\b.*\b(?:coast|mara|diani|watamu|naivasha|nairobi|{MONTHS}|sometime)\b",
