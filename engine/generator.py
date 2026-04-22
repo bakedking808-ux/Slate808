@@ -29,6 +29,7 @@ NATURAL_TRAVEL_INTENT_PATTERNS = (
     rf"\bwe\s+could\s+use\s+a\s+break\b.*\b(?:diani|watamu|naivasha|nairobi|coast|mara|{MONTHS})\b",
     rf"\bplan\s+something\s+\w+\b.*\b(?:for\s+\d+|{MONTHS})\b",
     r"^near\s+\w+\b.*\bfor\s+\d+\b",
+    r"\b(?:diani|watamu|naivasha|nairobi|coast|mara|maasai mara)\s+stay\b.*\b(?:budget|for\s+\d+|from\s+\d+|\d+\s+(?:january|february|march|april|may|june|july|august|september|october|november|december))\b",
     rf"\bthinking\s+maybe\b.*\b(?:coast|mara|diani|watamu|naivasha|nairobi|{MONTHS}|sometime)\b",
     rf"\bi\s+want\s+something\b.*\b(?:romantic|family|adventure|quiet|low-key)\b.*\b(?:coast|mara|diani|watamu|naivasha|nairobi|{MONTHS})\b",
     rf"\bcan\s+you\s+sort\b.*\bbreak\b.*\b(?:{MONTHS}|next week|next month|this weekend|next weekend|low budget|for\s+\d+)\b",

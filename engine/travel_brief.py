@@ -454,7 +454,7 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
             "travel_to",
         ),
         (
-            r"\b(?:book\s+out|book|organize|organise|arrange|set\s+up|plan|make|create)?\s*(?:a|an)?\s*(?:beach|calm|luxury|romantic|family|quiet|low-key|adventure|chilled|short)?\s*([a-zA-Z][a-zA-Z\s\-'\/]{1,40})\s+(?:trip|getaway|staycation|escape)\b",
+            r"\b(?:book\s+out|book|organize|organise|arrange|set\s+up|plan|make|create)?\s*(?:a|an)?\s*(?:beach|calm|luxury|romantic|family|quiet|low-key|adventure|chilled|short)?\s*([a-zA-Z][a-zA-Z\s\-'\/]{1,40})\s+(?:trip|getaway|staycation|escape|stay)\b",
             "modifier_place_travel_noun",
         ),
         (

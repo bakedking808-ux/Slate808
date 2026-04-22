@@ -361,6 +361,40 @@ def test_natural_operational_intent_preserves_non_travel_rejection():
     assert "Slate808 currently supports travel planning only." in result
 
 
+def test_stay_travel_noun_with_budget_enters_controlled_flow():
+    text = "Nairobi stay with 85,001 budget"
+
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert is_travel_intent(text) is True
+    assert brief["destination"] == "nairobi"
+    assert brief["budget_level"] == "high"
+    assert "Slate808 currently supports travel planning only." not in result
+    assert "?" in result
+
+
+def test_stay_travel_noun_with_exact_dates_enters_travel_flow():
+    text = "Plan a Nairobi stay for 2 people 9 August to 10 August"
+
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert is_travel_intent(text) is True
+    assert brief["destination"] == "nairobi"
+    assert brief["timing"]["state"] == "exact_timing"
+    assert "Slate808 currently supports travel planning only." not in result
+
+
+def test_stay_support_preserves_non_travel_rejection():
+    text = "Please stay focused for tomorrow"
+
+    result = run(text)
+
+    assert is_travel_intent(text) is False
+    assert "Slate808 currently supports travel planning only." in result
+
+
 def test_build_travel_brief_returns_validated_dict_shape_for_engine_compatibility():
     brief = build_travel_brief("Plan a trip to diani for 2 people next weekend")
 
