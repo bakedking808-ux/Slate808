@@ -474,6 +474,29 @@ def test_budget_contract_unset_budget_remains_unspecified(text):
     assert brief["budget_level"] == "unspecified"
 
 
+def test_budget_wording_with_nearby_exact_date_does_not_parse_date_as_amount():
+    brief = build_travel_brief(
+        "Plan a quiet low-key Naivasha trip on a medium budget 10 April to 12 April"
+    )
+
+    assert brief["budget_amount"] is None
+    assert brief["budget_level"] == "medium"
+
+
+def test_exact_date_request_without_budget_stays_unspecified():
+    brief = build_travel_brief("Plan a trip to Diani for 2 people 10 April to 12 April")
+
+    assert brief["budget_amount"] is None
+    assert brief["budget_level"] == "unspecified"
+
+
+def test_numeric_budget_after_exact_dates_still_parses():
+    brief = build_travel_brief("Plan a trip to Diani for 2 people 10 April to 12 April under 45,000")
+
+    assert brief["budget_amount"] == 45000
+    assert brief["budget_level"] == "low"
+
+
 def test_budget_contract_no_budget_exact_date_request_still_runs():
     result = run("Plan a trip to Diani for 2 people 10 April to 12 April")
 

@@ -734,6 +734,10 @@ def _infer_budget_level_from_amount(amount: int) -> str:
     return "high"
 
 
+def _budget_amount_is_date_token(text: str, amount_end: int) -> bool:
+    return bool(re.match(rf"\s+(?:{MONTHS})\b", text[amount_end:]))
+
+
 CANONICAL_MONTH_TO_NUMBER = {
     "january": 1,
     "february": 2,
@@ -926,6 +930,9 @@ def extract_budget_info(text: str, decision_log=None) -> Dict[str, Any]:
     for pattern in amount_patterns:
         match = re.search(pattern, text_lower)
         if match:
+            if _budget_amount_is_date_token(text_lower, match.end(1)):
+                continue
+
             raw = match.group(1).replace(",", "")
             amount = int(raw)
 
