@@ -130,6 +130,16 @@ def _resume(user_input: str, normalized_input: str) -> str:
     state = state_manager.update_with_field(current_field, value)
 
     if state["status"] == "complete":
+        if "trip_mood" not in state["collected_fields"]:
+            state = state_manager.start(
+                task_type=state["task_type"],
+                original_input=state["original_input"],
+                missing_fields=["trip_mood"],
+                collected_fields=state["collected_fields"],
+                trace_id=state["trace_id"],
+            )
+            return _next_prompt("trip_mood", state)
+
         full_input = _rebuild_input(state)
         state_manager.clear()
         return run_engine(full_input)
@@ -244,6 +254,9 @@ def _extract_single(field: str, text: str):
         if timing.get("state") in {"exact_timing", "relative_timing", "duration_only", "month_only"}:
             return timing
         return None
+
+    if field == "trip_mood":
+        return extract_trip_mood(text)
 
     return None
 
@@ -362,7 +375,10 @@ def _timing_prompt(state: dict | None, retry: bool = False) -> str:
 
 def _format_clarification_prompt(prompt: str, state: dict | None = None) -> str:
     collected = (state or {}).get("collected_fields", {})
-    if not collected.get("trip_mood"):
+    if (
+        not collected.get("trip_mood")
+        and prompt != "What kind of trip mood should this have?"
+    ):
         return f"\n==============================\n{prompt}\n==============================\n"
 
     lines = ["Slate808 Output", "==============================", "", "Status: pass", ""]
@@ -403,6 +419,9 @@ def _next_prompt(field: str, state: dict | None = None) -> str:
 
     if field == "timing":
         return _format_clarification_prompt(_timing_prompt(state), state)
+
+    if field == "trip_mood":
+        return _format_clarification_prompt("What kind of trip mood should this have?", state)
 
     return ""
 

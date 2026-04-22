@@ -1292,6 +1292,11 @@ def test_mood_extraction_none_when_no_signal():
     assert brief["trip_mood"] is None
 
 
+def test_mood_extraction_quiet_low_key_maps_to_relaxed():
+    brief = build_travel_brief("Plan a quiet low-key trip to naivasha for 2 people 10 April to 12 April")
+    assert brief["trip_mood"] == "relaxed"
+
+
 def test_mood_extraction_none_when_only_budget_signal():
     brief = build_travel_brief("Plan a trip to diani for 2 people next weekend with a budget of 50000")
     assert brief["trip_mood"] is None

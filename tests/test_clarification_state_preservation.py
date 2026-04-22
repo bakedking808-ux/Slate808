@@ -22,6 +22,40 @@ def test_clarification_preserves_trip_mood_in_initial_and_completed_output():
     assert "- Trip Mood: adventure" in completed
 
 
+def test_clarification_prompts_for_trip_mood_after_hard_fields_complete():
+    initial = run("Plan a trip to mara for 3 people")
+    assert "What exact dates are you planning?" in initial
+
+    mood_prompt = run("10-14 April")
+
+    assert "What kind of trip mood should this have?" in mood_prompt
+    assert "- Destination: mara" in mood_prompt
+    assert "- Traveller Count: 3" in mood_prompt
+    assert "- Timing: 10 april to 14 april" in mood_prompt
+    assert "Slate808 Output" in mood_prompt
+
+
+def test_clarification_trip_mood_answer_completes_preserved_trip():
+    run("Plan a trip to mara for 3 people")
+    run("10-14 April")
+
+    completed = run("relaxed")
+
+    assert "Slate808 Output" in completed
+    assert "Status: pass" in completed
+    assert "- Destination: mara" in completed
+    assert "- Traveller Count: 3" in completed
+    assert "- Timing: 10 april to 14 april" in completed
+    assert "- Trip Mood: relaxed" in completed
+
+
+def test_trip_mood_does_not_outrank_hard_missing_destination():
+    result = run("Plan a relaxed trip for 2 people 10 April to 12 April")
+
+    assert "Where would you like to go?" in result
+    assert "What kind of trip mood should this have?" not in result
+
+
 def test_clarification_state_merge_does_not_overwrite_trip_mood_with_none():
     manager = ClarificationStateManager()
     manager.start(
