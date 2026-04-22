@@ -334,6 +334,31 @@ def test_natural_travel_intent_gate_is_deterministic():
     assert detect_task_type(request) == detect_task_type(request) == "trip"
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Plan something warm for 2 people 10 April to 12 April",
+        "Near Diani for 2 people",
+        "Thinking maybe a chilled coast thing for me and my partner sometime in July",
+        "I want something romantic, maybe Mara, maybe coast, for two in August",
+        "Can you sort a quiet break in Watamu for 3 people, low budget, probably mid June",
+    ],
+)
+def test_natural_operational_travel_requests_enter_controlled_flow(text):
+    result = run(text)
+
+    assert is_travel_intent(text) is True
+    assert "Slate808 currently supports travel planning only." not in result
+    assert "?" in result
+
+
+def test_natural_operational_intent_preserves_non_travel_rejection():
+    result = run("Summarize the project status for tomorrow")
+
+    assert is_travel_intent("Summarize the project status for tomorrow") is False
+    assert "Slate808 currently supports travel planning only." in result
+
+
 def test_build_travel_brief_returns_validated_dict_shape_for_engine_compatibility():
     brief = build_travel_brief("Plan a trip to diani for 2 people next weekend")
 

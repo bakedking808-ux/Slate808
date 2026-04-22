@@ -25,6 +25,11 @@ NATURAL_TRAVEL_INTENT_PATTERNS = (
     r"\blong weekend\b",
     r"\bweekend away\b",
     rf"\b(?:(?:i|we)\s+(?:really\s+)?need|need|i\s+could\s+use|i\s+want)\s+a\s+(?:little\s+|short\s+)?break\b.*\b(?:{MONTHS}|next month|this month|next week|this weekend|next weekend|sometime|coast)\b",
+    rf"\bplan\s+something\s+\w+\b.*\b(?:for\s+\d+|{MONTHS})\b",
+    r"^near\s+\w+\b.*\bfor\s+\d+\b",
+    rf"\bthinking\s+maybe\b.*\b(?:coast|mara|diani|watamu|naivasha|nairobi|{MONTHS}|sometime)\b",
+    rf"\bi\s+want\s+something\b.*\b(?:romantic|family|adventure|quiet|low-key)\b.*\b(?:coast|mara|diani|watamu|naivasha|nairobi|{MONTHS})\b",
+    rf"\bcan\s+you\s+sort\b.*\bbreak\b.*\b(?:{MONTHS}|next week|next month|this weekend|next weekend|low budget|for\s+\d+)\b",
 )
 NON_TRAVEL_BREAK_PATTERNS = (
     r"\bbreak\s+from\s+(?:work|studying|school|class|classes|job)\b",
