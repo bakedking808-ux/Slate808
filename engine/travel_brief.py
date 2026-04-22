@@ -466,7 +466,7 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
             "generic_to",
         ),
         (
-            r"\b(?:i|we)\s+(?:really\s+)?(?:need|want|could\s+use)\s+(?:a|an)?\s*(?:little\s+|short\s+)?(?:break|getaway|escape|weekend\s+away)\s+(?:in|at)\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
+            r"\b(?:(?:i|we)\s+(?:really\s+)?(?:need|want|could\s+use)|can\s+you\s+sort)\s+(?:a|an)?\s*(?:little\s+|short\s+|quiet\s+|calm\s+)?(?:break|getaway|escape|weekend\s+away)\s+(?:in|at)\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
             "soft_travel_place_hint",
         ),
     ]

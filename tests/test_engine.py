@@ -1238,6 +1238,36 @@ def test_soft_travel_relational_place_hint_still_clarifies_destination():
     assert "Slate808 Output" not in result
 
 
+def test_quiet_break_in_place_hint_is_preserved_with_shaping_fields():
+    text = "Can you sort a quiet break in Watamu for 3 people, low budget, probably mid June"
+
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert brief["destination"] == "watamu"
+    assert brief["budget_level"] == "low"
+    assert brief["timing"]["state"] == "month_only"
+    assert "exact dates in June" in result
+    assert "Where would you like to go?" not in result
+
+
+def test_calm_break_in_place_hint_is_preserved():
+    brief = build_travel_brief("Can you sort a calm break in Diani for 2 people 10 April to 12 April")
+
+    assert brief["destination"] == "diani"
+
+
+def test_quiet_break_near_place_hint_remains_clarification_safe():
+    text = "Can you sort a quiet break near Naivasha for 2 people"
+
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert brief["destination"] is None
+    assert "Where would you like to go?" in result
+    assert "Destination: naivasha" not in result
+
+
 @pytest.mark.parametrize(
     ("text", "destination"),
     [
