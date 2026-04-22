@@ -307,6 +307,20 @@ def _is_registered_destination(candidate: Optional[str]) -> bool:
     return candidate.strip().lower() in _load_destination_aliases()
 
 
+def _registered_destination_from_candidate(candidate: Optional[str]) -> Optional[str]:
+    if not candidate:
+        return None
+
+    aliases = _load_destination_aliases()
+    words = candidate.strip().lower().split()
+    for size in range(len(words), 0, -1):
+        for start in range(0, len(words) - size + 1):
+            value = " ".join(words[start:start + size])
+            if value in aliases:
+                return value
+    return None
+
+
 def _strip_malformed_destination_prefix(candidate: str) -> str:
     candidate = re.sub(r"^(?:(?:travel|trip|journey|getaway|holiday|retreat|vacation|escape)to\s+)+", "", candidate)
     return re.sub(
@@ -414,6 +428,9 @@ def _is_valid_destination(candidate: Optional[str]) -> bool:
     if candidate in {"family", "group", "team", "crew"}:
         return False
 
+    if re.search(r"\bthing\b", candidate):
+        return False
+
     if len(candidate) < 2:
         return False
 
@@ -467,8 +484,8 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
                 f"DESTINATION_PATTERN_MATCH: label={label}, raw='{raw_candidate}', cleaned='{cleaned_candidate}'"
             )
 
-        if label == "modifier_place_travel_noun" and not _is_registered_destination(cleaned_candidate):
-            continue
+        if label == "modifier_place_travel_noun":
+            cleaned_candidate = _registered_destination_from_candidate(cleaned_candidate)
 
         if _is_valid_destination(cleaned_candidate):
             canonical_candidate = _canonicalize_destination(cleaned_candidate)

@@ -1186,12 +1186,25 @@ def test_soft_travel_relational_place_hint_still_clarifies_destination():
         ("Organize a luxury Nairobi staycation for 2 people 14 July to 16 July", "nairobi"),
         ("Book a coast getaway for two tomorrow", "coast"),
         ("Set up a Mara trip for 4 people this month", "maasai mara"),
+        ("Plan a Diani beach trip for 2 people 10 April to 12 April", "diani"),
+        ("Plan a quiet low-key Naivasha trip for 2 people on a medium budget 10 April to 12 April", "naivasha"),
     ],
 )
 def test_modifier_place_travel_noun_destination_is_preserved(text, destination):
     brief = build_travel_brief(text)
 
     assert brief["destination"] == destination
+
+
+def test_loose_thing_destination_candidate_does_not_pollute_destination():
+    text = "Thinking maybe a chilled coast thing for me and my partner sometime in July"
+
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert brief["destination"] is None
+    assert "Destination: thinking maybe a chilled coast thing" not in result
+    assert "Where would you like to go?" in result
 
 
 def test_polluted_relational_trip_destination_does_not_execute():
