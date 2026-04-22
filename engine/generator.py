@@ -4,7 +4,7 @@ import uuid
 from engine.goal_normalizer import normalize_goal
 from engine.planning_policy import build_planning_constraints, validate_planning_constraints
 import engine.travel_brief as travel_brief
-from engine.travel_brief import summarize_timing
+from engine.travel_brief import MONTHS, summarize_timing
 
 TRAVEL_INTENT_KEYWORDS = (
     "trip",
@@ -24,6 +24,7 @@ NATURAL_TRAVEL_INTENT_PATTERNS = (
     r"\b\d+\s*-\s*night\s+break\b|\b\d+\s+night\s+break\b",
     r"\blong weekend\b",
     r"\bweekend away\b",
+    rf"\bi\s+need\s+a\s+break\b.*\b(?:{MONTHS}|next month|this month|next week|this weekend|next weekend|sometime|coast)\b",
 )
 TRAVEL_ONLY_ERROR = "Slate808 currently supports travel planning only."
 

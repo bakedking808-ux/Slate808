@@ -6,7 +6,7 @@ from pydantic import ValidationError
 import engine.checker as checker
 from engine.clarification_runner import run, reset_state
 from engine.formatter import format_output
-from engine.generator import detect_task_type, generate_plan
+from engine.generator import detect_task_type, generate_plan, is_travel_intent
 from engine.planning_policy import derive_planning_constraints
 from engine.runner import run_engine
 from engine.travel_brief import (
@@ -459,6 +459,24 @@ def test_clarification_asks_destination_when_timing_and_travellers_known():
     assert result.count("?") == 1
 
 
+def test_soft_break_phrase_with_timing_is_travel_intent():
+    result = run("I need a break next month")
+
+    assert is_travel_intent("I need a break next month") is True
+    assert "Slate808 currently supports travel planning only." not in result
+    assert "Where would you like to go?" in result
+    assert "Slate808 Output" not in result
+
+
+def test_soft_break_phrase_with_coast_hint_stays_controlled():
+    result = run("I need a break sometime next month maybe coast")
+
+    assert is_travel_intent("I need a break sometime next month maybe coast") is True
+    assert "Slate808 currently supports travel planning only." not in result
+    assert "Slate808 Output" not in result
+    assert result.count("?") == 1
+
+
 def test_relative_timing_followup_refines_to_exact_dates_only():
     run("Plan a trip to naivasha for 3 people")
     result = run("next month")
@@ -825,6 +843,7 @@ def test_shorthand_trip_inputs_route_to_trip_pipeline():
 def test_non_travel_requests_fail_clearly():
     result = run_engine("Plan a meeting agenda for Monday")
 
+    assert is_travel_intent("Plan a meeting agenda for Monday") is False
     assert "Slate808 Output" in result
     assert "Status: fail" in result
     assert "Slate808 currently supports travel planning only." in result
@@ -884,6 +903,7 @@ def test_malformed_destination_prefix_cleanup_works():
     "text",
     [
         "Could you help me do like a small getaway for us",
+        "Help me set up a trip",
         "Set up a trip for 2 Jan.",
         "I want to travel from Jan 18-20",
         "Plan a trip to book a solo trip for 1 people at tomorrow",

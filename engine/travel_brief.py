@@ -248,6 +248,7 @@ CONTAMINATED_DESTINATION_PATTERNS = (
     r"\b.*\b(?:trip|travel|getaway|retreat|vacation|holiday|journey|escape)\b",
     r"^i\s+want\b.*\b"
     r"(?:trip|travel|getaway|retreat|vacation|holiday|journey|escape)\b",
+    r"^i\s+need\s+a\s+break\b",
     r"^travel\s+from\b",
     r"^me\s+(?:and|on)\b",
 )
