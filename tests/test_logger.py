@@ -82,3 +82,43 @@ def test_append_log_writes_plain_line_inside_dated_directory(monkeypatch, tmp_pa
     log_path = tmp_path / "logs" / "2026-04-19" / "decisions.log"
     assert log_path.is_file()
     assert log_path.read_text(encoding="utf-8") == "{'budget_posture': 'balanced'}\n"
+
+
+def test_build_confidence_readout_counts_known_metric_events_only():
+    readout = logger.build_confidence_readout(
+        [
+            {"event": "clarification_routed"},
+            {"event": "relative_timing_exact_date_refinement"},
+            {"event": "relative_timing_exact_date_refinement"},
+            {"event": "execution_blocked"},
+            {"event": "execution_rejected"},
+            {"event": "execution_weak"},
+            {"event": "execution_completed"},
+            {"event": "unrelated_event"},
+        ]
+    )
+
+    assert readout == {
+        "clarification_routed_count": 1,
+        "relative_timing_exact_date_refinement_count": 2,
+        "execution_blocked_count": 1,
+        "execution_rejected_count": 1,
+        "execution_weak_count": 1,
+        "execution_completed_count": 1,
+    }
+
+
+def test_read_confidence_readout_uses_logged_event_file(monkeypatch, tmp_path):
+    monkeypatch.setattr(logger, "LOGS_ROOT", tmp_path / "logs")
+    monkeypatch.setattr(logger, "local_date_str", lambda: "2026-04-19")
+    monkeypatch.setattr(logger, "local_timestamp", lambda: "2026-04-19 11:00:00 EAT")
+
+    logger.log_event(
+        filename="engine.log",
+        source="runner",
+        layer="execution",
+        event="execution_completed",
+        status="success",
+    )
+
+    assert logger.read_confidence_readout("engine.log")["execution_completed_count"] == 1

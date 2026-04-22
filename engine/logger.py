@@ -6,6 +6,14 @@ from zoneinfo import ZoneInfo
 LOGS_ROOT = Path("logs")
 ENGINE_LOG_FILENAME = "engine.log"
 LOCAL_TZ = ZoneInfo("Africa/Nairobi")
+CONFIDENCE_READOUT_EVENTS = (
+    "clarification_routed",
+    "relative_timing_exact_date_refinement",
+    "execution_blocked",
+    "execution_rejected",
+    "execution_weak",
+    "execution_completed",
+)
 
 
 def local_date_str() -> str:
@@ -82,3 +90,25 @@ def log_event(
 
     with get_log_file_path(filename).open("a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def build_confidence_readout(events: list[dict]) -> dict:
+    readout = {f"{event}_count": 0 for event in CONFIDENCE_READOUT_EVENTS}
+    for entry in events:
+        event = entry.get("event")
+        if event in CONFIDENCE_READOUT_EVENTS:
+            readout[f"{event}_count"] += 1
+    return readout
+
+
+def read_confidence_readout(filename: str = ENGINE_LOG_FILENAME) -> dict:
+    log_path = get_log_file_path(filename)
+    if not log_path.exists():
+        return build_confidence_readout([])
+
+    events = [
+        json.loads(line)
+        for line in log_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    return build_confidence_readout(events)
