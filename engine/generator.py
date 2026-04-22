@@ -48,6 +48,11 @@ NATURAL_TRAVEL_INTENT_PATTERNS = (
     r"^somewhere\s+quiet\b.*\b(?:partner|exact dates)\b",
     rf"^(?:diani|watamu|naivasha|nairobi|coast|mara)\b.*\b\d+\s+(?:{MONTHS})\s+to\s+\d+\s+(?:{MONTHS})\b.*\bnot\s+sure\s+who\b",
     r"\bi\s+want\s+a\s+scenic\s+place\b.*\bfew\s+nights\b",
+    r"^somewhere\s+near\s+\w+\b.*\bany\s+ideas\b",
+    r"\b(?:i'?m|i’m)\s+open\s+to\s+anything\s+coastal\b.*\bmaybe\b",
+    r"\bi\s+want\s+to\s+visit\b.*\bor\s+is\s+it\b",
+    r"\bi\s+want\s+to\s+go\s+to\b.*\bor\s+maybe\b",
+    r"\b(?:i'?m|i’m)\s+considering\s+a\s+mountain\s+area\b.*\bmaybe\b",
 )
 NON_TRAVEL_BREAK_PATTERNS = (
     r"\bbreak\s+from\s+(?:work|studying|school|class|classes|job)\b",

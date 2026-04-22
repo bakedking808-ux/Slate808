@@ -259,6 +259,7 @@ CONTAMINATED_DESTINATION_VALUES = {
     "i want a",
     "i want a scenic place",
     "continue",
+    "anything coastal",
     "looking",
     "me and",
     "me on",
@@ -267,6 +268,7 @@ CONTAMINATED_DESTINATION_VALUES = {
     "plan",
     "we need a",
     "uhh plan something",
+    "visit lamuu",
 }
 
 CONTAMINATED_DESTINATION_PATTERNS = (

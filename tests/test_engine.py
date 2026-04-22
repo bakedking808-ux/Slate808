@@ -380,6 +380,27 @@ def test_destination_discovery_prompts_enter_destination_clarification(text):
 @pytest.mark.parametrize(
     "text",
     [
+        "Somewhere near Nairobi but not too crowded — any ideas?",
+        "I’m open to anything coastal, maybe Watamu, maybe something else.",
+        "I want to visit Lamuu — or is it Lamu? That one.",
+        "I want to go to Mombassa or maybe Dianii, whichever works.",
+        "I’m considering a mountain area — maybe Kenya, maybe Tanzania.",
+    ],
+)
+def test_destination_discovery_language_variants_clarify_destination(text):
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert is_travel_intent(text) is True
+    assert brief["destination"] is None
+    assert "Slate808 currently supports travel planning only." not in result
+    assert "Where would you like to go?" in result
+    assert "Destination:" not in result
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
         "uhh plan something for us maybe next month idk budget medium",
         "Need a calm break, no idea where, for 3 people, 10 April to 12 April",
         "somewhere quiet for me and my partner, exact dates are 5 May to 7 May",
