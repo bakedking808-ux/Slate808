@@ -938,6 +938,37 @@ def test_malformed_destination_prefix_cleanup_works():
 
 
 @pytest.mark.parametrize(
+    ("text", "destination"),
+    [
+        ("Maybe Diani next month for 2 people", "diani"),
+        ("Diani sometime next month for 2 people", "diani"),
+        ("Plan a trip to Diani for 2 people next month", "diani"),
+        ("Coast next month for 2 people", "coast"),
+    ],
+)
+def test_destination_cleanup_removes_weak_prefixes_and_timing_leakage(
+    text,
+    destination,
+):
+    brief = build_travel_brief(text)
+
+    assert brief["destination"] == destination
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "I need an escape next month",
+        "I need a weekend away next month",
+    ],
+)
+def test_destination_cleanup_preserves_non_destination_phrases(text):
+    brief = build_travel_brief(text)
+
+    assert brief["destination"] is None
+
+
+@pytest.mark.parametrize(
     "text",
     [
         "Could you help me do like a small getaway for us",

@@ -232,13 +232,32 @@ SUPPORTED_FLEXIBLE_DESTINATION_PATTERNS = (
     r"^outside\s+kenya$",
     r"^near\s+nairobi$",
 )
+DESTINATION_PREFIX_TOKENS = {
+    "maybe",
+    "perhaps",
+    "around",
+    "somewhere",
+    "someplace",
+}
+DESTINATION_TRAILING_TIMING_TOKENS = {
+    "sometime",
+    "soon",
+    "later",
+    "next",
+    "this",
+}
 
 CONTAMINATED_DESTINATION_VALUES = {
     "help me",
+    "i need a",
+    "i need an",
+    "i want a",
     "me and",
     "me on",
+    "need a",
     "new request",
     "plan",
+    "we need a",
 }
 
 CONTAMINATED_DESTINATION_PATTERNS = (
@@ -248,6 +267,7 @@ CONTAMINATED_DESTINATION_PATTERNS = (
     r"\b.*\b(?:trip|travel|getaway|retreat|vacation|holiday|journey|escape)\b",
     r"^i\s+want\b.*\b"
     r"(?:trip|travel|getaway|retreat|vacation|holiday|journey|escape)\b",
+    r"^i\s+need\s+an?\s+(?:escape|weekend\s+away)\b",
     r"^i\s+need\s+a\s+break\b",
     r"^travel\s+from\b",
     r"^me\s+(?:and|on)\b",
@@ -269,12 +289,27 @@ def _clean_destination_candidate(candidate: str) -> Optional[str]:
     candidate = re.sub(r"\s+", " ", candidate)
 
     words = candidate.split()
+    while (
+        words
+        and words[0].strip(" ,.-") in DESTINATION_PREFIX_TOKENS
+        and not (
+            words[0].strip(" ,.-") == "somewhere"
+            and len(words) > 1
+            and words[1].strip(" ,.-") not in DESTINATION_TRAILING_TIMING_TOKENS
+        )
+        and not _is_supported_flexible_destination(" ".join(words))
+    ):
+        words.pop(0)
+
     cleaned_words: List[str] = []
 
     for word in words:
         stripped = word.strip(" ,.-")
         if not stripped:
             continue
+
+        if stripped in DESTINATION_TRAILING_TIMING_TOKENS:
+            break
 
         if stripped in DESTINATION_STOP_WORDS:
             break
