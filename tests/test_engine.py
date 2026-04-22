@@ -1126,6 +1126,34 @@ def test_ambiguous_destination_phrases_route_to_destination_clarification(text):
     assert "Slate808 Output" not in result
 
 
+def test_soft_travel_scaffolding_preserves_safe_at_place_hint():
+    brief = build_travel_brief("We need a short break at the coast 10 April to 12 April")
+    result = run("We need a short break at the coast 10 April to 12 April")
+
+    assert brief["destination"] == "coast"
+    assert "Destination: we need a short break" not in result
+    assert "How many travellers?" in result
+    assert "Where would you like to go?" not in result
+
+
+def test_soft_travel_scaffolding_preserves_safe_in_place_hint():
+    brief = build_travel_brief("I need a break in Diani 10 April to 12 April")
+    result = run("I need a break in Diani 10 April to 12 April")
+
+    assert brief["destination"] == "diani"
+    assert "Destination: i need a break" not in result
+    assert "How many travellers?" in result
+
+
+def test_soft_travel_relational_place_hint_still_clarifies_destination():
+    brief = build_travel_brief("I want a getaway near Naivasha 10 April to 12 April")
+    result = run("I want a getaway near Naivasha 10 April to 12 April")
+
+    assert brief["destination"] is None
+    assert "Where would you like to go?" in result
+    assert "Slate808 Output" not in result
+
+
 def test_destination_contamination_repeated_calls_are_deterministic():
     text = "Plan a trip to book a solo trip for 1 people at tomorrow"
 

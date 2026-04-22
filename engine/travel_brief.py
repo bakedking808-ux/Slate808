@@ -273,6 +273,7 @@ CONTAMINATED_DESTINATION_PATTERNS = (
     r"(?:trip|travel|getaway|retreat|vacation|holiday|journey|escape)\b",
     r"^i\s+need\s+an?\s+(?:escape|weekend\s+away)\b",
     r"^i\s+need\s+a\s+break\b",
+    r"^we\s+need\s+(?:a\s+)?(?:little\s+|short\s+)?break\b",
     r"^travel\s+from\b",
     r"^me\s+(?:and|on)\b",
 )
@@ -435,6 +436,10 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
         (
             r"\bto\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
             "generic_to",
+        ),
+        (
+            r"\b(?:i|we)\s+(?:really\s+)?(?:need|want|could\s+use)\s+(?:a|an)?\s*(?:little\s+|short\s+)?(?:break|getaway|escape|weekend\s+away)\s+(?:in|at)\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
+            "soft_travel_place_hint",
         ),
     ]
 
