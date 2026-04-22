@@ -1281,6 +1281,7 @@ def test_destination_cleanup_preserves_non_destination_phrases(text):
         "Set up a trip for 2 Jan.",
         "I want to travel from Jan 18-20",
         "Plan a trip to book a solo trip for 1 people at tomorrow",
+        "Let’s plan a trip — ask me whatever you need to continue.",
     ],
 )
 def test_contaminated_destination_routes_to_destination_clarification(text):

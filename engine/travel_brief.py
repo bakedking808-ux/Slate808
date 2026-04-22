@@ -258,6 +258,7 @@ CONTAMINATED_DESTINATION_VALUES = {
     "i need an",
     "i want a",
     "i want a scenic place",
+    "continue",
     "looking",
     "me and",
     "me on",
