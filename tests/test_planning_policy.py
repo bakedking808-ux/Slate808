@@ -230,7 +230,7 @@ def test_global_flags_cover_budget_constrained_family_safe_coordination_and_prov
     assert corporate_flags["requires_coordination_bias"] is True
     assert "group_coordination" in corporate_flags["constraints"]
     assert "team_structure" in corporate_flags["constraints"]
-    assert corporate_flags["is_timing_strong"] is True
+    assert corporate_flags["is_timing_strong"] is False
 
     assert logged
     assert logged[0][0] == "decisions.log"

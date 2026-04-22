@@ -234,10 +234,14 @@ def test_clarification_flow_trip():
     assert "What exact dates are you planning?" in result_3
 
     result_4 = run("next weekend")
-    assert "Slate808 Output" in result_4
-    assert "Destination: naivasha" in result_4
-    assert "Traveller Count: 3" in result_4
-    assert "Timing: next weekend" in result_4
+    assert "What exact dates are you planning for next weekend?" in result_4
+    assert "Slate808 Output" not in result_4
+
+    result_5 = run("10 April to 12 April")
+    assert "Slate808 Output" in result_5
+    assert "Destination: naivasha" in result_5
+    assert "Traveller Count: 3" in result_5
+    assert "Timing: 10 april to 12 april" in result_5
 
 
 def test_bare_number_word_reply_supported():
@@ -251,11 +255,11 @@ def test_timing_range_dash_format_supported():
 
 
 def test_direct_complete_trip_request():
-    result = run("Plan a trip to diani for 3 couples next weekend")
+    result = run("Plan a trip to diani for 3 couples 10 April to 12 April")
     assert "Slate808 Output" in result
     assert "Destination: diani" in result
     assert "Traveller Count: 6" in result
-    assert "Timing: next weekend" in result
+    assert "Timing: 10 april to 12 april" in result
 
 
 def test_staycation_routes_to_trip_pipeline():
@@ -429,8 +433,8 @@ def test_timing_clarification_reply_is_routed_to_active_trip():
     run("Plan a trip to naivasha for 3 people")
     result = run("tomorrow")
 
-    assert "Slate808 Output" in result
-    assert "Timing: tomorrow" in result
+    assert "What exact dates are you planning for tomorrow?" in result
+    assert "Slate808 Output" not in result
 
 
 def test_clarification_does_not_reask_known_destination():
@@ -453,14 +457,21 @@ def test_clarification_does_not_reask_known_travellers_for_month_timing():
 @pytest.mark.parametrize(
     "text",
     [
+        "Plan a trip to Diani for 2 people next month",
         "Diani next month for 2 people",
         "Coast next month for 2 people",
+        "Plan a trip to Diani for 2 people this month",
+        "Diani next week for 2 people",
+        "Plan a trip to Diani for 2 people this weekend",
+        "Plan a trip to Diani for 2 people next weekend",
+        "Plan a trip to Coast for 2 people today",
+        "Plan a trip to Coast for 2 people tomorrow",
     ],
 )
-def test_shorthand_next_month_requires_exact_date_clarification(text):
+def test_relative_timing_requires_exact_date_clarification(text):
     result = run(text)
 
-    assert "What exact dates are you planning for next month?" in result
+    assert "exact dates" in result
     assert "Slate808 Output" not in result
     assert "Where would you like to go?" not in result
     assert "How many travellers?" not in result
@@ -575,11 +586,11 @@ def test_clarification_preserves_budget_from_followup_answer():
     result_2 = run("7 people and a budget of 600000")
     assert "What exact dates are you planning?" in result_2
 
-    result_3 = run("next week")
+    result_3 = run("10 April to 12 April")
     assert "Slate808 Output" in result_3
     assert "Destination: paris" in result_3
     assert "Traveller Count: 7" in result_3
-    assert "Timing: next week" in result_3
+    assert "Timing: 10 april to 12 april" in result_3
     assert "- Budget: 600000 (high)" in result_3
 
 
@@ -623,7 +634,7 @@ def test_exit_command_does_not_become_destination():
 
     assert "Session reset. What would you like to plan?" in exit_result
 
-    next_trip = run("Plan a trip to diani for 2 people next weekend")
+    next_trip = run("Plan a trip to diani for 2 people 10 April to 12 April")
     assert "Destination: diani" in next_trip
     assert "Destination: exit" not in next_trip
 
@@ -656,7 +667,7 @@ def test_non_travel_override_exits_clarification_state_cleanly():
 
     assert "Slate808 currently supports travel planning only." in override_result
 
-    follow_up = run("Plan a trip to naivasha for 2 people next weekend")
+    follow_up = run("Plan a trip to naivasha for 2 people 10 April to 12 April")
     assert "Status: pass" in follow_up
     assert "Destination: naivasha" in follow_up
 
@@ -826,7 +837,7 @@ def test_numeric_separation_does_not_contaminate_timing_or_budget():
 
 
 def test_budget_visibility_numeric_budget_and_level_appear_in_output():
-    result = run("Plan a trip to diani for 2 people next weekend budget is 45000")
+    result = run("Plan a trip to diani for 2 people 10 April to 12 April budget is 45000")
 
     assert "- Budget: 45000 (medium)" in result
     assert "Budget Level:" not in result
@@ -835,8 +846,8 @@ def test_budget_visibility_numeric_budget_and_level_appear_in_output():
 @pytest.mark.parametrize(
     ("trip_request", "expected_budget_line"),
     [
-        ("Plan a cheap trip to diani for 2 people next weekend", "- Budget Level: low"),
-        ("Plan a luxury trip to diani for 2 people next weekend", "- Budget Level: high"),
+        ("Plan a cheap trip to diani for 2 people 10 April to 12 April", "- Budget Level: low"),
+        ("Plan a luxury trip to diani for 2 people 10 April to 12 April", "- Budget Level: high"),
     ],
 )
 def test_budget_visibility_signal_based_levels_appear_in_output(trip_request, expected_budget_line):
@@ -1021,7 +1032,7 @@ def test_contaminated_destination_routes_to_destination_clarification(text):
 
 @pytest.mark.parametrize("destination", ["somewhere warm", "coast"])
 def test_supported_flexible_destinations_still_plan(destination):
-    result = run(f"Plan a trip to {destination} for 2 people tomorrow")
+    result = run(f"Plan a trip to {destination} for 2 people 10 April to 12 April")
 
     assert "Slate808 Output" in result
     assert f"Destination: {destination}" in result
@@ -1051,7 +1062,7 @@ def test_planning_policy_logs_decision_trace(monkeypatch):
     assert "constraint_policy" in logged[0][1]
     assert "conflict_flags" in logged[0][1]
     assert "refinement_flags" in logged[0][1]
-    assert constraints["timing_policy"]["is_timing_usable"] is True
+    assert constraints["timing_policy"]["is_timing_usable"] is False
 
 
 def test_rules_loading_is_path_safe(monkeypatch, tmp_path):

@@ -4,6 +4,7 @@ from cross_field_validation_contract import validate_travel_brief_cross_fields
 from engine.clarification_runner import reset_state, run
 from engine.travel_brief import build_travel_brief as build_live_brief
 from extractor_contract import extract_catalogue_signals
+from input_normalization_contract import normalize_travel_input
 from itinerary_input_contract import build_itinerary_request
 from planning_policy import evaluate_travel_brief
 from priority_resolution_contract import resolve_field_priorities
@@ -204,25 +205,34 @@ def test_timing_precision_is_not_reduced_after_clarification_completes():
 
 
 def test_glued_token_destination_survives_normalization_and_planning_path():
-    result = run("Plan a trip toamboseli for 4 travellers next weekend")
+    text = "Plan a trip toamboseli for 4 travellers next weekend"
+    live = build_live_brief(normalize_travel_input(text).normalized_input)
+    result = run(text)
 
+    assert live["destination"] == "amboseli"
     assert "Where would you like to go?" not in result
-    assert "- Destination: amboseli" in result
+    assert "What exact dates are you planning for next weekend?" in result
 
 
 def test_missing_comma_spacing_input_resolves_after_normalization():
-    result = run("Plan a trip to Naivasha for 2 people next weekend,KES 600000")
+    text = "Plan a trip to Naivasha for 2 people next weekend,KES 600000"
+    live = build_live_brief(text)
+    result = run(text)
 
+    assert live["destination"] == "naivasha"
+    assert live["budget_amount"] == 600000
     assert "How many travellers?" not in result
-    assert "- Destination: naivasha" in result
-    assert "- Budget: 600000 (high)" in result
+    assert "What exact dates are you planning for next weekend?" in result
 
 
 def test_typo_normalized_destination_does_not_trigger_missing_destination():
-    result = run("Plan a trip to coasta rico for 2 people next weekend")
+    text = "Plan a trip to coasta rico for 2 people next weekend"
+    live = build_live_brief(normalize_travel_input(text).normalized_input)
+    result = run(text)
 
+    assert live["destination"] == "costa rica"
     assert "Where would you like to go?" not in result
-    assert "- Destination: costa rica" in result
+    assert "What exact dates are you planning for next weekend?" in result
 
 
 def test_clean_high_integrity_case_preserves_strong_values_end_to_end():

@@ -59,12 +59,6 @@ def _start(user_input: str, normalized_input: str) -> str:
     if _is_trip_request(normalized_input):
         brief = build_travel_brief(normalized_input)
         missing_fields = get_missing_critical_fields(brief)
-        if (
-            "timing" not in missing_fields
-            and _is_shorthand_request(normalized_input)
-            and _needs_exact_timing_refinement(brief.get("timing", {}))
-        ):
-            missing_fields.append("timing")
 
         if missing_fields:
             collected_fields = {}
@@ -227,11 +221,7 @@ def _needs_exact_timing_refinement(timing: dict) -> bool:
     if timing.get("state") != "relative_timing":
         return False
 
-    return timing.get("raw_text", "").strip().lower() in {"next month"}
-
-
-def _is_shorthand_request(text: str) -> bool:
-    return not _looks_like_new_request(text.strip().lower())
+    return True
 
 
 def _extract_single(field: str, text: str):

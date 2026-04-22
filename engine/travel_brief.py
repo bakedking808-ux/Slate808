@@ -20,7 +20,7 @@ BudgetLevel = Literal["low", "medium", "high", "unspecified"]
 TripMood = Literal["relaxed", "adventure", "luxury", "romantic", "family", "corporate"]
 
 TIMING_USABLE_STATES = frozenset(
-    {"exact_timing", "relative_timing"}
+    {"exact_timing"}
 )
 
 
