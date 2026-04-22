@@ -450,6 +450,40 @@ def test_clarification_does_not_reask_known_travellers_for_month_timing():
     assert result.count("?") == 1
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Diani next month for 2 people",
+        "Coast next month for 2 people",
+    ],
+)
+def test_shorthand_next_month_requires_exact_date_clarification(text):
+    result = run(text)
+
+    assert "What exact dates are you planning for next month?" in result
+    assert "Slate808 Output" not in result
+    assert "Where would you like to go?" not in result
+    assert "How many travellers?" not in result
+    assert result.count("?") == 1
+
+
+def test_explicit_around_june_refinement_remains_preserved():
+    result = run("Plan a trip to coast for 2 people around June")
+
+    assert "Which exact dates in June are you planning?" in result
+    assert "Slate808 Output" not in result
+    assert result.count("?") == 1
+
+
+def test_exact_date_ready_trip_still_executes():
+    result = run("Plan a trip to Diani for 2 people 10 April to 12 April")
+
+    assert "Slate808 Output" in result
+    assert "Destination: diani" in result
+    assert "Traveller Count: 2" in result
+    assert "Timing: 10 april to 12 april" in result
+
+
 def test_clarification_asks_destination_when_timing_and_travellers_known():
     result = run("I want a getaway next month for 2 people")
 
