@@ -257,12 +257,15 @@ CONTAMINATED_DESTINATION_VALUES = {
     "i need a",
     "i need an",
     "i want a",
+    "i want a scenic place",
+    "looking",
     "me and",
     "me on",
     "need a",
     "new request",
     "plan",
     "we need a",
+    "uhh plan something",
 }
 
 CONTAMINATED_DESTINATION_PATTERNS = (
@@ -272,10 +275,13 @@ CONTAMINATED_DESTINATION_PATTERNS = (
     r"\b.*\b(?:trip|travel|getaway|retreat|vacation|holiday|journey|escape)\b",
     r"^i\s+want\b.*\b"
     r"(?:trip|travel|getaway|retreat|vacation|holiday|journey|escape)\b",
+    r"^i\s+want\b.*\bstay\b",
+    r"^a\s+quick\s+escape\b",
     r"^i\s+need\s+an?\s+(?:escape|weekend\s+away)\b",
     r"^i\s+need\s+a\s+trip\s+near\b",
     r"^i\s+need\s+a\s+break\b",
     r"^we\s+need\s+(?:a\s+)?(?:little\s+|short\s+)?break\b",
+    r"^thinking\s+of\s+a\s+place\b",
     r"^travel\s+from\b",
     r"^me\s+(?:and|on)\b",
 )
@@ -399,6 +405,13 @@ def is_contaminated_destination(candidate: Optional[str]) -> bool:
     )
 
 
+def _is_multi_option_destination(candidate: str) -> bool:
+    return bool(
+        re.search(r"\b(?:or|maybe)\b.+\b(?:maybe|or)\b", candidate)
+        or re.search(r"\b\w+\b\s+or\s+\b\w+\b", candidate)
+    )
+
+
 def _is_valid_destination(candidate: Optional[str]) -> bool:
     if not candidate:
         return False
@@ -412,6 +425,9 @@ def _is_valid_destination(candidate: Optional[str]) -> bool:
         return False
 
     if any(re.search(pattern, candidate) for pattern in AMBIGUOUS_DESTINATION_PATTERNS):
+        return False
+
+    if _is_multi_option_destination(candidate):
         return False
 
     if candidate in {
@@ -461,6 +477,10 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
         (
             r"\b(?:quiet|calm|short|little)\s+(?:break|getaway|escape|weekend\s+away)\s+in\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
             "comma_soft_travel_place_hint",
+        ),
+        (
+            r"\bstay\b(?:\s+for\s+[^,]{1,40})?,\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
+            "stay_comma_place_hint",
         ),
         (
             r"\b(?:book\s+out|book|organize|organise|arrange|set\s+up|plan|make|create)?\s*(?:a|an)?\s*(?:beach|calm|luxury|romantic|family|quiet|low-key|adventure|chilled|short)?\s*([a-zA-Z][a-zA-Z\s\-'\/]{1,40})\s+(?:trip|getaway|staycation|escape|stay)\b",
