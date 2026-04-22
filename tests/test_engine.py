@@ -1295,6 +1295,37 @@ def test_quiet_break_in_place_hint_is_preserved_with_shaping_fields():
     assert "Where would you like to go?" not in result
 
 
+def test_comma_shaped_quiet_break_in_place_hint_is_preserved():
+    text = "Quiet break in Watamu, low budget, mid June"
+
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert brief["destination"] == "watamu"
+    assert brief["budget_level"] == "low"
+    assert brief["timing"]["state"] == "month_only"
+    assert "Which exact dates in June are you planning?" in result
+    assert "Destination: quiet break" not in result
+
+
+def test_comma_shaped_calm_break_in_place_hint_is_preserved():
+    brief = build_travel_brief("Calm break in Diani, medium budget, mid June")
+
+    assert brief["destination"] == "diani"
+    assert brief["budget_level"] == "medium"
+
+
+def test_comma_shaped_near_place_hint_remains_clarification_safe():
+    text = "Quiet break near Naivasha, low budget, mid June"
+
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert brief["destination"] is None
+    assert "Where would you like to go?" in result
+    assert "Destination: naivasha" not in result
+
+
 def test_calm_break_in_place_hint_is_preserved():
     brief = build_travel_brief("Can you sort a calm break in Diani for 2 people 10 April to 12 April")
 

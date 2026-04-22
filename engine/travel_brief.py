@@ -459,6 +459,10 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
             "travel_to",
         ),
         (
+            r"\b(?:quiet|calm|short|little)\s+(?:break|getaway|escape|weekend\s+away)\s+in\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
+            "comma_soft_travel_place_hint",
+        ),
+        (
             r"\b(?:book\s+out|book|organize|organise|arrange|set\s+up|plan|make|create)?\s*(?:a|an)?\s*(?:beach|calm|luxury|romantic|family|quiet|low-key|adventure|chilled|short)?\s*([a-zA-Z][a-zA-Z\s\-'\/]{1,40})\s+(?:trip|getaway|staycation|escape|stay)\b",
             "modifier_place_travel_noun",
         ),
