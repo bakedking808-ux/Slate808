@@ -272,6 +272,7 @@ CONTAMINATED_DESTINATION_PATTERNS = (
     r"^i\s+want\b.*\b"
     r"(?:trip|travel|getaway|retreat|vacation|holiday|journey|escape)\b",
     r"^i\s+need\s+an?\s+(?:escape|weekend\s+away)\b",
+    r"^i\s+need\s+a\s+trip\s+near\b",
     r"^i\s+need\s+a\s+break\b",
     r"^we\s+need\s+(?:a\s+)?(?:little\s+|short\s+)?break\b",
     r"^travel\s+from\b",
@@ -298,6 +299,12 @@ def _load_destination_aliases() -> Dict[str, str]:
 
 def _canonicalize_destination(candidate: str) -> str:
     return _load_destination_aliases().get(candidate.strip().lower(), candidate)
+
+
+def _is_registered_destination(candidate: Optional[str]) -> bool:
+    if not candidate:
+        return False
+    return candidate.strip().lower() in _load_destination_aliases()
 
 
 def _strip_malformed_destination_prefix(candidate: str) -> str:
@@ -418,7 +425,7 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
 
     patterns = [
         (
-            r"\b(?:plan|curate|organize|arrange|help me plan|make|design|execute|prepare|create|schedule)\s+(?:a\s+)?(?:trip|travel plan|travel|holiday|getaway|retreat|escape|journey)\s+to\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
+            r"\b(?:plan|curate|organize|arrange|help me plan|make|design|execute|prepare|create|schedule)\s+(?:a\s+)?(?:trip|travel plan|travel|holiday|getaway|retreat|escape|journey|staycation)\s+to\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
             "trip_to",
         ),
         (
@@ -426,8 +433,12 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
             "trip_for_after_context",
         ),
         (
-            r"\b(?:weekend|holiday|relaxed|family|short|corporate)?\s*(?:trip|travel|getaway|retreat|journey|escape)\s+to\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
+            r"\b(?:weekend|holiday|relaxed|family|short|corporate)?\s*(?:trip|travel|getaway|retreat|journey|escape|staycation)\s+to\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
             "travel_to",
+        ),
+        (
+            r"\b(?:book\s+out|book|organize|organise|arrange|set\s+up|plan|make|create)?\s*(?:a|an)?\s*(?:beach|calm|luxury|romantic|family|quiet|low-key|adventure|chilled|short)?\s*([a-zA-Z][a-zA-Z\s\-'\/]{1,40})\s+(?:trip|getaway|staycation|escape)\b",
+            "modifier_place_travel_noun",
         ),
         (
             r"\b(?:make|plan|curate|design)\s+(?:a\s+)?(?:trip|travel plan|journey|escape)\s+for\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
@@ -455,6 +466,9 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
             decision_log(
                 f"DESTINATION_PATTERN_MATCH: label={label}, raw='{raw_candidate}', cleaned='{cleaned_candidate}'"
             )
+
+        if label == "modifier_place_travel_noun" and not _is_registered_destination(cleaned_candidate):
+            continue
 
         if _is_valid_destination(cleaned_candidate):
             canonical_candidate = _canonicalize_destination(cleaned_candidate)

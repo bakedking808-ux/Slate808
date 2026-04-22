@@ -1154,6 +1154,32 @@ def test_soft_travel_relational_place_hint_still_clarifies_destination():
     assert "Slate808 Output" not in result
 
 
+@pytest.mark.parametrize(
+    ("text", "destination"),
+    [
+        ("Book out a calm Watamu trip for 4 people 18 June to 21 June", "watamu"),
+        ("Organize a luxury Nairobi staycation for 2 people 14 July to 16 July", "nairobi"),
+        ("Book a coast getaway for two tomorrow", "coast"),
+        ("Set up a Mara trip for 4 people this month", "maasai mara"),
+    ],
+)
+def test_modifier_place_travel_noun_destination_is_preserved(text, destination):
+    brief = build_travel_brief(text)
+
+    assert brief["destination"] == destination
+
+
+def test_polluted_relational_trip_destination_does_not_execute():
+    text = "I need a trip near Nairobi for 3 people 8 June to 10 June"
+
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert brief["destination"] is None
+    assert "Where would you like to go?" in result
+    assert "Slate808 Output" not in result
+
+
 def test_destination_contamination_repeated_calls_are_deterministic():
     text = "Plan a trip to book a solo trip for 1 people at tomorrow"
 
