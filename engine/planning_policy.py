@@ -995,7 +995,10 @@ def validate_planning_constraints(planning_constraints: Dict[str, Any]) -> Plann
     return PlanningConstraints(**planning_constraints)
 
 
-def build_planning_constraints(brief: Dict[str, Any]) -> Dict[str, Any]:
+def build_planning_constraints(
+    brief: Dict[str, Any],
+    trace_id: str | None = None,
+) -> Dict[str, Any]:
     destination_policy = derive_destination_policy(brief)
     budget_policy = derive_budget_policy(brief)
     traveller_policy = derive_traveller_policy(brief)
@@ -1045,6 +1048,7 @@ def build_planning_constraints(brief: Dict[str, Any]) -> Dict[str, Any]:
         "decisions.log",
         str(
             {
+                "trace_id": trace_id,
                 "constraint_policy": planning_constraints_dict["constraint_policy"],
                 "conflict_flags": planning_constraints_dict["global_flags"]["conflict_flags"],
                 "resolved_constraints": planning_constraints_dict["global_flags"]["resolved_constraints"],
@@ -1055,5 +1059,8 @@ def build_planning_constraints(brief: Dict[str, Any]) -> Dict[str, Any]:
     return planning_constraints_dict
 
 
-def derive_planning_constraints(brief: Dict[str, Any]) -> Dict[str, Any]:
-    return build_planning_constraints(brief)
+def derive_planning_constraints(
+    brief: Dict[str, Any],
+    trace_id: str | None = None,
+) -> Dict[str, Any]:
+    return build_planning_constraints(brief, trace_id=trace_id)

@@ -43,7 +43,7 @@ def test_generator_uses_planning_constraints_instead_of_raw_brief_branching(monk
     monkeypatch.setattr(
         generator,
         "build_planning_constraints",
-        lambda brief: {
+        lambda brief, trace_id=None: {
             "destination_policy": {
                 "resolved_destination": "diani",
                 "destination_type": "mixed_or_unknown",

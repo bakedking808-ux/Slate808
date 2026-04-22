@@ -1410,10 +1410,11 @@ def test_planning_policy_logs_decision_trace(monkeypatch):
     monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: logged.append((filename, line)))
 
     brief = build_travel_brief("Plan a family trip to the coast for 4 people next weekend with a budget of 45000")
-    constraints = derive_planning_constraints(brief)
+    constraints = derive_planning_constraints(brief, trace_id="trace-engine-1")
 
     assert logged
     assert logged[0][0] == "decisions.log"
+    assert "'trace_id': 'trace-engine-1'" in logged[0][1]
     assert "constraint_policy" in logged[0][1]
     assert "conflict_flags" in logged[0][1]
     assert "refinement_flags" in logged[0][1]

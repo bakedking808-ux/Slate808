@@ -585,9 +585,9 @@ def generate_plan(request: str) -> dict:
     if task_type != "trip":
         return build_travel_only_failure(goal_core)
 
-    brief = None
+    trace_id = str(uuid.uuid4())
     brief = travel_brief.build_travel_brief(goal_core, decision_log=None)
-    planning_constraints = build_planning_constraints(brief)
+    planning_constraints = build_planning_constraints(brief, trace_id=trace_id)
 
     details = {
         "brief": brief,
@@ -597,7 +597,7 @@ def generate_plan(request: str) -> dict:
     steps = build_steps(task_type, details)
 
     return {
-        "trace_id": str(uuid.uuid4()),
+        "trace_id": trace_id,
         "task_type": task_type,
         "goal": goal,
         "mode": "normal",

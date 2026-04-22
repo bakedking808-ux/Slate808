@@ -41,10 +41,14 @@ def test_build_planning_constraints_logs_compact_policy_summary(monkeypatch):
     logged = []
     monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: logged.append((filename, line)))
 
-    constraints = build_planning_constraints(_brief(destination="mt kenya", trip_mood="relaxed"))
+    constraints = build_planning_constraints(
+        _brief(destination="mt kenya", trip_mood="relaxed"),
+        trace_id="trace-policy-1",
+    )
 
     assert logged
     assert logged[0][0] == "decisions.log"
+    assert "'trace_id': 'trace-policy-1'" in logged[0][1]
     assert "constraint_policy" in logged[0][1]
     assert "conflict_flags" in logged[0][1]
     assert "refinement_flags" in logged[0][1]

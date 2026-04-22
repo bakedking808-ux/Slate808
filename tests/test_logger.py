@@ -122,3 +122,15 @@ def test_read_confidence_readout_uses_logged_event_file(monkeypatch, tmp_path):
     )
 
     assert logger.read_confidence_readout("engine.log")["execution_completed_count"] == 1
+
+
+def test_confidence_readout_ignores_trace_fields():
+    readout = logger.build_confidence_readout(
+        [
+            {"trace_id": "trace-1", "event": "execution_completed"},
+            {"trace_id": "trace-1", "event": "clarification_routed"},
+        ]
+    )
+
+    assert readout["execution_completed_count"] == 1
+    assert readout["clarification_routed_count"] == 1
