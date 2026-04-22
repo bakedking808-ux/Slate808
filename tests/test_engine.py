@@ -565,6 +565,15 @@ def test_destination_clarification_reply_is_routed_to_active_trip():
     assert "Where would you like to go?" not in result
 
 
+def test_uncertain_destination_reply_keeps_destination_clarification_first():
+    run("Plan a trip for 2 people 10 April to 12 April")
+    result = run("near Diani")
+
+    assert "Where would you like to go?" in result
+    assert "How many travellers?" not in result
+    assert "Slate808 Output" not in result
+
+
 def test_traveller_count_clarification_reply_is_routed_to_active_trip():
     run("Plan a trip to naivasha")
     result = run("3 people")

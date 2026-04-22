@@ -437,6 +437,10 @@ def _is_valid_destination(candidate: Optional[str]) -> bool:
     return True
 
 
+def is_uncertain_destination(candidate: Optional[str]) -> bool:
+    return not _is_valid_destination(candidate)
+
+
 def extract_destination(text: str, decision_log=None) -> Optional[str]:
     text = normalize_travel_text(text)
 
@@ -1536,7 +1540,7 @@ def enforce_travel_brief_schema(brief: Dict[str, Any]) -> Dict[str, Any]:
 def get_missing_critical_fields(brief: Dict[str, Any]) -> List[str]:
     missing = []
 
-    if not brief.get("destination"):
+    if is_uncertain_destination(brief.get("destination")):
         missing.append("destination")
 
     if not brief.get("traveller_count"):
