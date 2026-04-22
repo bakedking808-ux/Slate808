@@ -1146,6 +1146,7 @@ def test_malformed_destination_prefix_cleanup_works():
         ("Coast next month for 2 people", "coast"),
         ("Plan a trip to the coast for 2 people 10 April to 12 April", "coast"),
         ("Plan a trip to Mara for 2 people 10 April to 12 April", "maasai mara"),
+        ("Plan a trip to the Mara for 2 people 10 April to 12 April", "maasai mara"),
     ],
 )
 def test_destination_cleanup_removes_weak_prefixes_and_timing_leakage(
@@ -1207,6 +1208,7 @@ def test_supported_flexible_destinations_still_plan(destination):
     [
         "somewhere warm for 2 people 10 April to 12 April",
         "near Nairobi for 2 people 10 April to 12 April",
+        "near Diani for 2 people 10 April to 12 April",
         "outside Kenya for 2 people 10 April to 12 April",
     ],
 )
@@ -1303,6 +1305,18 @@ def test_loose_thing_destination_candidate_does_not_pollute_destination():
     assert brief["destination"] is None
     assert "Destination: thinking maybe a chilled coast thing" not in result
     assert "Where would you like to go?" in result
+
+
+def test_polluted_loose_thing_with_known_fields_keeps_destination_first():
+    text = "Thinking maybe a chilled coast thing for 2 people 10 April to 12 April"
+
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert brief["destination"] is None
+    assert "Where would you like to go?" in result
+    assert "How many travellers?" not in result
+    assert "Slate808 Output" not in result
 
 
 def test_polluted_relational_trip_destination_does_not_execute():
