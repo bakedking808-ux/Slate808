@@ -355,6 +355,47 @@ def test_natural_operational_travel_requests_enter_controlled_flow(text):
     assert "?" in result
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Thinking of heading somewhere coastal… not sure which place yet.",
+        "Could you help me plan something around the lakeside?",
+        "Thinking of a place with wildlife… not sure which park.",
+        "I want a warm destination, but I don’t have a specific place in mind.",
+        "Could you help me plan something affordable for a few days?",
+        "I need a short break — you tell me what you need from me.",
+        "Plan something for us; I’ll confirm the timing once you ask.",
+        "I want a premium experience, but I don’t know where or when.",
+    ],
+)
+def test_destination_discovery_prompts_enter_destination_clarification(text):
+    result = run(text)
+
+    assert is_travel_intent(text) is True
+    assert "Slate808 currently supports travel planning only." not in result
+    assert "Where would you like to go?" in result
+    assert result.count("?") == 1
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "uhh plan something for us maybe next month idk budget medium",
+        "Need a calm break, no idea where, for 3 people, 10 April to 12 April",
+        "somewhere quiet for me and my partner, exact dates are 5 May to 7 May",
+        "Watamu 18 June to 21 June, not sure who all is coming",
+        "I want a scenic place for a few nights — timing is open.",
+    ],
+)
+def test_messy_travel_intent_prompts_enter_controlled_flow(text):
+    result = run(text)
+
+    assert is_travel_intent(text) is True
+    assert "Slate808 currently supports travel planning only." not in result
+    assert "Where would you like to go?" in result
+    assert result.count("?") == 1
+
+
 def test_natural_operational_intent_preserves_non_travel_rejection():
     result = run("Summarize the project status for tomorrow")
 
@@ -600,6 +641,28 @@ def test_clarification_does_not_reask_known_destination():
     assert "Where would you like to go?" not in result
     assert "How many travellers?" not in result
     assert result.count("?") == 1
+
+
+def test_clarification_route_logs_collected_field_names_only(monkeypatch):
+    logged_events = []
+    monkeypatch.setattr(
+        "engine.clarification_runner.log_event",
+        lambda **kwargs: logged_events.append(kwargs),
+    )
+
+    result = run("Plan a calm trip to Diani next month with a medium budget")
+
+    assert "What exact dates are you planning for next month?" in result
+    details = logged_events[0]["details"]
+    assert details["collected_fields_count"] == 4
+    assert details["collected_field_names"] == [
+        "budget_level",
+        "destination",
+        "timing",
+        "trip_mood",
+    ]
+    assert "diani" not in str(details)
+    assert "medium" not in str(details)
 
 
 def test_clarification_does_not_reask_known_travellers_for_month_timing():
@@ -1239,6 +1302,24 @@ def test_supported_flexible_destinations_still_plan(destination):
 @pytest.mark.parametrize(
     "text",
     [
+        "Plan a trip to Mombassa or Dianii for 2 people 10 April to 12 April",
+        "maybe the coast or mara next month for two, romantic but flexible",
+        "romantic getaway maybe Naivasha maybe coast sometime in June",
+        "I want something romantic, maybe Naivasha maybe coast, for two in August",
+    ],
+)
+def test_multi_option_destination_phrases_route_to_destination_clarification(text):
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert brief["destination"] is None
+    assert "Where would you like to go?" in result
+    assert "Destination:" not in result
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
         "somewhere warm for 2 people 10 April to 12 April",
         "near Nairobi for 2 people 10 April to 12 April",
         "near Diani for 2 people 10 April to 12 April",
@@ -1369,6 +1450,38 @@ def test_loose_thing_destination_candidate_does_not_pollute_destination():
     assert brief["destination"] is None
     assert "Destination: thinking maybe a chilled coast thing" not in result
     assert "Where would you like to go?" in result
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Looking for a short, affordable trip — maybe 2 nights.",
+        "Maybe a quick escape this month, something not too pricey.",
+        "Help me plan a quick escape this month, for two",
+    ],
+)
+def test_scouting_scaffold_destination_candidate_does_not_pollute_destination(text):
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert brief["destination"] is None
+    assert "Where would you like to go?" in result
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "I want a simple stay, Nairobi, tomorrow maybe",
+        "I want a simple stay for 2 adults, Nairobi, tomorrow maybe",
+    ],
+)
+def test_simple_stay_comma_place_hint_is_preserved(text):
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert brief["destination"] == "nairobi"
+    assert "Destination: i want a simple stay" not in result
+    assert "exact dates" in result
 
 
 def test_polluted_loose_thing_with_known_fields_keeps_destination_first():

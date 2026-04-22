@@ -96,6 +96,7 @@ def _start(user_input: str, normalized_input: str) -> str:
                 details={
                     "missing_fields": missing_fields,
                     "collected_fields_count": len(collected_fields),
+                    "collected_field_names": sorted(collected_fields),
                 }
             )
             
