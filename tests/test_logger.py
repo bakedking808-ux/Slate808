@@ -105,6 +105,10 @@ def test_build_confidence_readout_counts_known_metric_events_only():
         "execution_rejected_count": 1,
         "execution_weak_count": 1,
         "execution_completed_count": 1,
+        "clarification_routed_by_missing_fields": {},
+        "execution_blocked_by_reason": {},
+        "execution_rejected_by_reason": {},
+        "execution_weak_by_reason": {},
     }
 
 
@@ -134,3 +138,42 @@ def test_confidence_readout_ignores_trace_fields():
 
     assert readout["execution_completed_count"] == 1
     assert readout["clarification_routed_count"] == 1
+
+
+def test_confidence_readout_groups_clarification_missing_fields():
+    readout = logger.build_confidence_readout(
+        [
+            {
+                "event": "clarification_routed",
+                "details": {"missing_fields": ["destination", "timing"]},
+            },
+            {
+                "event": "clarification_routed",
+                "details": {"missing_fields": ["destination", "timing"]},
+            },
+            {
+                "event": "clarification_routed",
+                "details": {"missing_fields": ["traveller_count"]},
+            },
+        ]
+    )
+
+    assert readout["clarification_routed_by_missing_fields"] == {
+        "destination,timing": 2,
+        "traveller_count": 1,
+    }
+
+
+def test_confidence_readout_groups_execution_reasons():
+    readout = logger.build_confidence_readout(
+        [
+            {"event": "execution_blocked", "details": {"reason": "Unsafe input"}},
+            {"event": "execution_blocked", "details": {"reason": "Unsafe input"}},
+            {"event": "execution_rejected", "details": {"reason": "Non-travel request"}},
+            {"event": "execution_weak", "details": {"reason": "Input too short"}},
+        ]
+    )
+
+    assert readout["execution_blocked_by_reason"] == {"Unsafe input": 2}
+    assert readout["execution_rejected_by_reason"] == {"Non-travel request": 1}
+    assert readout["execution_weak_by_reason"] == {"Input too short": 1}

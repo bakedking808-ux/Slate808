@@ -16,6 +16,11 @@ CONFIDENCE_READOUT_EVENTS = (
 )
 
 
+def _increment_group(group: dict, key) -> None:
+    if key:
+        group[str(key)] = group.get(str(key), 0) + 1
+
+
 def local_date_str() -> str:
     return datetime.now(LOCAL_TZ).strftime("%Y-%m-%d")
 
@@ -94,10 +99,27 @@ def log_event(
 
 def build_confidence_readout(events: list[dict]) -> dict:
     readout = {f"{event}_count": 0 for event in CONFIDENCE_READOUT_EVENTS}
+    readout["clarification_routed_by_missing_fields"] = {}
+    readout["execution_blocked_by_reason"] = {}
+    readout["execution_rejected_by_reason"] = {}
+    readout["execution_weak_by_reason"] = {}
     for entry in events:
         event = entry.get("event")
         if event in CONFIDENCE_READOUT_EVENTS:
             readout[f"{event}_count"] += 1
+        details = entry.get("details") or {}
+        if event == "clarification_routed":
+            missing_fields = details.get("missing_fields") or []
+            _increment_group(
+                readout["clarification_routed_by_missing_fields"],
+                ",".join(str(field) for field in missing_fields),
+            )
+        if event == "execution_blocked":
+            _increment_group(readout["execution_blocked_by_reason"], details.get("reason"))
+        if event == "execution_rejected":
+            _increment_group(readout["execution_rejected_by_reason"], details.get("reason"))
+        if event == "execution_weak":
+            _increment_group(readout["execution_weak_by_reason"], details.get("reason"))
     return readout
 
 
