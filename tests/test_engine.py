@@ -229,16 +229,17 @@ def test_clarification_flow_trip():
     assert "Where would you like to go?" in result_1
 
     result_2 = run("Naivasha")
-    assert "How many travellers?" in result_2
+    assert "What exact dates are you planning?" in result_2
 
-    result_3 = run("3 people")
-    assert "What exact dates are you planning?" in result_3
+    result_3 = run("next weekend")
+    assert "What exact dates are you planning for next weekend?" in result_3
+    assert "Slate808 Output" not in result_3
 
-    result_4 = run("next weekend")
-    assert "What exact dates are you planning for next weekend?" in result_4
+    result_4 = run("10 April to 12 April")
+    assert "How many travellers?" in result_4
     assert "Slate808 Output" not in result_4
 
-    result_5 = run("10 April to 12 April")
+    result_5 = run("3 people")
     assert "Slate808 Output" in result_5
     assert "Destination: naivasha" in result_5
     assert "Traveller Count: 3" in result_5
@@ -541,16 +542,17 @@ def test_budget_contract_no_budget_exact_date_request_still_runs():
 
 def test_clarification_with_partial_trip_continues_from_next_missing_field():
     result_1 = run("Plan a trip to watamu")
-    assert "How many travellers?" in result_1
+    assert "What exact dates are you planning?" in result_1
 
-    result_2 = run("2 people")
-    assert "What exact dates are you planning?" in result_2
+    result_2 = run("next month")
+    assert "What exact dates are you planning for next month?" in result_2
+    assert "Slate808 Output" not in result_2
 
-    result_3 = run("next month")
-    assert "What exact dates are you planning for next month?" in result_3
+    result_3 = run("10-12 April")
+    assert "How many travellers?" in result_3
     assert "Slate808 Output" not in result_3
 
-    result_4 = run("10-12 April")
+    result_4 = run("2 people")
     assert "Slate808 Output" in result_4
     assert "Destination: watamu" in result_4
     assert "Traveller Count: 2" in result_4
@@ -561,7 +563,8 @@ def test_destination_clarification_reply_is_routed_to_active_trip():
     run("Plan a trip")
     result = run("Naivasha")
 
-    assert "How many travellers?" in result
+    assert "What exact dates are you planning?" in result
+    assert "How many travellers?" not in result
     assert "Where would you like to go?" not in result
 
 
@@ -593,8 +596,9 @@ def test_timing_clarification_reply_is_routed_to_active_trip():
 def test_clarification_does_not_reask_known_destination():
     result = run("Plan a trip to Diani next weekend")
 
-    assert "How many travellers?" in result
+    assert "What exact dates are you planning for next weekend?" in result
     assert "Where would you like to go?" not in result
+    assert "How many travellers?" not in result
     assert result.count("?") == 1
 
 
@@ -654,6 +658,33 @@ def test_clarification_asks_destination_when_timing_and_travellers_known():
     assert "Where would you like to go?" in result
     assert "How many travellers?" not in result
     assert "What exact dates are you planning?" not in result
+    assert result.count("?") == 1
+
+
+def test_clarification_priority_timing_before_traveller_when_destination_known():
+    result = run("Plan a trip to Diani next month")
+
+    assert "What exact dates are you planning for next month?" in result
+    assert "How many travellers?" not in result
+    assert "Where would you like to go?" not in result
+    assert result.count("?") == 1
+
+
+def test_clarification_priority_traveller_when_destination_and_timing_known():
+    result = run("Plan a trip to Diani 10 April to 12 April")
+
+    assert "How many travellers?" in result
+    assert "Where would you like to go?" not in result
+    assert "What exact dates are you planning?" not in result
+    assert result.count("?") == 1
+
+
+def test_clarification_priority_shaping_does_not_outrank_hard_fields():
+    result = run("Plan a luxury trip to somewhere warm next month with a high budget")
+
+    assert "Where would you like to go?" in result
+    assert "What exact dates are you planning?" not in result
+    assert "What kind of trip mood should this have?" not in result
     assert result.count("?") == 1
 
 
@@ -734,12 +765,12 @@ def test_clarification_quality_repeated_calls_are_deterministic():
 
 def test_clarification_preserves_budget_from_followup_answer():
     result_1 = run("Plan a trip to Paris")
-    assert "How many travellers?" in result_1
+    assert "What exact dates are you planning?" in result_1
 
-    result_2 = run("7 people and a budget of 600000")
-    assert "What exact dates are you planning?" in result_2
+    result_2 = run("10 April to 12 April")
+    assert "How many travellers?" in result_2
 
-    result_3 = run("10 April to 12 April")
+    result_3 = run("7 people and a budget of 600000")
     assert "Slate808 Output" in result_3
     assert "Destination: paris" in result_3
     assert "Traveller Count: 7" in result_3
@@ -755,7 +786,8 @@ def test_clarification_cancel_clears_active_state():
 
     follow_up = run("Plan a trip to naivasha")
     assert "Where would you like to go?" not in follow_up
-    assert "How many travellers?" in follow_up
+    assert "What exact dates are you planning?" in follow_up
+    assert "How many travellers?" not in follow_up
 
 
 def test_clarification_restart_clears_active_state():
@@ -901,7 +933,8 @@ def test_short_destination_reply_does_not_trigger_new_task_override():
     run("Plan a trip")
     result = run("travel to nairobi")
 
-    assert "How many travellers?" in result
+    assert "What exact dates are you planning?" in result
+    assert "How many travellers?" not in result
     assert "Where would you like to go?" not in result
 
 

@@ -25,6 +25,7 @@ TripMood = Literal["relaxed", "adventure", "luxury", "romantic", "family", "corp
 TIMING_USABLE_STATES = frozenset(
     {"exact_timing"}
 )
+HARD_FIELD_PRIORITY = ("destination", "timing", "traveller_count")
 DESTINATION_ALIAS_REGISTRY_PATH = (
     Path(__file__).resolve().parent.parent / "rules" / "destination_aliases.csv"
 )
@@ -1538,15 +1539,10 @@ def enforce_travel_brief_schema(brief: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_missing_critical_fields(brief: Dict[str, Any]) -> List[str]:
-    missing = []
+    missing_by_field = {
+        "destination": is_uncertain_destination(brief.get("destination")),
+        "timing": not is_timing_usable(brief.get("timing")),
+        "traveller_count": not brief.get("traveller_count"),
+    }
 
-    if is_uncertain_destination(brief.get("destination")):
-        missing.append("destination")
-
-    if not brief.get("traveller_count"):
-        missing.append("traveller_count")
-
-    if not is_timing_usable(brief.get("timing")):
-        missing.append("timing")
-
-    return missing
+    return [field for field in HARD_FIELD_PRIORITY if missing_by_field[field]]

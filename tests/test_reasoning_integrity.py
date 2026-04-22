@@ -133,7 +133,7 @@ def test_ambiguous_timing_triggers_clarification_not_silent_acceptance():
 def test_missing_traveller_count_is_not_inferred_from_vague_group_wording():
     result = run("Plan a luxury trip to Diani for my group next weekend")
 
-    assert "How many travellers?" in result
+    assert "What exact dates are you planning for next weekend?" in result
     assert "- Traveller Count:" not in result
 
 
