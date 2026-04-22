@@ -477,6 +477,44 @@ def test_soft_break_phrase_with_coast_hint_stays_controlled():
     assert result.count("?") == 1
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "I need a little break next month",
+        "I really need a break next month",
+        "We need a break next month",
+        "Need a break next month",
+        "I could use a break next month",
+        "I want a break next month",
+        "I need a short break next month",
+    ],
+)
+def test_soft_break_variants_are_travel_intent(text):
+    result = run(text)
+
+    assert is_travel_intent(text) is True
+    assert "Slate808 currently supports travel planning only." not in result
+    assert "Slate808 Output" not in result
+    assert result.count("?") == 1
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "I need a break from work next month",
+        "I need a break on this project next month",
+        "I need a break in the meeting next month",
+        "I need a break from studying next month",
+    ],
+)
+def test_non_travel_break_variants_remain_rejected(text):
+    result = run(text)
+
+    assert is_travel_intent(text) is False
+    assert "Slate808 currently supports travel planning only." in result
+    assert "Where would you like to go?" not in result
+
+
 def test_relative_timing_followup_refines_to_exact_dates_only():
     run("Plan a trip to naivasha for 3 people")
     result = run("next month")

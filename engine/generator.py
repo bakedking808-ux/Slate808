@@ -24,7 +24,12 @@ NATURAL_TRAVEL_INTENT_PATTERNS = (
     r"\b\d+\s*-\s*night\s+break\b|\b\d+\s+night\s+break\b",
     r"\blong weekend\b",
     r"\bweekend away\b",
-    rf"\bi\s+need\s+a\s+break\b.*\b(?:{MONTHS}|next month|this month|next week|this weekend|next weekend|sometime|coast)\b",
+    rf"\b(?:(?:i|we)\s+(?:really\s+)?need|need|i\s+could\s+use|i\s+want)\s+a\s+(?:little\s+|short\s+)?break\b.*\b(?:{MONTHS}|next month|this month|next week|this weekend|next weekend|sometime|coast)\b",
+)
+NON_TRAVEL_BREAK_PATTERNS = (
+    r"\bbreak\s+from\s+(?:work|studying|school|class|classes|job)\b",
+    r"\bbreak\s+on\s+(?:this\s+)?(?:project|task|assignment)\b",
+    r"\bbreak\s+in\s+(?:the\s+)?(?:meeting|session|class)\b",
 )
 TRAVEL_ONLY_ERROR = "Slate808 currently supports travel planning only."
 
@@ -262,6 +267,9 @@ def normalize_request(request: str) -> str:
 
 def is_travel_intent(request: str) -> bool:
     text = normalize_request(request)
+
+    if any(re.search(pattern, text) for pattern in NON_TRAVEL_BREAK_PATTERNS):
+        return False
 
     if any(keyword in text for keyword in TRAVEL_INTENT_KEYWORDS):
         return True
