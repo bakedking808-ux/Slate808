@@ -1,7 +1,7 @@
 from engine.generator import generate_plan
 from engine.checker import check_plan
 from engine.fixer import fix_plan
-from engine.logger import log_run, create_log_entry
+from engine.logger import log_run, create_log_entry, log_event
 from engine.input_gate import assess_input
 from engine.task_personality import apply_task_personality
 from engine.task_checks import apply_task_checks
@@ -54,6 +54,16 @@ def run_engine(request: str) -> str:
         log_entry["input_gate"] = gate
         log_entry["pipeline_stop"] = "blocked_input_hard_stop"
 
+        log_event(
+            filename="engine.log",
+            source="runner",
+            layer="execution",
+            event="execution_blocked",
+            status="blocked",
+            trace_id=None,
+            details={"reason": gate["reason"]}
+        )
+
         log_run(log_entry)
         return format_output(final_output)
 
@@ -87,6 +97,16 @@ def run_engine(request: str) -> str:
         log_entry["input_gate"] = gate
         log_entry["pipeline_stop"] = "rejected_input_hard_stop"
 
+        log_event(
+            filename="engine.log",
+            source="runner",
+            layer="execution",
+            event="execution_rejected",
+            status="rejected",
+            trace_id=None,
+            details={"reason": gate["reason"]}
+        )
+
         log_run(log_entry)
         return format_output(final_output)
 
@@ -119,6 +139,16 @@ def run_engine(request: str) -> str:
         log_entry["initial_checker_result"] = None
         log_entry["input_gate"] = gate
         log_entry["pipeline_stop"] = "weak_input_hard_stop"
+
+        log_event(
+            filename="engine.log",
+            source="runner",
+            layer="execution",
+            event="execution_weak",
+            status="weak",
+            trace_id=None,
+            details={"reason": gate["reason"]}
+        )
 
         log_run(log_entry)
         return format_output(final_output)
@@ -154,6 +184,16 @@ def run_engine(request: str) -> str:
         log_entry["initial_checker_result"] = None
         log_entry["input_gate"] = gate
         log_entry["pipeline_stop"] = "unsupported_non_travel_hard_stop"
+
+        log_event(
+            filename="engine.log",
+            source="runner",
+            layer="execution",
+            event="execution_blocked",
+            status="unsupported",
+            trace_id=plan.get("trace_id"),
+            details={"reason": "Task type is not a travel request"}
+        )
 
         log_run(log_entry)
         return format_output(final_output)
@@ -210,6 +250,16 @@ def run_engine(request: str) -> str:
     log_entry["initial_checker_result"] = initial_checker_result
     log_entry["input_gate"] = gate
     log_entry["pipeline_stop"] = None
+
+    log_event(
+        filename="engine.log",
+        source="runner",
+        layer="execution",
+        event="execution_completed",
+        status="success",
+        trace_id=plan.get("trace_id"),
+        details={"task_type": plan.get("task_type")}
+    )
 
     log_run(log_entry)
 

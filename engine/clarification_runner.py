@@ -3,6 +3,7 @@ import re
 from engine.formatter import format_output
 from engine.generator import build_travel_only_failure, is_travel_intent
 from engine.runner import run_engine
+from engine.logger import log_event
 from clarification_state import ClarificationStateManager
 from input_normalization_contract import normalize_travel_input
 from engine.travel_brief import (
@@ -82,6 +83,21 @@ def _start(user_input: str, normalized_input: str) -> str:
                 missing_fields=missing_fields,
                 collected_fields=collected_fields,
             )
+            
+            # Emit clarification routing metric
+            log_event(
+                filename="engine.log",
+                source="clarification_runner",
+                layer="clarification",
+                event="clarification_routed",
+                status="routed",
+                trace_id=state["trace_id"],
+                details={
+                    "missing_fields": missing_fields,
+                    "collected_fields_count": len(collected_fields),
+                }
+            )
+            
             return _next_prompt(missing_fields[0], state)
 
     return _run_with_travel_boundary(normalized_input)
@@ -120,6 +136,21 @@ def _resume(user_input: str, normalized_input: str) -> str:
     if current_field == "timing" and _needs_exact_timing_refinement(value):
         state_manager.merge_fields({"timing": value})
         state_manager.increment_retry()
+        
+        # Emit relative timing refinement metric
+        log_event(
+            filename="engine.log",
+            source="clarification_runner",
+            layer="clarification",
+            event="relative_timing_exact_date_refinement",
+            status="detected",
+            trace_id=state["trace_id"],
+            details={
+                "current_state": value.get("state"),
+                "retry_count": state_manager.get_state()["retry_count"]
+            }
+        )
+        
         return _retry_prompt(current_field, state_manager.get_state())
 
     if current_field == "timing" and _duration_conflicts_with_exact_range(state, value):
