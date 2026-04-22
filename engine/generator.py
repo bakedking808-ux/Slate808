@@ -328,6 +328,14 @@ def _looks_like_trip_shorthand(text: str) -> bool:
     ):
         support_signals += 1
 
+    if (
+        not destination
+        and traveller_count
+        and timing.get("state") == "exact_timing"
+        and re.match(r"^(?:somewhere\s+\w+|near\s+\w+|outside\s+\w+)\b", text)
+    ):
+        return True
+
     return bool(destination and support_signals >= 2)
 
 

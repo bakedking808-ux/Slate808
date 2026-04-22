@@ -228,13 +228,11 @@ WEAK_DESTINATION_VALUES = {
 
 SUPPORTED_FLEXIBLE_DESTINATION_PATTERNS = (
     r"^(?:the\s+)?coast$",
-    r"^somewhere\s+\w+$",
-    r"^outside\s+kenya$",
-    r"^near\s+nairobi$",
 )
 DESTINATION_PREFIX_TOKENS = {
     "maybe",
     "perhaps",
+    "possibly",
     "around",
     "somewhere",
     "someplace",
@@ -273,6 +271,12 @@ CONTAMINATED_DESTINATION_PATTERNS = (
     r"^me\s+(?:and|on)\b",
 )
 
+AMBIGUOUS_DESTINATION_PATTERNS = (
+    r"^somewhere\s+\w+",
+    r"^near\s+\w+",
+    r"^outside\s+\w+",
+)
+
 
 def _strip_malformed_destination_prefix(candidate: str) -> str:
     candidate = re.sub(r"^(?:(?:travel|trip|journey|getaway|holiday|retreat|vacation|escape)to\s+)+", "", candidate)
@@ -286,6 +290,7 @@ def _strip_malformed_destination_prefix(candidate: str) -> str:
 def _clean_destination_candidate(candidate: str) -> Optional[str]:
     candidate = candidate.lower().strip()
     candidate = _strip_malformed_destination_prefix(candidate)
+    candidate = re.sub(r"^at\s+the\s+", "", candidate)
     candidate = re.sub(r"\s+", " ", candidate)
 
     words = candidate.split()
@@ -360,6 +365,9 @@ def _is_valid_destination(candidate: Optional[str]) -> bool:
         return False
 
     if is_contaminated_destination(candidate):
+        return False
+
+    if any(re.search(pattern, candidate) for pattern in AMBIGUOUS_DESTINATION_PATTERNS):
         return False
 
     if candidate in {

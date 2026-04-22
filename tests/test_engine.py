@@ -1046,6 +1046,8 @@ def test_malformed_destination_prefix_cleanup_works():
     ("text", "destination"),
     [
         ("Maybe Diani next month for 2 people", "diani"),
+        ("Possibly Watamu for 2 people 10 April to 12 April", "watamu"),
+        ("at the coast for 2 people 10 April to 12 April", "coast"),
         ("Diani sometime next month for 2 people", "diani"),
         ("Plan a trip to Diani for 2 people next month", "diani"),
         ("Coast next month for 2 people", "coast"),
@@ -1090,13 +1092,30 @@ def test_contaminated_destination_routes_to_destination_clarification(text):
     assert "Slate808 Output" not in result
 
 
-@pytest.mark.parametrize("destination", ["somewhere warm", "coast"])
+@pytest.mark.parametrize("destination", ["coast"])
 def test_supported_flexible_destinations_still_plan(destination):
     result = run(f"Plan a trip to {destination} for 2 people 10 April to 12 April")
 
     assert "Slate808 Output" in result
     assert f"Destination: {destination}" in result
     assert "Where would you like to go?" not in result
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "somewhere warm for 2 people 10 April to 12 April",
+        "near Nairobi for 2 people 10 April to 12 April",
+        "outside Kenya for 2 people 10 April to 12 April",
+    ],
+)
+def test_ambiguous_destination_phrases_route_to_destination_clarification(text):
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert brief["destination"] is None
+    assert "Where would you like to go?" in result
+    assert "Slate808 Output" not in result
 
 
 def test_destination_contamination_repeated_calls_are_deterministic():
