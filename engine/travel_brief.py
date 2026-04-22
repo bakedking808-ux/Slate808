@@ -86,12 +86,12 @@ class TravelBriefModel(BaseModel):
         str_strip_whitespace=True,
     )
 
-    destination: Optional[str] = Field(default=None)
-    traveller_count: Optional[int] = Field(default=None, gt=0)
-    timing: TimingModel = Field(default_factory=TimingModel)
-    budget_amount: Optional[int] = Field(default=None, ge=0)
-    budget_level: BudgetLevel = Field(default="unspecified")
-    trip_mood: Optional[TripMood] = Field(default=None)
+    destination: Optional[str]
+    traveller_count: Optional[int] = Field(gt=0)
+    timing: TimingModel
+    budget_amount: Optional[int] = Field(ge=0)
+    budget_level: BudgetLevel
+    trip_mood: Optional[TripMood]
 
     @field_validator("destination", "trip_mood", mode="before")
     @classmethod
@@ -1452,7 +1452,11 @@ def build_travel_brief(text: str, decision_log=None) -> Dict[str, Any]:
         trip_mood=extract_trip_mood(normalized, decision_log=decision_log),
     )
 
-    return brief.model_dump()
+    return enforce_travel_brief_schema(brief.model_dump())
+
+
+def enforce_travel_brief_schema(brief: Dict[str, Any]) -> Dict[str, Any]:
+    return TravelBriefModel.model_validate(brief).model_dump()
 
 
 def get_missing_critical_fields(brief: Dict[str, Any]) -> List[str]:

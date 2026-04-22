@@ -17,6 +17,7 @@ from engine.travel_brief import (
     extract_timing,
     extract_budget_info,
     build_travel_brief,
+    enforce_travel_brief_schema,
     get_missing_critical_fields,
     extract_trip_mood,
 )
@@ -340,6 +341,20 @@ def test_build_travel_brief_returns_validated_dict_shape_for_engine_compatibilit
     assert isinstance(brief["timing"], dict)
     assert brief["destination"] == "diani"
     assert brief["timing"]["state"] == "relative_timing"
+
+
+def test_travel_brief_schema_gate_valid_payload_passes_unchanged():
+    brief = build_travel_brief("Plan a trip to diani for 2 people next weekend")
+
+    assert enforce_travel_brief_schema(brief) == brief
+
+
+def test_travel_brief_schema_gate_malformed_payload_fails_loudly():
+    brief = build_travel_brief("Plan a trip to diani for 2 people next weekend")
+    brief.pop("timing")
+
+    with pytest.raises(ValidationError):
+        enforce_travel_brief_schema(brief)
 
 
 def test_budget_extraction_numeric_amount_supported():
