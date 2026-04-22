@@ -660,9 +660,9 @@ def extract_traveller_count(text: str, decision_log=None) -> Optional[int]:
 
 
 def _infer_budget_level_from_amount(amount: int) -> str:
-    if amount <= 30000:
+    if amount <= 45000:
         return "low"
-    if amount <= 100000:
+    if amount <= 85000:
         return "medium"
     return "high"
 
@@ -843,11 +843,15 @@ def extract_budget_info(text: str, decision_log=None) -> Dict[str, Any]:
     text = normalize_travel_text(text)
     text_lower = text.lower()
 
+    if re.search(r"\b(?:no\s+budget\s+(?:yet|for\s+now)|budget\s+not\s+decided)\b", text_lower):
+        return {"budget_amount": None, "budget_level": "unspecified"}
+
     amount_patterns = [
         r"\bbudget(?:\s+is|\s+of|\s+for)?\s+(?:kes|ksh|sh)?\s*([\d,]+)\b",
         r"\bwith\s+(?:a\s+budget\s+(?:of|is)\s+)?(?:kes|ksh|sh)\s*([\d,]+)\b",
         r"\b(?:kes|ksh|sh)\s*([\d,]+)\b",
         r"\b([\d,]+)\s*(?:kes|ksh|sh)\b",
+        r"\bunder\s+([\d,]+)\b",
         r"\b([\d,]+)\s+budget\b",
         r"\b([\d,]+)k\b",
     ]
@@ -871,18 +875,13 @@ def extract_budget_info(text: str, decision_log=None) -> Dict[str, Any]:
                 "budget_level": level,
             }
 
-    if (
-        "luxury" in text_lower
-        or "premium" in text_lower
-        or "high-end" in text_lower
-        or "high budget" in text_lower
-    ):
+    if re.search(r"\b(?:luxury|premium|high-end|high\s+budget)\b", text_lower):
         return {"budget_amount": None, "budget_level": "high"}
 
-    if "comfortable" in text_lower or "mid-range" in text_lower or "moderate" in text_lower:
+    if re.search(r"\b(?:comfortable|mid-range|moderate|medium\s+budget)\b", text_lower):
         return {"budget_amount": None, "budget_level": "medium"}
 
-    if "cheap" in text_lower or "budget" in text_lower or "affordable" in text_lower:
+    if re.search(r"\b(?:cheap|low\s+budget|affordable)\b", text_lower):
         return {"budget_amount": None, "budget_level": "low"}
 
     return {"budget_amount": None, "budget_level": "unspecified"}

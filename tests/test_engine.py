@@ -345,7 +345,7 @@ def test_build_travel_brief_returns_validated_dict_shape_for_engine_compatibilit
 def test_budget_extraction_numeric_amount_supported():
     brief = build_travel_brief("Plan a trip to diani for 2 people next weekend budget is 45000")
     assert brief["budget_amount"] == 45000
-    assert brief["budget_level"] == "medium"
+    assert brief["budget_level"] == "low"
 
 
 def test_budget_extraction_numeric_k_format_supported():
@@ -380,7 +380,7 @@ def test_budget_extraction_real_world_family_request_supported():
     assert brief["destination"] == "ukunda"
     assert brief["traveller_count"] == 10
     assert brief["budget_amount"] == 40000
-    assert brief["budget_level"] == "medium"
+    assert brief["budget_level"] == "low"
 
 
 def test_budget_and_destination_extraction_with_interleaved_currency_context():
@@ -393,6 +393,51 @@ def test_budget_and_destination_extraction_with_interleaved_currency_context():
     assert brief["budget_amount"] == 60000
     assert brief["budget_level"] == "medium"
     assert brief["timing"]["raw_text"] == "next week"
+
+
+@pytest.mark.parametrize(
+    ("text", "amount", "level"),
+    [
+        ("Plan a trip to Diani for 2 people on a medium budget", None, "medium"),
+        ("Plan a trip to Diani for 2 people medium budget", None, "medium"),
+        ("Plan a trip to Diani for 2 people high budget", None, "high"),
+        ("Plan a trip to Diani for 2 people low budget", None, "low"),
+        ("Plan a trip to Diani for 2 people under 45,000", 45000, "low"),
+        ("Plan a trip to Diani for 2 people under 45000", 45000, "low"),
+        ("Plan a trip to Diani for 2 people under 50000", 50000, "medium"),
+        ("Plan a trip to Diani for 2 people 45,000 budget", 45000, "low"),
+        ("Plan a trip to Diani for 2 people 45,001 budget", 45001, "medium"),
+        ("Plan a trip to Diani for 2 people 85,000 budget", 85000, "medium"),
+        ("Plan a trip to Diani for 2 people 85,001 budget", 85001, "high"),
+    ],
+)
+def test_budget_contract_bands_phrases_and_numeric_formats(text, amount, level):
+    brief = build_travel_brief(text)
+
+    assert brief["budget_amount"] == amount
+    assert brief["budget_level"] == level
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Plan a trip to Diani for 2 people no budget yet",
+        "Plan a trip to Diani for 2 people budget not decided",
+    ],
+)
+def test_budget_contract_unset_budget_remains_unspecified(text):
+    brief = build_travel_brief(text)
+
+    assert brief["budget_amount"] is None
+    assert brief["budget_level"] == "unspecified"
+
+
+def test_budget_contract_no_budget_exact_date_request_still_runs():
+    result = run("Plan a trip to Diani for 2 people 10 April to 12 April")
+
+    assert "Slate808 Output" in result
+    assert "Destination: diani" in result
+    assert "Budget Level: unspecified" in result
 
 
 def test_clarification_with_partial_trip_continues_from_next_missing_field():
@@ -839,7 +884,7 @@ def test_numeric_separation_does_not_contaminate_timing_or_budget():
 def test_budget_visibility_numeric_budget_and_level_appear_in_output():
     result = run("Plan a trip to diani for 2 people 10 April to 12 April budget is 45000")
 
-    assert "- Budget: 45000 (medium)" in result
+    assert "- Budget: 45000 (low)" in result
     assert "Budget Level:" not in result
 
 
@@ -1266,7 +1311,7 @@ def test_mood_extraction_does_not_break_budget_extraction():
     brief = build_travel_brief("Plan a luxury trip to diani for 2 people with a budget of 100000")
     assert brief["trip_mood"] == "luxury"
     assert brief["budget_amount"] == 100000
-    assert brief["budget_level"] == "medium"
+    assert brief["budget_level"] == "high"
 
 
 def test_mood_extraction_does_not_break_traveller_extraction():
