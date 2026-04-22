@@ -1,4 +1,7 @@
+import csv
 import re
+from functools import lru_cache
+from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -21,6 +24,9 @@ TripMood = Literal["relaxed", "adventure", "luxury", "romantic", "family", "corp
 
 TIMING_USABLE_STATES = frozenset(
     {"exact_timing"}
+)
+DESTINATION_ALIAS_REGISTRY_PATH = (
+    Path(__file__).resolve().parent.parent / "rules" / "destination_aliases.csv"
 )
 
 
@@ -278,6 +284,21 @@ AMBIGUOUS_DESTINATION_PATTERNS = (
 )
 
 
+@lru_cache(maxsize=1)
+def _load_destination_aliases() -> Dict[str, str]:
+    with DESTINATION_ALIAS_REGISTRY_PATH.open(newline="", encoding="utf-8") as f:
+        rows = csv.DictReader(f)
+        return {
+            row["alias"].strip().lower(): row["canonical_destination"].strip().lower()
+            for row in rows
+            if row.get("alias") and row.get("canonical_destination")
+        }
+
+
+def _canonicalize_destination(candidate: str) -> str:
+    return _load_destination_aliases().get(candidate.strip().lower(), candidate)
+
+
 def _strip_malformed_destination_prefix(candidate: str) -> str:
     candidate = re.sub(r"^(?:(?:travel|trip|journey|getaway|holiday|retreat|vacation|escape)to\s+)+", "", candidate)
     return re.sub(
@@ -431,9 +452,10 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
             )
 
         if _is_valid_destination(cleaned_candidate):
+            canonical_candidate = _canonicalize_destination(cleaned_candidate)
             if decision_log:
-                decision_log(f"DESTINATION_ACCEPTED: '{cleaned_candidate}'")
-            return cleaned_candidate
+                decision_log(f"DESTINATION_ACCEPTED: '{canonical_candidate}'")
+            return canonical_candidate
 
     shorthand_match = re.match(
         r"^\s*([a-zA-Z][a-zA-Z\s\-'\/]{1,60}?)(?=\s+(?:for|with|budget|next|this|tomorrow|today|in|at)\b)",
@@ -454,9 +476,10 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
             )
 
         if _is_valid_destination(cleaned_candidate):
+            canonical_candidate = _canonicalize_destination(cleaned_candidate)
             if decision_log:
-                decision_log(f"DESTINATION_ACCEPTED: '{cleaned_candidate}'")
-            return cleaned_candidate
+                decision_log(f"DESTINATION_ACCEPTED: '{canonical_candidate}'")
+            return canonical_candidate
 
     if decision_log:
         decision_log("DESTINATION_ACCEPTED: None")

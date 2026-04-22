@@ -1051,6 +1051,8 @@ def test_malformed_destination_prefix_cleanup_works():
         ("Diani sometime next month for 2 people", "diani"),
         ("Plan a trip to Diani for 2 people next month", "diani"),
         ("Coast next month for 2 people", "coast"),
+        ("Plan a trip to the coast for 2 people 10 April to 12 April", "coast"),
+        ("Plan a trip to Mara for 2 people 10 April to 12 April", "maasai mara"),
     ],
 )
 def test_destination_cleanup_removes_weak_prefixes_and_timing_leakage(
@@ -1060,6 +1062,12 @@ def test_destination_cleanup_removes_weak_prefixes_and_timing_leakage(
     brief = build_travel_brief(text)
 
     assert brief["destination"] == destination
+
+
+def test_destination_canonical_registry_preserves_clean_known_destination():
+    brief = build_travel_brief("Plan a trip to Diani for 2 people 10 April to 12 April")
+
+    assert brief["destination"] == "diani"
 
 
 @pytest.mark.parametrize(

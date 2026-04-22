@@ -16,7 +16,7 @@ def test_clarification_preserves_trip_mood_in_initial_and_completed_output():
 
     assert "Slate808 Output" in completed
     assert "Status: pass" in completed
-    assert "- Destination: mara" in completed
+    assert "- Destination: maasai mara" in completed
     assert "- Traveller Count: 3" in completed
     assert "- Timing: 10 april to 14 april" in completed
     assert "- Trip Mood: adventure" in completed
@@ -29,7 +29,7 @@ def test_clarification_prompts_for_trip_mood_after_hard_fields_complete():
     mood_prompt = run("10-14 April")
 
     assert "What kind of trip mood should this have?" in mood_prompt
-    assert "- Destination: mara" in mood_prompt
+    assert "- Destination: maasai mara" in mood_prompt
     assert "- Traveller Count: 3" in mood_prompt
     assert "- Timing: 10 april to 14 april" in mood_prompt
     assert "Slate808 Output" in mood_prompt
@@ -43,7 +43,7 @@ def test_clarification_trip_mood_answer_completes_preserved_trip():
 
     assert "Slate808 Output" in completed
     assert "Status: pass" in completed
-    assert "- Destination: mara" in completed
+    assert "- Destination: maasai mara" in completed
     assert "- Traveller Count: 3" in completed
     assert "- Timing: 10 april to 14 april" in completed
     assert "- Trip Mood: relaxed" in completed

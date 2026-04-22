@@ -1,0 +1,10 @@
+alias,canonical_destination,match_type
+diani,diani,canonical
+naivasha,naivasha,canonical
+watamu,watamu,canonical
+nairobi,nairobi,canonical
+maasai mara,maasai mara,canonical
+coast,coast,canonical
+the coast,coast,alias
+mara,maasai mara,alias
+the mara,maasai mara,alias
