@@ -4,8 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from calendar_input_contract import CalendarRequest
-from calendar_policy_contract import CalendarDecision
+from contracts.calendar_input_contract import CalendarRequest
+from contracts.calendar_policy_contract import CalendarDecision
 
 
 class CalendarAction(BaseModel):

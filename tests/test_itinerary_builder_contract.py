@@ -1,5 +1,5 @@
-from itinerary_builder_contract import build_itinerary_plan
-from itinerary_input_contract import ItineraryRequest
+from contracts.itinerary_builder_contract import build_itinerary_plan
+from contracts.itinerary_input_contract import ItineraryRequest
 
 
 def _request(**overrides):

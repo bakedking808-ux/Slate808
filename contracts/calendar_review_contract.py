@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from calendar_action_contract import CalendarAction
+from contracts.calendar_action_contract import CalendarAction
 
 
 class CalendarReview(BaseModel):

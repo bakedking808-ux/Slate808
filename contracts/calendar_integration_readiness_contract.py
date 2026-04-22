@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
-from calendar_review_contract import CalendarReview
+from contracts.calendar_review_contract import CalendarReview
 
 
 class CalendarIntegrationReadiness(BaseModel):

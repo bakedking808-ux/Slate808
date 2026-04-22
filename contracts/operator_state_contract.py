@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from operator_flow_contract import OperatorFlowResult
+from contracts.operator_flow_contract import OperatorFlowResult
 
 
 OperatorActionType = Literal[

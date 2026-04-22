@@ -1,15 +1,15 @@
-from calendar_action_contract import build_calendar_action
-from calendar_input_contract import build_calendar_request
-from calendar_integration_readiness_contract import (
+from contracts.calendar_action_contract import build_calendar_action
+from contracts.calendar_input_contract import build_calendar_request
+from contracts.calendar_integration_readiness_contract import (
     build_calendar_integration_readiness,
 )
-from calendar_policy_contract import evaluate_calendar_request
-from calendar_review_contract import build_calendar_review
-from clarification_contract import build_clarification_response
-from extractor_contract import extract_catalogue_signals
-from itinerary_input_contract import build_itinerary_request
+from contracts.calendar_policy_contract import evaluate_calendar_request
+from contracts.calendar_review_contract import build_calendar_review
+from contracts.clarification_contract import build_clarification_response
+from contracts.extractor_contract import extract_catalogue_signals
+from contracts.itinerary_input_contract import build_itinerary_request
 from planning_policy import evaluate_travel_brief
-from travel_brief_contract import build_travel_brief
+from contracts.travel_brief_contract import build_travel_brief
 
 
 def _build_calendar_spine(user_input: str):

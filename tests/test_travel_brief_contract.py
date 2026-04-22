@@ -1,5 +1,5 @@
-from extractor_contract import extract_catalogue_signals
-from travel_brief_contract import build_travel_brief
+from contracts.extractor_contract import extract_catalogue_signals
+from contracts.travel_brief_contract import build_travel_brief
 
 
 def test_brief_assembly_from_required_family_extraction():

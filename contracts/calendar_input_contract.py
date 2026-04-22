@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
-from itinerary_input_contract import ItineraryRequest
-from travel_brief_contract import TravelBrief
+from contracts.itinerary_input_contract import ItineraryRequest
+from contracts.travel_brief_contract import TravelBrief
 
 
 CALENDAR_CHECK_KEYS = (

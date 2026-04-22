@@ -1,8 +1,8 @@
 from clarification_state import ClarificationStateManager
-import operator_runtime_execution_contract
-from operator_runtime_admission_contract import OperatorRuntimeAdmissionRequest
-from operator_runtime_state_shaping_contract import apply_admitted_supply_field_operator
-from operator_state_contract import OperatorStateAction
+import contracts.operator_runtime_execution_contract as operator_runtime_execution_contract
+from contracts.operator_runtime_admission_contract import OperatorRuntimeAdmissionRequest
+from contracts.operator_runtime_state_shaping_contract import apply_admitted_supply_field_operator
+from contracts.operator_state_contract import OperatorStateAction
 
 
 _RESULT_KEYS = ["status", "transition", "admission", "state", "result", "error"]

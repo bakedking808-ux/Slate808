@@ -1,4 +1,4 @@
-from operator_flow_contract import classify_operator_flow
+from contracts.operator_flow_contract import classify_operator_flow
 
 
 def _signal_type(text: str) -> str:

@@ -1,8 +1,8 @@
-from clarification_contract import build_clarification_response
-from extractor_contract import extract_catalogue_signals
-from itinerary_input_contract import build_itinerary_request
+from contracts.clarification_contract import build_clarification_response
+from contracts.extractor_contract import extract_catalogue_signals
+from contracts.itinerary_input_contract import build_itinerary_request
 from planning_policy import evaluate_travel_brief
-from travel_brief_contract import build_travel_brief
+from contracts.travel_brief_contract import build_travel_brief
 
 
 def test_request_builds_successfully_for_fully_ready_trip_brief():

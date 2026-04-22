@@ -4,7 +4,7 @@ import re
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from input_normalization_contract import normalize_travel_input
+from contracts.input_normalization_contract import normalize_travel_input
 from slate808_catalogue import CatalogueItem, FULL_CATALOGUE
 
 

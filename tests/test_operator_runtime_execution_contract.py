@@ -1,8 +1,8 @@
-from itinerary_builder_contract import ItineraryPlan, build_itinerary_plan
-from itinerary_input_contract import ItineraryRequest
-from operator_runtime_admission_contract import OperatorRuntimeAdmissionRequest
-from operator_runtime_execution_contract import execute_admitted_itinerary_operator
-from operator_state_contract import OperatorStateAction
+from contracts.itinerary_builder_contract import ItineraryPlan, build_itinerary_plan
+from contracts.itinerary_input_contract import ItineraryRequest
+from contracts.operator_runtime_admission_contract import OperatorRuntimeAdmissionRequest
+from contracts.operator_runtime_execution_contract import execute_admitted_itinerary_operator
+from contracts.operator_state_contract import OperatorStateAction
 
 
 _RESULT_KEYS = ["status", "transition", "admission", "state", "result", "error"]

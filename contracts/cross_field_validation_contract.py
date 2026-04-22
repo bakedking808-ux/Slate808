@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from travel_brief_contract import TravelBrief
+from contracts.travel_brief_contract import TravelBrief
 
 
 _TIMING_FRAGMENT_PATTERN = re.compile(

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
-from clarification_contract import ClarificationResponse
+from contracts.clarification_contract import ClarificationResponse
 from planning_policy import PlanningDecision
-from travel_brief_contract import TravelBrief
+from contracts.travel_brief_contract import TravelBrief
 
 
 class ItineraryRequest(BaseModel):

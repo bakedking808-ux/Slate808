@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from timing_parsing_contract import parse_timing_text
+from contracts.timing_parsing_contract import parse_timing_text
 
 
 TimingState = Literal[

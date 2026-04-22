@@ -1,7 +1,7 @@
-from clarification_contract import build_clarification_response
-from extractor_contract import extract_catalogue_signals
+from contracts.clarification_contract import build_clarification_response
+from contracts.extractor_contract import extract_catalogue_signals
 from planning_policy import evaluate_travel_brief
-from travel_brief_contract import build_travel_brief
+from contracts.travel_brief_contract import build_travel_brief
 
 
 def test_clarify_decision_produces_needs_clarification_response():

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from itinerary_input_contract import ItineraryRequest
+from contracts.itinerary_input_contract import ItineraryRequest
 
 
 OPTIONAL_FIELD_ORDER = (

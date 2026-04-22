@@ -1,9 +1,9 @@
-from calendar_input_contract import build_calendar_request
-from clarification_contract import build_clarification_response
-from extractor_contract import extract_catalogue_signals
-from itinerary_input_contract import build_itinerary_request
+from contracts.calendar_input_contract import build_calendar_request
+from contracts.clarification_contract import build_clarification_response
+from contracts.extractor_contract import extract_catalogue_signals
+from contracts.itinerary_input_contract import build_itinerary_request
 from planning_policy import evaluate_travel_brief
-from travel_brief_contract import build_travel_brief
+from contracts.travel_brief_contract import build_travel_brief
 
 
 def _build_inputs(user_input: str):

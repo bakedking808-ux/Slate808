@@ -5,7 +5,7 @@ from engine.generator import build_travel_only_failure, is_travel_intent
 from engine.runner import run_engine
 from engine.logger import log_event
 from clarification_state import ClarificationStateManager
-from input_normalization_contract import normalize_travel_input
+from contracts.input_normalization_contract import normalize_travel_input
 from engine.travel_brief import (
     MONTHS,
     build_travel_brief,

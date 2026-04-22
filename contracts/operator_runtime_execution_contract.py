@@ -5,9 +5,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from itinerary_builder_contract import ItineraryPlan, build_itinerary_plan
-from itinerary_input_contract import ItineraryRequest
-from operator_runtime_admission_contract import (
+from contracts.itinerary_builder_contract import ItineraryPlan, build_itinerary_plan
+from contracts.itinerary_input_contract import ItineraryRequest
+from contracts.operator_runtime_admission_contract import (
     OperatorRuntimeAdmissionRequest,
     OperatorRuntimeAdmissionResult,
     admit_operator_runtime,

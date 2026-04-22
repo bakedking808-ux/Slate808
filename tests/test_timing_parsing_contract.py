@@ -1,4 +1,4 @@
-from timing_parsing_contract import parse_timing_text
+from contracts.timing_parsing_contract import parse_timing_text
 
 
 def _parsed(text):

@@ -1,14 +1,14 @@
-from clarification_contract import build_clarification_response
+from contracts.clarification_contract import build_clarification_response
 from clarification_state import ClarificationStateManager
-from cross_field_validation_contract import validate_travel_brief_cross_fields
+from contracts.cross_field_validation_contract import validate_travel_brief_cross_fields
 from engine.clarification_runner import reset_state, run
 from engine.travel_brief import build_travel_brief as build_live_brief
-from extractor_contract import extract_catalogue_signals
-from input_normalization_contract import normalize_travel_input
-from itinerary_input_contract import build_itinerary_request
+from contracts.extractor_contract import extract_catalogue_signals
+from contracts.input_normalization_contract import normalize_travel_input
+from contracts.itinerary_input_contract import build_itinerary_request
 from planning_policy import evaluate_travel_brief
-from priority_resolution_contract import resolve_field_priorities
-from travel_brief_contract import TravelBrief, TravelBriefField, build_travel_brief
+from contracts.priority_resolution_contract import resolve_field_priorities
+from contracts.travel_brief_contract import TravelBrief, TravelBriefField, build_travel_brief
 
 
 def setup_function():

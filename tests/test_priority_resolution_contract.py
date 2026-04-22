@@ -1,4 +1,4 @@
-from priority_resolution_contract import resolve_field_priorities
+from contracts.priority_resolution_contract import resolve_field_priorities
 
 
 def test_explicit_beats_inferred():

@@ -1,6 +1,6 @@
-from cross_field_validation_contract import validate_travel_brief_cross_fields
-from extractor_contract import extract_catalogue_signals
-from travel_brief_contract import TravelBrief, TravelBriefField, build_travel_brief
+from contracts.cross_field_validation_contract import validate_travel_brief_cross_fields
+from contracts.extractor_contract import extract_catalogue_signals
+from contracts.travel_brief_contract import TravelBrief, TravelBriefField, build_travel_brief
 
 
 def _field(

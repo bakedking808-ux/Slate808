@@ -1,7 +1,7 @@
-from calendar_integration_readiness_contract import (
+from contracts.calendar_integration_readiness_contract import (
     build_calendar_integration_readiness,
 )
-from calendar_review_contract import CalendarReview
+from contracts.calendar_review_contract import CalendarReview
 import pytest
 
 

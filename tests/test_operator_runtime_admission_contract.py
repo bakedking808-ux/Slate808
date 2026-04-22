@@ -1,11 +1,11 @@
 import pytest
 from pydantic import ValidationError
 
-from operator_runtime_admission_contract import (
+from contracts.operator_runtime_admission_contract import (
     OperatorRuntimeAdmissionRequest,
     admit_operator_runtime,
 )
-from operator_state_contract import OperatorStateAction
+from contracts.operator_state_contract import OperatorStateAction
 
 
 def _action(action: str = "replace_field") -> OperatorStateAction:

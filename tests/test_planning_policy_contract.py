@@ -1,6 +1,6 @@
-from extractor_contract import extract_catalogue_signals
+from contracts.extractor_contract import extract_catalogue_signals
 from planning_policy import evaluate_travel_brief
-from travel_brief_contract import build_travel_brief
+from contracts.travel_brief_contract import build_travel_brief
 
 
 def test_proceed_case_with_no_missing_required_fields():

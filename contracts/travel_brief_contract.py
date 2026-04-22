@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from extractor_contract import ExtractionResult
-from priority_resolution_contract import resolve_field_priorities
+from contracts.extractor_contract import ExtractionResult
+from contracts.priority_resolution_contract import resolve_field_priorities
 
 
 BRIEF_FAMILIES = (

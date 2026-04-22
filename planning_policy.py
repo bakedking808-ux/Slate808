@@ -4,8 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cross_field_validation_contract import validate_travel_brief_cross_fields
-from travel_brief_contract import TravelBrief
+from contracts.cross_field_validation_contract import validate_travel_brief_cross_fields
+from contracts.travel_brief_contract import TravelBrief
 
 
 MISSING_FIELD_PRIORITY = (

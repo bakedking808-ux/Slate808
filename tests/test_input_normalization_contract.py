@@ -1,5 +1,5 @@
 from engine.clarification_runner import reset_state, run
-from input_normalization_contract import normalize_travel_input
+from contracts.input_normalization_contract import normalize_travel_input
 
 
 def setup_function():

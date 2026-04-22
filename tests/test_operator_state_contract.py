@@ -1,5 +1,5 @@
-from operator_flow_contract import classify_operator_flow
-from operator_state_contract import interpret_operator_state
+from contracts.operator_flow_contract import classify_operator_flow
+from contracts.operator_state_contract import interpret_operator_state
 
 
 def _action(text: str):

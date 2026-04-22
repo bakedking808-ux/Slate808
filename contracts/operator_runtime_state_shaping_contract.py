@@ -5,7 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 from clarification_state import ClarificationStateManager
-from operator_runtime_admission_contract import (
+from contracts.operator_runtime_admission_contract import (
     OperatorRuntimeAdmissionRequest,
     OperatorRuntimeAdmissionResult,
     admit_operator_runtime,

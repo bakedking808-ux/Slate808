@@ -1,6 +1,6 @@
-from calendar_action_contract import build_calendar_action
-from calendar_input_contract import CalendarRequest
-from calendar_policy_contract import CalendarDecision
+from contracts.calendar_action_contract import build_calendar_action
+from contracts.calendar_input_contract import CalendarRequest
+from contracts.calendar_policy_contract import CalendarDecision
 import pytest
 
 

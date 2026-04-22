@@ -1,4 +1,4 @@
-from extractor_contract import extract_catalogue_signals
+from contracts.extractor_contract import extract_catalogue_signals
 from slate808_catalogue import FULL_CATALOGUE
 
 

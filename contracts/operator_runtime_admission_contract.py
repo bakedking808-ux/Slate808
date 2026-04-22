@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
-from operator_state_contract import OperatorStateAction
+from contracts.operator_state_contract import OperatorStateAction
 
 
 class OperatorRuntimeAdmissionRequest(BaseModel):

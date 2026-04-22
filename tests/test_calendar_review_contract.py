@@ -1,5 +1,5 @@
-from calendar_action_contract import CalendarAction
-from calendar_review_contract import build_calendar_review
+from contracts.calendar_action_contract import CalendarAction
+from contracts.calendar_review_contract import build_calendar_review
 
 
 def test_builds_review_payload_for_none_action():
