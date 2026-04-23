@@ -22,6 +22,7 @@ from engine.travel_brief import (
 )
 
 state_manager = ClarificationStateManager()
+HARD_FIELDS = ("destination", "timing", "traveller_count")
 
 EXIT_COMMANDS = {"exit", "cancel", "stop", "restart", "quit"}
 NEW_TASK_OVERRIDE_PATTERNS = [
@@ -31,6 +32,13 @@ NEW_TASK_OVERRIDE_PATTERNS = [
 TRAVELLER_HINTS = r"\b(?:people|persons|travellers|travelers|adults?|children|kids?|couples|group|party|team|crew|friends|colleagues|guests)\b"
 BUDGET_HINTS = r"\b(?:budget|kes|ksh|sh)\b"
 TIMING_HINTS = rf"\b(?:{MONTHS}|today|tomorrow|next weekend|this weekend|next week|next month|this month|fortnight|soon|later|sometime|days?|nights?|weeks?)\b"
+EXPLICIT_CORRECTION_PATTERNS = (
+    r"^\s*actually\b",
+    r"\binstead\b",
+    r"\bi meant\b",
+    r"^\s*no[, ]",
+    r"\bmake it\b",
+)
 
 
 def reset_state() -> None:
@@ -119,26 +127,25 @@ def _run_with_travel_boundary(user_input: str) -> str:
 def _resume(user_input: str, normalized_input: str) -> str:
     state = state_manager.get_state()
     current_field = state["current_field"]
+    extracted_fields = _extract_resume_fields(normalized_input, state)
+    if extracted_fields:
+        state_manager.merge_fields(extracted_fields)
 
-    supplemental_fields = _extract_supplemental_fields(normalized_input)
-    if supplemental_fields:
-        state_manager.merge_fields(supplemental_fields)
-
-    value = _extract_single(current_field, normalized_input)
+    merged_state = state_manager.get_state()
+    value = merged_state["collected_fields"].get(current_field)
+    hard_missing = _remaining_hard_fields(merged_state["collected_fields"])
 
     if value is None:
         state_manager.increment_retry()
         return _retry_prompt(current_field, state_manager.get_state())
 
-    if current_field == "timing" and not is_timing_usable(value):
-        state_manager.merge_fields({"timing": value})
+    if current_field == "timing" and current_field in hard_missing and not is_timing_usable(value):
         state_manager.increment_retry()
         return _retry_prompt(current_field, state_manager.get_state())
 
-    if current_field == "timing" and _needs_exact_timing_refinement(value):
-        state_manager.merge_fields({"timing": value})
+    if current_field == "timing" and current_field in hard_missing and _needs_exact_timing_refinement(value):
         state_manager.increment_retry()
-        
+
         # Emit relative timing refinement metric
         log_event(
             filename="engine.log",
@@ -152,7 +159,7 @@ def _resume(user_input: str, normalized_input: str) -> str:
                 "retry_count": state_manager.get_state()["retry_count"]
             }
         )
-        
+
         return _retry_prompt(current_field, state_manager.get_state())
 
     if current_field == "timing" and _duration_conflicts_with_exact_range(state, value):
@@ -160,7 +167,25 @@ def _resume(user_input: str, normalized_input: str) -> str:
         prompt = _timing_prompt(state_manager.get_state(), retry=True)
         return f"\n==============================\n{prompt}\n==============================\n"
 
-    state = state_manager.update_with_field(current_field, value)
+    if current_field in HARD_FIELDS:
+        if hard_missing:
+            state = state_manager.start(
+                task_type=state["task_type"],
+                original_input=state["original_input"],
+                missing_fields=hard_missing,
+                collected_fields=merged_state["collected_fields"],
+                trace_id=state["trace_id"],
+            )
+            return _next_prompt(state["current_field"], state)
+
+        state = dict(merged_state)
+        state["missing_fields"] = []
+        state["current_field"] = None
+        state["status"] = "complete"
+        state["active"] = False
+        state["retry_count"] = 0
+    else:
+        state = state_manager.update_with_field(current_field, value)
 
     if state["status"] == "complete":
         if "trip_mood" not in state["collected_fields"]:
@@ -271,12 +296,7 @@ def _extract_single(field: str, text: str):
     text = text.strip()
 
     if field == "destination":
-        val = extract_destination(text)
-        if val:
-            return val
-
-        fallback = text.lower().strip(" ,.-")
-        return fallback if _looks_like_destination_candidate(fallback) else None
+        return _extract_destination_value(text)
 
     if field == "traveller_count":
         val = extract_traveller_count(text)
@@ -338,6 +358,64 @@ def _looks_like_budget(text: str) -> bool:
 
 def _looks_like_traveller_phrase(text: str) -> bool:
     return bool(re.search(TRAVELLER_HINTS, text))
+
+
+def _is_explicit_correction(text: str) -> bool:
+    normalized = text.lower()
+    return any(re.search(pattern, normalized) for pattern in EXPLICIT_CORRECTION_PATTERNS)
+
+
+def _remaining_hard_fields(collected_fields: dict) -> list[str]:
+    return get_missing_critical_fields(
+        {
+            "destination": collected_fields.get("destination"),
+            "timing": collected_fields.get("timing"),
+            "traveller_count": collected_fields.get("traveller_count"),
+        }
+    )
+
+
+def _extract_resume_fields(text: str, state: dict) -> dict:
+    collected = state.get("collected_fields", {})
+    missing_fields = set(state.get("missing_fields", []))
+    fields_to_extract = set(missing_fields)
+
+    if _is_explicit_correction(text):
+        fields_to_extract.update(HARD_FIELDS)
+
+    extracted = {}
+    is_correction = _is_explicit_correction(text)
+    for field in HARD_FIELDS:
+        if field not in fields_to_extract:
+            continue
+        value = _extract_single(field, text)
+        if value is not None and (
+            field not in collected or field in missing_fields or is_correction
+        ):
+            extracted[field] = value
+
+    extracted.update(_extract_supplemental_fields(text))
+    return extracted
+
+
+def _extract_destination_value(text: str):
+    val = extract_destination(text)
+    if val:
+        return val
+
+    for fragment in _destination_fragments(text):
+        if _looks_like_destination_candidate(fragment):
+            return fragment
+
+    return None
+
+
+def _destination_fragments(text: str) -> list[str]:
+    cleaned = text.lower()
+    cleaned = re.sub(r"\b(?:actually|make it|i meant|instead)\b", "", cleaned)
+    cleaned = re.sub(r"^\s*no[, ]*", "", cleaned).strip(" ,.-")
+    fragments = re.split(r",|\band\b", cleaned)
+    return [fragment.strip(" ,.-") for fragment in fragments if fragment.strip(" ,.-")]
 
 
 def _rebuild_input(state: dict) -> str:

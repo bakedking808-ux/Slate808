@@ -695,6 +695,50 @@ def test_clarification_does_not_reask_known_travellers_for_month_timing():
     assert result.count("?") == 1
 
 
+def test_destination_clarification_absorbs_multi_field_reply():
+    run("Plan a trip")
+    result = run("Diani, 10 April to 12 April, two people")
+
+    assert "What kind of trip mood should this have?" in result
+    assert "- Destination: diani" in result
+    assert "- Traveller Count: 2" in result
+    assert "- Timing: 10 april to 12 april" in result
+    assert "Where would you like to go?" not in result
+    assert "How many travellers?" not in result
+
+
+def test_destination_clarification_absorbs_destination_and_broad_timing_reply():
+    run("Plan a trip")
+    result = run("Watamu next month")
+
+    assert "What exact dates are you planning for next month?" in result
+    assert "Where would you like to go?" not in result
+    assert "How many travellers?" not in result
+
+
+def test_explicit_destination_correction_overrides_stale_state():
+    run("Plan a trip to Diani for 2 people")
+    result = run("Actually make it Watamu instead")
+    follow_up = run("10 April to 12 April")
+
+    assert "What exact dates are you planning?" in result
+    assert "How many travellers?" not in result
+    assert "- Destination: watamu" in follow_up
+    assert "- Destination: diani" not in follow_up
+
+
+def test_explicit_correction_also_absorbs_additional_fields():
+    run("Plan a trip to Diani")
+    result = run("Actually Watamu, and we'll be 3 people")
+    follow_up = run("10 April to 12 April")
+
+    assert "What exact dates are you planning?" in result
+    assert "How many travellers?" not in result
+    assert "- Destination: watamu" in follow_up
+    assert "- Traveller Count: 3" in follow_up
+    assert "- Destination: diani" not in follow_up
+
+
 @pytest.mark.parametrize(
     "text",
     [
@@ -1051,6 +1095,16 @@ def test_timing_vague_reasks_in_clarification():
     result = run("soon")
 
     assert "What exact dates are you planning?" in result
+    assert "Slate808 Output" not in result
+
+
+def test_partial_timing_reply_does_not_advance_past_current_hard_field():
+    run("Plan a trip to diani for 2 people")
+    result = run("Maybe early June")
+
+    assert "Which exact dates in June are you planning?" in result
+    assert "Where would you like to go?" not in result
+    assert "How many travellers?" not in result
     assert "Slate808 Output" not in result
 
 
