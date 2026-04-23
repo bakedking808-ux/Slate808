@@ -118,3 +118,56 @@ def test_live_path_just_me_keeps_destination_clean():
     assert "Destination: diani solo" not in result
     assert "Traveller Count: 1" in result
     assert "Timing: 10 april to 12 april" in result
+
+
+def test_punctuation_noise_normalizes_into_stable_extractable_form():
+    result = normalize_travel_input("Diani... 10 April to 12 April, 2 people")
+    brief = build_travel_brief(f"Plan a trip to {result.normalized_input}")
+
+    assert result.normalized_input == "Diani, 10 April to 12 April, 2 people"
+    assert brief["destination"] == "diani"
+    assert brief["traveller_count"] == 2
+    assert brief["timing"]["raw_text"] == "10 april to 12 april"
+    assert "punctuation_noise_normalization" in result.applied_rules
+
+
+def test_repeated_comma_and_tight_fragment_spacing_normalize_cleanly():
+    result = normalize_travel_input("Watamu,, next month")
+    brief = build_travel_brief(f"Plan a trip to {result.normalized_input}")
+
+    assert result.normalized_input == "Watamu, next month"
+    assert brief["destination"] == "watamu"
+    assert brief["timing"]["raw_text"] == "next month"
+    assert "punctuation_noise_normalization" in result.applied_rules
+
+
+def test_conversational_filler_does_not_block_downstream_extraction():
+    result = normalize_travel_input("idk, maybe Diani, 2 people")
+    brief = build_travel_brief(f"Plan a trip to {result.normalized_input}")
+
+    assert result.normalized_input == "Diani, 2 people"
+    assert brief["destination"] == "diani"
+    assert brief["traveller_count"] == 2
+    assert "conversational_fragment_normalization" in result.applied_rules
+
+
+def test_compressed_casual_fragment_with_traveller_phrase_still_normalizes_cleanly():
+    result = normalize_travel_input("hmm Watamu... just me")
+    brief = build_travel_brief(f"Plan a trip to {result.normalized_input}")
+
+    assert result.normalized_input == "Watamu, for 1 person"
+    assert brief["destination"] == "watamu"
+    assert brief["traveller_count"] == 1
+    assert "conversational_fragment_normalization" in result.applied_rules
+    assert "punctuation_noise_normalization" in result.applied_rules
+
+
+def test_maybe_ellipses_date_fragment_normalizes_without_blocking_range_extraction():
+    result = normalize_travel_input("maybe... 4th-8 march")
+    brief = build_travel_brief(f"Plan a trip to Watamu {result.normalized_input} for 2 people")
+
+    assert result.normalized_input == "4th - 8 march"
+    assert brief["timing"]["raw_text"] == "4th march to 8 march"
+    assert "conversational_fragment_normalization" in result.applied_rules
+    assert "punctuation_noise_normalization" in result.applied_rules
+
