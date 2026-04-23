@@ -716,6 +716,26 @@ def test_destination_clarification_absorbs_destination_and_broad_timing_reply():
     assert "How many travellers?" not in result
 
 
+def test_timing_clarification_absorbs_exact_timing_with_additional_traveller_count():
+    run("Plan a trip to Diani")
+    result = run("10 April to 12 April, and we are 3")
+
+    assert "What kind of trip mood should this have?" in result
+    assert "- Destination: diani" in result
+    assert "- Traveller Count: 3" in result
+    assert "- Timing: 10 april to 12 april" in result
+    assert "How many travellers?" not in result
+
+
+def test_destination_correction_with_broad_timing_recomputes_next_field():
+    run("Plan a trip")
+    result = run("Actually make it Watamu next month")
+
+    assert "What exact dates are you planning for next month?" in result
+    assert "Where would you like to go?" not in result
+    assert "How many travellers?" not in result
+
+
 def test_explicit_destination_correction_overrides_stale_state():
     run("Plan a trip to Diani for 2 people")
     result = run("Actually make it Watamu instead")
@@ -737,6 +757,26 @@ def test_explicit_correction_also_absorbs_additional_fields():
     assert "- Destination: watamu" in follow_up
     assert "- Traveller Count: 3" in follow_up
     assert "- Destination: diani" not in follow_up
+
+
+def test_timing_correction_overrides_stale_timing_state():
+    run("Plan a trip to Diani for 2 people next month")
+    result = run("No, not June, make it 15 July to 18 July")
+
+    assert "What exact dates are you planning" not in result
+    assert "- Timing: 15 july to 18 july" in result
+    assert "next month" not in result.lower()
+
+
+def test_later_turn_correction_recomputes_state_from_freshest_reply():
+    run("Plan a trip to Diani 10 April to 12 April")
+    result = run("Actually Watamu, 3 people")
+
+    assert "What kind of trip mood should this have?" in result
+    assert "- Destination: watamu" in result
+    assert "- Traveller Count: 3" in result
+    assert "- Timing: 10 april to 12 april" in result
+    assert "How many travellers?" not in result
 
 
 @pytest.mark.parametrize(

@@ -299,7 +299,7 @@ def _extract_single(field: str, text: str):
         return _extract_destination_value(text)
 
     if field == "traveller_count":
-        val = extract_traveller_count(text)
+        val = _extract_traveller_count_value(text)
         return val if val else None
 
     if field == "timing":
@@ -406,6 +406,18 @@ def _extract_destination_value(text: str):
     for fragment in _destination_fragments(text):
         if _looks_like_destination_candidate(fragment):
             return fragment
+
+    return None
+
+
+def _extract_traveller_count_value(text: str) -> int | None:
+    value = extract_traveller_count(text)
+    if value is not None:
+        return value
+
+    match = re.search(r"\b(?:we(?:'re| are)?|us)\s+(\d{1,3})\b", text.lower())
+    if match:
+        return int(match.group(1))
 
     return None
 
