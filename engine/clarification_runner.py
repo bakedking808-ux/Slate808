@@ -34,6 +34,8 @@ BUDGET_HINTS = r"\b(?:budget|kes|ksh|sh)\b"
 TIMING_HINTS = rf"\b(?:{MONTHS}|today|tomorrow|next weekend|this weekend|next week|next month|this month|fortnight|soon|later|sometime|days?|nights?|weeks?)\b"
 EXPLICIT_CORRECTION_PATTERNS = (
     r"^\s*actually\b",
+    r"^\s*wait\b",
+    r"^\s*forget\b",
     r"\binstead\b",
     r"\bi meant\b",
     r"^\s*no[, ]",
@@ -134,6 +136,17 @@ def _resume(user_input: str, normalized_input: str) -> str:
     merged_state = state_manager.get_state()
     value = merged_state["collected_fields"].get(current_field)
     hard_missing = _remaining_hard_fields(merged_state["collected_fields"])
+
+    if value is None and _has_progressing_hard_field_update(extracted_fields, current_field):
+        if hard_missing:
+            state = state_manager.start(
+                task_type=state["task_type"],
+                original_input=state["original_input"],
+                missing_fields=hard_missing,
+                collected_fields=merged_state["collected_fields"],
+                trace_id=state["trace_id"],
+            )
+            return _next_prompt(state["current_field"], state)
 
     if value is None:
         state_manager.increment_retry()
@@ -375,6 +388,14 @@ def _remaining_hard_fields(collected_fields: dict) -> list[str]:
     )
 
 
+def _has_progressing_hard_field_update(extracted_fields: dict, current_field: str) -> bool:
+    return any(
+        field in extracted_fields
+        for field in HARD_FIELDS
+        if field != current_field
+    )
+
+
 def _extract_resume_fields(text: str, state: dict) -> dict:
     collected = state.get("collected_fields", {})
     missing_fields = set(state.get("missing_fields", []))
@@ -399,11 +420,23 @@ def _extract_resume_fields(text: str, state: dict) -> dict:
 
 
 def _extract_destination_value(text: str):
+    if _is_explicit_correction(text):
+        for fragment in _destination_fragments(text):
+            val = extract_destination(fragment)
+            if val:
+                return val
+            if _looks_like_destination_candidate(fragment):
+                return fragment
+        return None
+
     val = extract_destination(text)
     if val:
         return val
 
     for fragment in _destination_fragments(text):
+        val = extract_destination(fragment)
+        if val:
+            return val
         if _looks_like_destination_candidate(fragment):
             return fragment
 
@@ -423,11 +456,56 @@ def _extract_traveller_count_value(text: str) -> int | None:
 
 
 def _destination_fragments(text: str) -> list[str]:
+    cleaned = _normalize_correction_scaffold(text)
+    fragments = [cleaned]
+    fragments.extend(re.split(r",|\band\b|[-—]", cleaned))
+
+    candidates = []
+    for fragment in fragments:
+        fragment = fragment.strip(" ,.-")
+        if not fragment:
+            continue
+        extracted = _extract_destination_fragment_candidate(fragment)
+        if extracted:
+            candidates.append(extracted)
+        if not _looks_like_scaffold_fragment(fragment):
+            candidates.append(fragment)
+
+    return list(dict.fromkeys(candidate for candidate in candidates if candidate))
+
+
+def _normalize_correction_scaffold(text: str) -> str:
     cleaned = text.lower()
-    cleaned = re.sub(r"\b(?:actually|make it|i meant|instead)\b", "", cleaned)
-    cleaned = re.sub(r"^\s*no[, ]*", "", cleaned).strip(" ,.-")
-    fragments = re.split(r",|\band\b", cleaned)
-    return [fragment.strip(" ,.-") for fragment in fragments if fragment.strip(" ,.-")]
+    cleaned = cleaned.replace("’", "'")
+    cleaned = re.sub(r"^\s*no,\s*not\s+[^,.-]+(?:\s+[-—]\s*|\s+)", "", cleaned)
+    cleaned = re.sub(r"^\s*(?:actually|wait)\b[,\s-]*", "", cleaned)
+    cleaned = re.sub(r"^\s*forget\b[^-—,]*[-—,]\s*", "", cleaned)
+    cleaned = re.sub(r"\b(?:instead|please)\b", "", cleaned)
+    return cleaned.strip(" ,.-")
+
+
+def _extract_destination_fragment_candidate(fragment: str) -> str | None:
+    patterns = (
+        r"\bdestination\s+(?:to|is)\s+(.+)$",
+        r"\b(?:trip|retreat|getaway|escape|staycation)\s+(?:to|in)\s+(.+)$",
+        r"\b(?:beach|corporate|family|quiet|calm|solo|adventure|hiking)\s+(?:trip|retreat|getaway|escape|staycation)\s+(?:to|in)\s+(.+)$",
+    )
+
+    for pattern in patterns:
+        match = re.search(pattern, fragment)
+        if match:
+            return match.group(1).strip(" ,.-")
+
+    return None
+
+
+def _looks_like_scaffold_fragment(fragment: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:this is now|not a group|for my parents|just me|solo trip|group one|change|switch|move the dates)\b",
+            fragment,
+        )
+    )
 
 
 def _rebuild_input(state: dict) -> str:

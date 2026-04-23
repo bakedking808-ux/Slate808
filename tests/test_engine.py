@@ -779,6 +779,54 @@ def test_later_turn_correction_recomputes_state_from_freshest_reply():
     assert "How many travellers?" not in result
 
 
+def test_destination_shift_during_clarification_does_not_pollute_destination():
+    run("Plan a trip to Diani")
+    result = run("Actually make it a trip to Zanzibar instead")
+
+    assert "What exact dates are you planning?" in result
+    assert "Please give a specific answer." not in result
+    assert "- Destination: zanzibar" not in result
+
+    follow_up = run("10 April to 12 April")
+    assert "How many travellers?" in follow_up
+
+    completed = run("2 people")
+    assert "- Destination: zanzibar" in completed
+    assert "- Destination: actually" not in completed
+
+
+def test_descriptive_correction_phrasing_updates_destination_cleanly():
+    run("Plan a trip to Diani")
+    result = run("Forget the coast — let’s do a hiking trip in Mt. Kenya instead")
+
+    assert "What exact dates are you planning?" in result
+    assert "Please give a specific answer." not in result
+
+    follow_up = run("10 April to 12 April")
+    assert "- Destination: mt. kenya" in follow_up
+    assert "forget the coast" not in follow_up.lower()
+
+
+def test_traveller_correction_does_not_corrupt_destination():
+    run("Plan a trip to Diani 10 April to 12 April")
+    result = run("Actually this is now a solo trip, not a group one")
+
+    assert "What kind of trip mood should this have?" in result
+    assert "- Destination: diani" in result
+    assert "- Traveller Count: 1" in result
+    assert "- Destination: actually" not in result
+
+
+def test_corporate_destination_shift_recomputes_state_cleanly():
+    run("Plan a trip to Diani 10 April to 12 April")
+    result = run("No, this is now for a corporate retreat in Nairobi")
+
+    assert "How many travellers?" in result
+    assert "- Destination: nairobi" in result
+    assert "- Trip Mood: corporate" in result
+    assert "this is now for a corporate retreat in nairobi" not in result.lower()
+
+
 @pytest.mark.parametrize(
     "text",
     [
