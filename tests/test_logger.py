@@ -109,6 +109,8 @@ def test_build_confidence_readout_counts_known_metric_events_only():
         "execution_blocked_by_reason": {},
         "execution_rejected_by_reason": {},
         "execution_weak_by_reason": {},
+        "execution_completed_by_task_type": {},
+        "runtime_outcome_events_by_trace": {},
     }
 
 
@@ -177,3 +179,52 @@ def test_confidence_readout_groups_execution_reasons():
     assert readout["execution_blocked_by_reason"] == {"Unsafe input": 2}
     assert readout["execution_rejected_by_reason"] == {"Non-travel request": 1}
     assert readout["execution_weak_by_reason"] == {"Input too short": 1}
+
+
+def test_confidence_readout_groups_completed_task_types_and_trace_outcomes():
+    readout = logger.build_confidence_readout(
+        [
+            {
+                "trace_id": "trace-1",
+                "event": "execution_blocked",
+                "status": "blocked",
+                "details": {
+                    "reason": "Unsafe input",
+                    "transition": "blocked_input_hard_stop",
+                    "pipeline_stop": "blocked_input_hard_stop",
+                },
+            },
+            {
+                "trace_id": "trace-2",
+                "event": "execution_completed",
+                "status": "success",
+                "details": {
+                    "task_type": "trip",
+                    "final_status": "pass",
+                    "transition": "execution_completed",
+                },
+            },
+        ]
+    )
+
+    assert readout["execution_completed_by_task_type"] == {"trip": 1}
+    assert readout["runtime_outcome_events_by_trace"] == {
+        "trace-1": [
+            {
+                "event": "execution_blocked",
+                "status": "blocked",
+                "reason": "Unsafe input",
+                "transition": "blocked_input_hard_stop",
+                "pipeline_stop": "blocked_input_hard_stop",
+            }
+        ],
+        "trace-2": [
+            {
+                "event": "execution_completed",
+                "status": "success",
+                "task_type": "trip",
+                "transition": "execution_completed",
+                "final_status": "pass",
+            }
+        ],
+    }
