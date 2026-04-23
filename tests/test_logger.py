@@ -110,6 +110,8 @@ def test_build_confidence_readout_counts_known_metric_events_only():
         "execution_rejected_by_reason": {},
         "execution_weak_by_reason": {},
         "execution_completed_by_task_type": {},
+        "execution_completed_by_flow_shape": {},
+        "execution_completed_repaired_count": 0,
         "runtime_outcome_events_by_trace": {},
     }
 

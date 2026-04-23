@@ -661,7 +661,7 @@ def extract_traveller_count(text: str, decision_log=None) -> Optional[int]:
             decision_log(f"TRAVELLER_COUNT_EXTRACTED: {value} (composite)")
         return value
 
-    grouped = re.search(r"\b(group|party|team|crew)\s+of\s+(\d+)\b", text)
+    grouped = re.search(r"\b(group|party|team|crew|family)\s+of\s+(\d+)\b", text)
     if grouped:
         value = int(grouped.group(2))
         if decision_log:

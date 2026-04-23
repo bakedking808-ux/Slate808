@@ -91,6 +91,36 @@ def test_two_adults_and_one_teen_normalizes_to_extractable_traveller_count():
     )
 
 
+def test_2_adults_and_a_child_normalizes_to_extractable_traveller_count():
+    result = normalize_travel_input("Plan a trip to Naivasha for 2 adults and a child")
+    brief = build_travel_brief(result.normalized_input)
+
+    assert brief["traveller_count"] == 3
+    assert "traveller_phrase_normalization:\\b2 adults and a child\\b->3 people" in result.applied_rules
+
+
+def test_relationship_phrase_normalizes_to_extractable_traveller_count():
+    result = normalize_travel_input("Plan a trip to Diani for me, my partner, and our son")
+    brief = build_travel_brief(result.normalized_input)
+
+    assert brief["traveller_count"] == 3
+
+
+def test_just_me_and_my_sister_normalizes_to_extractable_traveller_count():
+    result = normalize_travel_input("Plan a trip to Kisumu for just me and my sister")
+    brief = build_travel_brief(result.normalized_input)
+
+    assert brief["traveller_count"] == 2
+
+
+def test_family_of_four_normalizes_to_extractable_traveller_count():
+    result = normalize_travel_input("Plan a family trip to Naivasha for a family of 4 next weekend")
+    brief = build_travel_brief(result.normalized_input)
+
+    assert brief["traveller_count"] == 4
+    assert "traveller_phrase_normalization:family_of->group_of" in result.applied_rules
+
+
 def test_en_dash_date_range_normalizes_to_stable_range_form():
     result = normalize_travel_input("Plan a trip to Nanyuki 18–20 September")
     brief = build_travel_brief(result.normalized_input)
@@ -170,4 +200,3 @@ def test_maybe_ellipses_date_fragment_normalizes_without_blocking_range_extracti
     assert brief["timing"]["raw_text"] == "4th march to 8 march"
     assert "conversational_fragment_normalization" in result.applied_rules
     assert "punctuation_noise_normalization" in result.applied_rules
-

@@ -68,10 +68,14 @@ def _apply_explicit_repairs(text: str, applied_rules: list[str]) -> str:
 def _normalize_traveller_phrases(text: str, applied_rules: list[str]) -> str:
     normalized = text
     replacements = (
+        (r"\bjust me and my sister\b", "2 people"),
+        (r"\bme,\s*my partner,\s*and our son\b", "3 people"),
+        (r"\bme and my partner and our son\b", "3 people"),
         (r"\bjust me\b", "for 1 person"),
         (r"\bme and my partner\b", "2 people"),
         (r"\btwo adults and one teen\b", "3 people"),
         (r"\btwo adults and a child\b", "3 people"),
+        (r"\b2 adults and a child\b", "3 people"),
     )
 
     for pattern, replacement in replacements:
@@ -79,6 +83,11 @@ def _normalize_traveller_phrases(text: str, applied_rules: list[str]) -> str:
         if updated != normalized:
             applied_rules.append(f"traveller_phrase_normalization:{pattern}->{replacement}")
             normalized = updated
+
+    updated = re.sub(r"\bfamily of (\d+)\b", r"group of \1", normalized, flags=re.IGNORECASE)
+    if updated != normalized:
+        applied_rules.append("traveller_phrase_normalization:family_of->group_of")
+        normalized = updated
 
     return normalized
 
