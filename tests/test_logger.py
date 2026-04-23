@@ -121,6 +121,8 @@ def test_build_confidence_readout_counts_known_metric_events_only():
         "execution_completed_by_flow_shape": {},
         "execution_completed_repaired_count": 0,
         "execution_outcomes_by_decision_path": {},
+        "execution_completed_by_flow_shape": {},
+        "execution_completed_repaired_count": 0,
         "runtime_outcome_events_by_trace": {},
     }
 

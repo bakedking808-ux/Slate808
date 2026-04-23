@@ -1873,6 +1873,25 @@ def test_mood_driven_family_plan_content():
     assert "align bookings" in steps[4].lower()
 
 
+def test_rendered_family_composite_traveller_count_is_preserved():
+    result = run("Plan a family trip to Naivasha for 2 adults and a child 5 May to 7 May")
+
+    assert "Traveller Count: 3" in result
+    assert "Traveller Count: 2" not in result
+
+
+def test_rendered_relationship_traveller_count_is_preserved():
+    result = run("Plan a trip to Diani for me, my partner, and our son 10 April to 12 April")
+
+    assert "Traveller Count: 3" in result
+
+
+def test_rendered_family_of_four_traveller_count_is_preserved():
+    result = run("Plan a family trip to Naivasha for a family of 4 5 May to 7 May")
+
+    assert "Traveller Count: 4" in result
+
+
 def test_mood_driven_corporate_plan_content():
     result = run_engine("Plan a corporate team retreat to nairobi for 10 people for 2 days")
     steps = _extract_numbered_steps(result)
