@@ -106,11 +106,12 @@ def _normalize_date_range_variants(text: str, applied_rules: list[str]) -> str:
 
 def _normalize_punctuation_noise(text: str, applied_rules: list[str]) -> str:
     normalized = text
-    updated = normalized
 
-    updated = re.sub(r"\.{2,}", ", ", updated)
-    updated = re.sub(r",\s*,+", ", ", updated)
-
+    updated = re.sub(r"\.{2,}", ", ", normalized)
+    updated = re.sub(r",{2,}", ", ", updated)
+    updated = re.sub(r"(?<=\D)\s*-\s*(?=\d)", " - ", updated)
+    updated = re.sub(r"(?<=\d)\s*-\s*(?=\D)", " - ", updated)
+    updated = re.sub(r",\s*,\s*", ", ", updated)
     if updated != normalized:
         applied_rules.append("punctuation_noise_normalization")
         normalized = updated
@@ -122,56 +123,22 @@ def _normalize_conversational_fragments(text: str, applied_rules: list[str]) -> 
     normalized = text
     updated = normalized
 
-    filler_pattern = r"(?:uhh|uh|umm|um|hmm|idk)"
-
-    updated = re.sub(
-        rf"^\s*{filler_pattern}\b(?:,\s*|\s+)",
-        "",
-        updated,
-        flags=re.IGNORECASE,
-    )
-    updated = re.sub(
-        rf"(\bto\s+){filler_pattern}\b(?:,\s*|\s+)",
-        r"\1",
-        updated,
-        flags=re.IGNORECASE,
-    )
-    updated = re.sub(
-        r"(\bto\s+)maybe\b(?:,\s*|\s+)",
-        r"\1",
-        updated,
-        flags=re.IGNORECASE,
-    )
-    updated = re.sub(
-        r"^\s*maybe(?:,\s*|\s+)",
-        "",
-        updated,
-        flags=re.IGNORECASE,
-    )
-    updated = re.sub(
-        r"\bmaybe(?=,\s*(?:[a-zA-Z]|\d))",
-        "",
-        updated,
-        flags=re.IGNORECASE,
-    )
-    updated = re.sub(
-        r"\bmaybe(?=,\s*(?:late|mid|early|next|this|tomorrow|today)\b)",
-        "",
-        updated,
-        flags=re.IGNORECASE,
-    )
-    updated = re.sub(
-        r"\bmaybe(?=,\s*\d{1,2}(?:st|nd|rd|th)?(?:\s*-\s*\d{1,2}(?:st|nd|rd|th)?)?)",
-        "",
-        updated,
-        flags=re.IGNORECASE,
-    )
-    updated = re.sub(
-        r"\bmaybe,\s+",
-        "",
-        updated,
-        flags=re.IGNORECASE,
-    )
+    while True:
+        candidate = re.sub(
+            r"^\s*(?:uhh|uh|umm|um|hmm|idk)(?:[,\s]+|$)",
+            "",
+            updated,
+            flags=re.IGNORECASE,
+        )
+        candidate = re.sub(
+            r"^\s*maybe(?:(?:\s*,)|(?:\s+\.\.\.)|(?:\s+)|(?:,\s+)|(?:\.\.\.\s+))",
+            "",
+            candidate,
+            flags=re.IGNORECASE,
+        )
+        if candidate == updated:
+            break
+        updated = candidate
 
     if updated != normalized:
         applied_rules.append("conversational_fragment_normalization")
