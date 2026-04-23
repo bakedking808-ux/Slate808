@@ -31,6 +31,13 @@ def _extract_numbered_steps(output: str) -> list[str]:
     return re.findall(r"^\d+\.\s+(.+)$", output, re.MULTILINE)
 
 
+def _extract_bullet_section(output: str, heading: str) -> list[str]:
+    match = re.search(rf"{heading}:\n((?:- .+\n)+)", output)
+    if not match:
+        return []
+    return re.findall(r"^- (.+)$", match.group(1), re.MULTILINE)
+
+
 def test_timing_model_exact_timing_payload_validates():
     timing = TimingModel(
         raw_text="10 april to 14 april",
@@ -1914,6 +1921,46 @@ def test_mood_influence_preserves_transport_and_timing_coverage():
     assert "timing" in joined
     assert len(steps) == 5
     assert len(steps) == len(set(step.lower() for step in steps))
+
+
+def test_shaped_trip_checks_and_risks_are_not_generic_clones():
+    family = run_engine("Plan a family trip to Naivasha for 4 people next weekend")
+    corporate = run_engine("Plan a corporate trip to Nairobi for 6 people 10 June to 12 June")
+
+    family_checks = _extract_bullet_section(family, "Checks")
+    family_risks = _extract_bullet_section(family, "Risks")
+    corporate_checks = _extract_bullet_section(corporate, "Checks")
+    corporate_risks = _extract_bullet_section(corporate, "Risks")
+
+    assert family_checks != corporate_checks
+    assert family_risks != corporate_risks
+    assert any("family" in check.lower() for check in family_checks)
+    assert any("team" in check.lower() or "group" in check.lower() for check in corporate_checks)
+
+
+def test_relaxed_trip_step_wording_suppresses_old_repeated_phrases():
+    result = run_engine("Plan a relaxed trip to Watamu for 2 people 10 April to 12 April")
+    steps = _extract_numbered_steps(result)
+    joined = " ".join(steps).lower()
+
+    assert "safe and practical choices" not in joined
+    assert "itinerary relaxed keep enough room" not in joined
+    assert "while leaving room for rest between activities" in joined
+
+
+def test_luxury_and_low_budget_outputs_keep_distinct_checks_and_risks():
+    luxury = run_engine("Plan a luxury trip to Diani for 2 people 20 July to 24 July")
+    budget = run_engine("Plan a low budget trip to Kisumu for 1 person 3 August to 5 August")
+
+    luxury_checks = _extract_bullet_section(luxury, "Checks")
+    luxury_risks = _extract_bullet_section(luxury, "Risks")
+    budget_checks = _extract_bullet_section(budget, "Checks")
+    budget_risks = _extract_bullet_section(budget, "Risks")
+
+    assert luxury_checks != budget_checks
+    assert luxury_risks != budget_risks
+    assert any("premium" in check.lower() for check in luxury_checks)
+    assert any("lower-cost" in check.lower() or "budget" in check.lower() for check in budget_checks)
 
 
 def test_no_mood_preserves_default_plan_behavior():

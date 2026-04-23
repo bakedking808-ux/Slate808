@@ -1,6 +1,22 @@
 from engine.travel_brief import summarize_timing
 
 
+def _polish_rendered_step(step: str) -> str:
+    replacements = (
+        ("and keep the itinerary relaxed keep enough room for rest between activities", "and keep the itinerary relaxed while leaving room for rest between activities"),
+        ("and align bookings and align premium bookings", "and align premium bookings"),
+        ("and align team logistics efficiently confirm the shared schedule for the group", "and align team logistics efficiently while keeping the shared schedule coordinated"),
+        ("with family-friendly and comfortable options; safe and practical choices", "with family-friendly, comfortable options"),
+        ("with practical and safe movement; while keeping transfers easy and low-strain", "with safe, low-friction movement while keeping transfers easy and low-strain"),
+        ("with practical and safe movement; using practical and cost-conscious routing", "with safe, cost-conscious routing"),
+        ("with safe and practical choices", "with safety and comfort in mind"),
+    )
+    updated = step
+    for old, new in replacements:
+        updated = updated.replace(old, new)
+    return updated
+
+
 def format_output(final_output: dict) -> str:
     lines = []
     lines.append("Slate808 Output")
@@ -56,7 +72,7 @@ def format_output(final_output: dict) -> str:
     if steps:
         lines.append("Steps:")
         for index, step in enumerate(steps, start=1):
-            lines.append(f"{index}. {step}")
+            lines.append(f"{index}. {_polish_rendered_step(step)}")
         lines.append("")
 
     checks = final_output.get("checks", [])

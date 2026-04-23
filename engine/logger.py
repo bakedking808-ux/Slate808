@@ -117,6 +117,11 @@ def build_confidence_readout(events: list[dict]) -> dict:
     readout["execution_blocked_by_reason"] = {}
     readout["execution_rejected_by_reason"] = {}
     readout["execution_weak_by_reason"] = {}
+    readout["execution_completed_by_task_type"] = {}
+    readout["execution_completed_by_flow_shape"] = {}
+    readout["execution_completed_repaired_count"] = 0
+    readout["execution_outcomes_by_decision_path"] = {}
+    readout["runtime_outcome_events_by_trace"] = {}
     for entry in events:
         event = entry.get("event")
         if event in CONFIDENCE_READOUT_EVENTS:
@@ -143,6 +148,31 @@ def build_confidence_readout(events: list[dict]) -> dict:
             _increment_group(readout["execution_rejected_by_reason"], details.get("reason"))
         if event == "execution_weak":
             _increment_group(readout["execution_weak_by_reason"], details.get("reason"))
+        if event == "execution_completed":
+            _increment_group(readout["execution_completed_by_task_type"], details.get("task_type"))
+            _increment_group(readout["execution_completed_by_flow_shape"], details.get("flow_shape"))
+            if details.get("used_repair") is True:
+                readout["execution_completed_repaired_count"] += 1
+        if event in RUNTIME_OUTCOME_EVENTS:
+            _increment_group(readout["execution_outcomes_by_decision_path"], details.get("decision_path"))
+        if event in RUNTIME_OUTCOME_EVENTS and trace_id:
+            trace_events = readout["runtime_outcome_events_by_trace"].setdefault(trace_id, [])
+            outcome_detail = {"event": event, "status": entry.get("status")}
+            for key in ("reason", "task_type", "transition", "pipeline_stop", "final_status", "flow_shape", "decision_path"):
+                if details.get(key) is not None:
+                    outcome_detail[key] = details.get(key)
+            if details.get("used_repair") is True:
+                outcome_detail["used_repair"] = True
+            trace_events.append(outcome_detail)
+    readout["dominant_runtime_outcome_family"] = max(
+        readout["runtime_outcome_family_counts"],
+        key=readout["runtime_outcome_family_counts"].get,
+    )
+    failure_counts = {
+        key: value for key, value in readout["runtime_outcome_family_counts"].items() if key != "completed"
+    }
+    if any(failure_counts.values()):
+        readout["dominant_failure_outcome_family"] = max(failure_counts, key=failure_counts.get)
     return readout
 
 
