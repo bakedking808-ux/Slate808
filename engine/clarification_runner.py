@@ -527,9 +527,12 @@ def _normalize_correction_scaffold(text: str) -> str:
     cleaned = text.lower()
     cleaned = cleaned.replace("’", "'")
     cleaned = re.sub(r"^\s*no,\s*not\s+[^,.-]+(?:\s+[-—]\s*|\s+)", "", cleaned)
+    cleaned = re.sub(r"^\s*no\b[,\s-]*", "", cleaned)
     cleaned = re.sub(r"^\s*(?:actually|wait)\b[,\s-]*", "", cleaned)
+    cleaned = re.sub(r"^\s*change\b[,\s-]*", "", cleaned)
     cleaned = re.sub(r"^\s*forget\b[^-—,]*[-—,]\s*", "", cleaned)
     cleaned = re.sub(r"^\s*make it\b\s*", "", cleaned)
+    cleaned = re.sub(r"^\s*(?:move|shift)\s+the\s+dates\b(?:\s+to)?\s*", "", cleaned)
     cleaned = re.sub(r"\b(?:instead|please)\b", "", cleaned)
     return cleaned.strip(" ,.-")
 
@@ -552,10 +555,10 @@ def _extract_destination_fragment_candidate(fragment: str) -> str | None:
 def _looks_like_scaffold_fragment(fragment: str) -> bool:
     return bool(
         re.search(
-            r"\b(?:this is now|not a group|for my parents|just me|solo trip|group one|change|switch|move the dates)\b",
+            r"\b(?:this is now|not a group|for my parents|just me|solo trip|group one|change|switch|move the dates|shift the dates)\b",
             fragment,
         )
-    )
+    ) or fragment in {"no", "actually", "wait", "change"}
 
 
 def _is_update_style_reply(text: str) -> bool:
