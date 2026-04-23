@@ -8,6 +8,21 @@ from engine.task_checks import apply_task_checks
 from engine.formatter import format_output
 
 
+_PENDING_EXECUTION_CONTEXT: dict | None = None
+
+
+def set_execution_observability_context(**context) -> None:
+    global _PENDING_EXECUTION_CONTEXT
+    _PENDING_EXECUTION_CONTEXT = dict(context)
+
+
+def _consume_execution_observability_context() -> dict:
+    global _PENDING_EXECUTION_CONTEXT
+    context = dict(_PENDING_EXECUTION_CONTEXT or {})
+    _PENDING_EXECUTION_CONTEXT = None
+    return context
+
+
 def is_llm_enabled() -> bool:
     return False
 
@@ -21,6 +36,7 @@ def run_engine(request: str) -> str:
     llm_used = False
     llm_raw_steps = None
     initial_checker_result = None
+    execution_context = _consume_execution_observability_context()
 
     gate = assess_input(request)
 
@@ -258,7 +274,11 @@ def run_engine(request: str) -> str:
         event="execution_completed",
         status="success",
         trace_id=plan.get("trace_id"),
-        details={"task_type": plan.get("task_type")}
+        details={
+            "task_type": plan.get("task_type"),
+            "flow_shape": execution_context.get("flow_shape", "direct_ready_completion"),
+            "used_repair": bool(fixer_actions),
+        }
     )
 
     log_run(log_entry)

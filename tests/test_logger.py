@@ -109,6 +109,10 @@ def test_build_confidence_readout_counts_known_metric_events_only():
         "execution_blocked_by_reason": {},
         "execution_rejected_by_reason": {},
         "execution_weak_by_reason": {},
+        "execution_completed_by_task_type": {},
+        "execution_completed_by_flow_shape": {},
+        "execution_completed_repaired_count": 0,
+        "runtime_outcome_events_by_trace": {},
     }
 
 
@@ -177,3 +181,56 @@ def test_confidence_readout_groups_execution_reasons():
     assert readout["execution_blocked_by_reason"] == {"Unsafe input": 2}
     assert readout["execution_rejected_by_reason"] == {"Non-travel request": 1}
     assert readout["execution_weak_by_reason"] == {"Input too short": 1}
+
+
+def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
+    readout = logger.build_confidence_readout(
+        [
+            {
+                "trace_id": "trace-1",
+                "event": "execution_completed",
+                "status": "success",
+                "details": {
+                    "task_type": "trip",
+                    "flow_shape": "direct_ready_completion",
+                    "used_repair": False,
+                },
+            },
+            {
+                "trace_id": "trace-2",
+                "event": "execution_completed",
+                "status": "success",
+                "details": {
+                    "task_type": "trip",
+                    "flow_shape": "clarification_resume_completion",
+                    "used_repair": True,
+                },
+            },
+        ]
+    )
+
+    assert readout["execution_completed_by_task_type"] == {"trip": 2}
+    assert readout["execution_completed_by_flow_shape"] == {
+        "direct_ready_completion": 1,
+        "clarification_resume_completion": 1,
+    }
+    assert readout["execution_completed_repaired_count"] == 1
+    assert readout["runtime_outcome_events_by_trace"] == {
+        "trace-1": [
+            {
+                "event": "execution_completed",
+                "status": "success",
+                "task_type": "trip",
+                "flow_shape": "direct_ready_completion",
+            }
+        ],
+        "trace-2": [
+            {
+                "event": "execution_completed",
+                "status": "success",
+                "task_type": "trip",
+                "flow_shape": "clarification_resume_completion",
+                "used_repair": True,
+            }
+        ],
+    }
