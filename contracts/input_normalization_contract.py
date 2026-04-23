@@ -68,7 +68,7 @@ def _apply_explicit_repairs(text: str, applied_rules: list[str]) -> str:
 def _normalize_traveller_phrases(text: str, applied_rules: list[str]) -> str:
     normalized = text
     replacements = (
-        (r"\bjust me\b", "solo"),
+        (r"\bjust me\b", "for 1 person"),
         (r"\bme and my partner\b", "2 people"),
         (r"\btwo adults and one teen\b", "3 people"),
         (r"\btwo adults and a child\b", "3 people"),

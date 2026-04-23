@@ -69,7 +69,7 @@ def test_just_me_normalizes_to_extractable_traveller_count():
     brief = build_travel_brief(result.normalized_input)
 
     assert brief["traveller_count"] == 1
-    assert "traveller_phrase_normalization:\\bjust me\\b->solo" in result.applied_rules
+    assert "traveller_phrase_normalization:\\bjust me\\b->for 1 person" in result.applied_rules
 
 
 def test_me_and_my_partner_normalizes_to_extractable_traveller_count():
@@ -109,3 +109,12 @@ def test_glued_month_date_range_normalizes_to_stable_range_form():
     assert brief["timing"]["start_date"] == "3rd june"
     assert brief["timing"]["end_date"] == "4th june"
     assert "date_token_spacing_normalization" in result.applied_rules
+
+
+def test_live_path_just_me_keeps_destination_clean():
+    result = run("Plan a trip to Diani just me 10 April to 12 April")
+
+    assert "Destination: diani" in result
+    assert "Destination: diani solo" not in result
+    assert "Traveller Count: 1" in result
+    assert "Timing: 10 april to 12 april" in result
