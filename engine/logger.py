@@ -110,6 +110,9 @@ def build_confidence_readout(events: list[dict]) -> dict:
     readout["execution_rejected_by_reason"] = {}
     readout["execution_weak_by_reason"] = {}
     readout["execution_completed_by_task_type"] = {}
+    readout["execution_completed_by_flow_shape"] = {}
+    readout["execution_completed_repaired_count"] = 0
+    readout["execution_outcomes_by_decision_path"] = {}
     readout["runtime_outcome_events_by_trace"] = {}
     for entry in events:
         event = entry.get("event")
@@ -131,15 +134,30 @@ def build_confidence_readout(events: list[dict]) -> dict:
             _increment_group(readout["execution_weak_by_reason"], details.get("reason"))
         if event == "execution_completed":
             _increment_group(readout["execution_completed_by_task_type"], details.get("task_type"))
+            _increment_group(readout["execution_completed_by_flow_shape"], details.get("flow_shape"))
+            if details.get("used_repair") is True:
+                readout["execution_completed_repaired_count"] += 1
+        if event in RUNTIME_OUTCOME_EVENTS:
+            _increment_group(readout["execution_outcomes_by_decision_path"], details.get("decision_path"))
         if event in RUNTIME_OUTCOME_EVENTS and trace_id:
             trace_events = readout["runtime_outcome_events_by_trace"].setdefault(trace_id, [])
             outcome_detail = {
                 "event": event,
                 "status": entry.get("status"),
             }
-            for key in ("reason", "task_type", "transition", "pipeline_stop", "final_status"):
-                if details.get(key):
+            for key in (
+                "reason",
+                "task_type",
+                "transition",
+                "pipeline_stop",
+                "final_status",
+                "flow_shape",
+                "decision_path",
+            ):
+                if details.get(key) is not None:
                     outcome_detail[key] = details.get(key)
+            if details.get("used_repair") is True:
+                outcome_detail["used_repair"] = True
             trace_events.append(outcome_detail)
     return readout
 

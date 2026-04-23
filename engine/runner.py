@@ -32,6 +32,10 @@ def generate_with_llm(request: str) -> list | None:
     return None
 
 
+def _decision_path(*stages: str) -> str:
+    return ">".join(stage for stage in stages if stage)
+
+
 def run_engine(request: str) -> str:
     fixer_actions = []
     llm_used = False
@@ -81,6 +85,7 @@ def run_engine(request: str) -> str:
             trace_id=run_trace_id,
             details={
                 "reason": gate["reason"],
+                "decision_path": _decision_path("input_gate", "blocked_input_hard_stop"),
                 "transition": "blocked_input_hard_stop",
                 "pipeline_stop": "blocked_input_hard_stop",
             }
@@ -128,6 +133,7 @@ def run_engine(request: str) -> str:
             trace_id=run_trace_id,
             details={
                 "reason": gate["reason"],
+                "decision_path": _decision_path("input_gate", "rejected_input_hard_stop"),
                 "transition": "rejected_input_hard_stop",
                 "pipeline_stop": "rejected_input_hard_stop",
             }
@@ -175,6 +181,7 @@ def run_engine(request: str) -> str:
             trace_id=run_trace_id,
             details={
                 "reason": gate["reason"],
+                "decision_path": _decision_path("input_gate", "weak_input_hard_stop"),
                 "transition": "weak_input_hard_stop",
                 "pipeline_stop": "weak_input_hard_stop",
             }
@@ -225,6 +232,7 @@ def run_engine(request: str) -> str:
             details={
                 "reason": "Task type is not a travel request",
                 "task_type": plan.get("task_type"),
+                "decision_path": _decision_path("input_gate", "generate_plan", "unsupported_non_travel_hard_stop"),
                 "transition": "unsupported_non_travel_hard_stop",
                 "pipeline_stop": "unsupported_non_travel_hard_stop",
             }
@@ -256,6 +264,13 @@ def run_engine(request: str) -> str:
         else:
             plan = repaired_plan
             result = recheck
+
+    decision_path = ["input_gate", "generate_plan", "check_plan"]
+    if initial_checker_result and initial_checker_result["status"] == "fail":
+        decision_path.extend(["fix_plan", "check_plan"])
+    decision_path.extend(["apply_task_layers", "check_plan"])
+    if len(fixer_actions) > 0 and decision_path[-2:] != ["fix_plan", "check_plan"]:
+        decision_path.extend(["fix_plan", "check_plan"])
 
     final_output = {
         "status": result["status"],
@@ -297,6 +312,7 @@ def run_engine(request: str) -> str:
             "task_type": plan.get("task_type"),
             "flow_shape": execution_context.get("flow_shape", "direct_ready_completion"),
             "used_repair": bool(fixer_actions),
+            "decision_path": _decision_path(*decision_path),
             "final_status": result["status"],
             "transition": "execution_completed",
         }
