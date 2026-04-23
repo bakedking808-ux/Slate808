@@ -529,6 +529,7 @@ def _normalize_correction_scaffold(text: str) -> str:
     cleaned = re.sub(r"^\s*no,\s*not\s+[^,.-]+(?:\s+[-—]\s*|\s+)", "", cleaned)
     cleaned = re.sub(r"^\s*(?:actually|wait)\b[,\s-]*", "", cleaned)
     cleaned = re.sub(r"^\s*forget\b[^-—,]*[-—,]\s*", "", cleaned)
+    cleaned = re.sub(r"^\s*make it\b\s*", "", cleaned)
     cleaned = re.sub(r"\b(?:instead|please)\b", "", cleaned)
     return cleaned.strip(" ,.-")
 
