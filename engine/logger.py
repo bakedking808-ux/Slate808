@@ -14,6 +14,12 @@ CONFIDENCE_READOUT_EVENTS = (
     "execution_weak",
     "execution_completed",
 )
+RUNTIME_OUTCOME_EVENTS = (
+    "execution_blocked",
+    "execution_rejected",
+    "execution_weak",
+    "execution_completed",
+)
 
 
 def _increment_group(group: dict, key) -> None:
@@ -103,11 +109,14 @@ def build_confidence_readout(events: list[dict]) -> dict:
     readout["execution_blocked_by_reason"] = {}
     readout["execution_rejected_by_reason"] = {}
     readout["execution_weak_by_reason"] = {}
+    readout["execution_completed_by_task_type"] = {}
+    readout["runtime_outcome_events_by_trace"] = {}
     for entry in events:
         event = entry.get("event")
         if event in CONFIDENCE_READOUT_EVENTS:
             readout[f"{event}_count"] += 1
         details = entry.get("details") or {}
+        trace_id = entry.get("trace_id")
         if event == "clarification_routed":
             missing_fields = details.get("missing_fields") or []
             _increment_group(
@@ -120,6 +129,18 @@ def build_confidence_readout(events: list[dict]) -> dict:
             _increment_group(readout["execution_rejected_by_reason"], details.get("reason"))
         if event == "execution_weak":
             _increment_group(readout["execution_weak_by_reason"], details.get("reason"))
+        if event == "execution_completed":
+            _increment_group(readout["execution_completed_by_task_type"], details.get("task_type"))
+        if event in RUNTIME_OUTCOME_EVENTS and trace_id:
+            trace_events = readout["runtime_outcome_events_by_trace"].setdefault(trace_id, [])
+            outcome_detail = {
+                "event": event,
+                "status": entry.get("status"),
+            }
+            for key in ("reason", "task_type", "transition", "pipeline_stop", "final_status"):
+                if details.get(key):
+                    outcome_detail[key] = details.get(key)
+            trace_events.append(outcome_detail)
     return readout
 
 
