@@ -105,11 +105,22 @@ def test_build_confidence_readout_counts_known_metric_events_only():
         "execution_rejected_count": 1,
         "execution_weak_count": 1,
         "execution_completed_count": 1,
+        "runtime_outcome_family_counts": {
+            "blocked": 1,
+            "rejected": 1,
+            "weak": 1,
+            "completed": 1,
+        },
+        "dominant_runtime_outcome_family": "blocked",
+        "dominant_failure_outcome_family": "blocked",
         "clarification_routed_by_missing_fields": {},
         "execution_blocked_by_reason": {},
         "execution_rejected_by_reason": {},
         "execution_weak_by_reason": {},
         "execution_completed_by_task_type": {},
+        "execution_completed_by_flow_shape": {},
+        "execution_completed_repaired_count": 0,
+        "execution_outcomes_by_decision_path": {},
         "execution_completed_by_flow_shape": {},
         "execution_completed_repaired_count": 0,
         "runtime_outcome_events_by_trace": {},
@@ -181,6 +192,14 @@ def test_confidence_readout_groups_execution_reasons():
     assert readout["execution_blocked_by_reason"] == {"Unsafe input": 2}
     assert readout["execution_rejected_by_reason"] == {"Non-travel request": 1}
     assert readout["execution_weak_by_reason"] == {"Input too short": 1}
+    assert readout["runtime_outcome_family_counts"] == {
+        "blocked": 2,
+        "rejected": 1,
+        "weak": 1,
+        "completed": 0,
+    }
+    assert readout["dominant_runtime_outcome_family"] == "blocked"
+    assert readout["dominant_failure_outcome_family"] == "blocked"
 
 
 def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
@@ -193,6 +212,7 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
                 "details": {
                     "task_type": "trip",
                     "flow_shape": "direct_ready_completion",
+                    "decision_path": "input_gate>generate_plan>check_plan>apply_task_layers>check_plan",
                     "used_repair": False,
                 },
             },
@@ -203,6 +223,7 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
                 "details": {
                     "task_type": "trip",
                     "flow_shape": "clarification_resume_completion",
+                    "decision_path": "input_gate>generate_plan>check_plan>fix_plan>check_plan>apply_task_layers>check_plan",
                     "used_repair": True,
                 },
             },
@@ -210,11 +231,23 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
     )
 
     assert readout["execution_completed_by_task_type"] == {"trip": 2}
+    assert readout["runtime_outcome_family_counts"] == {
+        "blocked": 0,
+        "rejected": 0,
+        "weak": 0,
+        "completed": 2,
+    }
+    assert readout["dominant_runtime_outcome_family"] == "completed"
+    assert readout["dominant_failure_outcome_family"] is None
     assert readout["execution_completed_by_flow_shape"] == {
         "direct_ready_completion": 1,
         "clarification_resume_completion": 1,
     }
     assert readout["execution_completed_repaired_count"] == 1
+    assert readout["execution_outcomes_by_decision_path"] == {
+        "input_gate>generate_plan>check_plan>apply_task_layers>check_plan": 1,
+        "input_gate>generate_plan>check_plan>fix_plan>check_plan>apply_task_layers>check_plan": 1,
+    }
     assert readout["runtime_outcome_events_by_trace"] == {
         "trace-1": [
             {
@@ -222,6 +255,7 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
                 "status": "success",
                 "task_type": "trip",
                 "flow_shape": "direct_ready_completion",
+                "decision_path": "input_gate>generate_plan>check_plan>apply_task_layers>check_plan",
             }
         ],
         "trace-2": [
@@ -230,6 +264,7 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
                 "status": "success",
                 "task_type": "trip",
                 "flow_shape": "clarification_resume_completion",
+                "decision_path": "input_gate>generate_plan>check_plan>fix_plan>check_plan>apply_task_layers>check_plan",
                 "used_repair": True,
             }
         ],
@@ -243,32 +278,39 @@ def test_confidence_readout_groups_completed_task_types_and_trace_outcomes():
                 "trace_id": "trace-1",
                 "event": "execution_blocked",
                 "status": "blocked",
-                "details": {
-                    "reason": "Unsafe input",
-                    "transition": "blocked_input_hard_stop",
-                    "pipeline_stop": "blocked_input_hard_stop",
-                },
+                    "details": {
+                        "reason": "Unsafe input",
+                        "decision_path": "input_gate>blocked_input_hard_stop",
+                        "transition": "blocked_input_hard_stop",
+                        "pipeline_stop": "blocked_input_hard_stop",
+                    },
             },
             {
                 "trace_id": "trace-2",
                 "event": "execution_completed",
                 "status": "success",
-                "details": {
-                    "task_type": "trip",
-                    "final_status": "pass",
-                    "transition": "execution_completed",
-                },
+                    "details": {
+                        "task_type": "trip",
+                        "decision_path": "input_gate>generate_plan>check_plan>apply_task_layers>check_plan",
+                        "final_status": "pass",
+                        "transition": "execution_completed",
+                    },
             },
         ]
     )
 
     assert readout["execution_completed_by_task_type"] == {"trip": 1}
+    assert readout["execution_outcomes_by_decision_path"] == {
+        "input_gate>blocked_input_hard_stop": 1,
+        "input_gate>generate_plan>check_plan>apply_task_layers>check_plan": 1,
+    }
     assert readout["runtime_outcome_events_by_trace"] == {
         "trace-1": [
             {
                 "event": "execution_blocked",
                 "status": "blocked",
                 "reason": "Unsafe input",
+                "decision_path": "input_gate>blocked_input_hard_stop",
                 "transition": "blocked_input_hard_stop",
                 "pipeline_stop": "blocked_input_hard_stop",
             }
@@ -278,6 +320,7 @@ def test_confidence_readout_groups_completed_task_types_and_trace_outcomes():
                 "event": "execution_completed",
                 "status": "success",
                 "task_type": "trip",
+                "decision_path": "input_gate>generate_plan>check_plan>apply_task_layers>check_plan",
                 "transition": "execution_completed",
                 "final_status": "pass",
             }
