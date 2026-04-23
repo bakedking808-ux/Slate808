@@ -9,6 +9,21 @@ from engine.formatter import format_output
 from uuid import uuid4
 
 
+_PENDING_EXECUTION_CONTEXT: dict | None = None
+
+
+def set_execution_observability_context(**context) -> None:
+    global _PENDING_EXECUTION_CONTEXT
+    _PENDING_EXECUTION_CONTEXT = dict(context)
+
+
+def _consume_execution_observability_context() -> dict:
+    global _PENDING_EXECUTION_CONTEXT
+    context = dict(_PENDING_EXECUTION_CONTEXT or {})
+    _PENDING_EXECUTION_CONTEXT = None
+    return context
+
+
 def is_llm_enabled() -> bool:
     return False
 

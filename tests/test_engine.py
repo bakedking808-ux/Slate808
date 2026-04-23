@@ -923,6 +923,32 @@ def test_unrelated_followup_after_completed_plan_still_rejects_non_travel():
     assert "Destination: diani" not in result
 
 
+def test_completed_run_flow_shapes_are_visible_in_execution_events(monkeypatch):
+    events = []
+
+    def capture_event(**kwargs):
+        events.append(kwargs)
+
+    monkeypatch.setattr("engine.runner.log_event", capture_event)
+
+    run("Plan a trip to Diani for 2 people 10 April to 12 April")
+    assert [e for e in events if e["event"] == "execution_completed"][-1]["details"]["flow_shape"] == "direct_ready_completion"
+
+    events.clear()
+    reset_state()
+    run("Plan a trip to Diani")
+    run("10 April to 12 April")
+    run("2 people")
+    run("relaxed")
+    assert [e for e in events if e["event"] == "execution_completed"][-1]["details"]["flow_shape"] == "clarification_resume_completion"
+
+    events.clear()
+    reset_state()
+    run("Plan a trip to Diani for 2 people 10 April to 12 April")
+    run("Actually change the destination to Lamu")
+    assert [e for e in events if e["event"] == "execution_completed"][-1]["details"]["flow_shape"] == "post_completion_update_completion"
+
+
 def test_clarification_asks_destination_when_timing_and_travellers_known():
     result = run("I want a getaway next month for 2 people")
 

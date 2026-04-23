@@ -2,7 +2,7 @@ import re
 
 from engine.formatter import format_output
 from engine.generator import build_travel_only_failure, is_travel_intent
-from engine.runner import run_engine
+from engine.runner import run_engine, set_execution_observability_context
 from engine.logger import log_event
 from clarification_state import ClarificationStateManager
 from contracts.input_normalization_contract import normalize_travel_input
@@ -138,6 +138,7 @@ def _is_trip_request(user_input: str) -> bool:
 
 def _run_with_travel_boundary(user_input: str) -> str:
     if _is_trip_request(user_input):
+        set_execution_observability_context(flow_shape="direct_ready_completion")
         return run_engine(user_input)
 
     return format_output(build_travel_only_failure(user_input))
@@ -231,6 +232,7 @@ def _resume(user_input: str, normalized_input: str) -> str:
         _remember_completed_fields(state["original_input"], state["collected_fields"])
         full_input = _rebuild_input(state)
         state_manager.clear()
+        set_execution_observability_context(flow_shape="clarification_resume_completion")
         return run_engine(full_input)
 
     return _next_prompt(state["current_field"], state)
@@ -501,6 +503,7 @@ def _resume_completed_trip_update(user_input: str, normalized_input: str) -> str
         return _next_prompt(active_state["current_field"], active_state)
 
     _remember_completed_fields(recent_completed_trip["original_input"], collected_fields)
+    set_execution_observability_context(flow_shape="post_completion_update_completion")
     return run_engine(_rebuild_input({"collected_fields": collected_fields}))
 
 
