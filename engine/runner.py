@@ -6,6 +6,7 @@ from engine.input_gate import assess_input
 from engine.task_personality import apply_task_personality
 from engine.task_checks import apply_task_checks
 from engine.formatter import format_output
+from uuid import uuid4
 
 
 _PENDING_EXECUTION_CONTEXT: dict | None = None
@@ -36,7 +37,7 @@ def run_engine(request: str) -> str:
     llm_used = False
     llm_raw_steps = None
     initial_checker_result = None
-    execution_context = _consume_execution_observability_context()
+    run_trace_id = str(uuid4())
 
     gate = assess_input(request)
 
@@ -55,7 +56,7 @@ def run_engine(request: str) -> str:
         }
 
         log_entry = create_log_entry(
-            trace_id=None,
+            trace_id=run_trace_id,
             input_text=request,
             task_type="unknown",
             generated_steps=[],
@@ -76,8 +77,12 @@ def run_engine(request: str) -> str:
             layer="execution",
             event="execution_blocked",
             status="blocked",
-            trace_id=None,
-            details={"reason": gate["reason"]}
+            trace_id=run_trace_id,
+            details={
+                "reason": gate["reason"],
+                "transition": "blocked_input_hard_stop",
+                "pipeline_stop": "blocked_input_hard_stop",
+            }
         )
 
         log_run(log_entry)
@@ -98,7 +103,7 @@ def run_engine(request: str) -> str:
         }
 
         log_entry = create_log_entry(
-            trace_id=None,
+            trace_id=run_trace_id,
             input_text=request,
             task_type="unknown",
             generated_steps=[],
@@ -119,8 +124,12 @@ def run_engine(request: str) -> str:
             layer="execution",
             event="execution_rejected",
             status="rejected",
-            trace_id=None,
-            details={"reason": gate["reason"]}
+            trace_id=run_trace_id,
+            details={
+                "reason": gate["reason"],
+                "transition": "rejected_input_hard_stop",
+                "pipeline_stop": "rejected_input_hard_stop",
+            }
         )
 
         log_run(log_entry)
@@ -141,7 +150,7 @@ def run_engine(request: str) -> str:
         }
 
         log_entry = create_log_entry(
-            trace_id=None,
+            trace_id=run_trace_id,
             input_text=request,
             task_type="unknown",
             generated_steps=[],
@@ -162,8 +171,12 @@ def run_engine(request: str) -> str:
             layer="execution",
             event="execution_weak",
             status="weak",
-            trace_id=None,
-            details={"reason": gate["reason"]}
+            trace_id=run_trace_id,
+            details={
+                "reason": gate["reason"],
+                "transition": "weak_input_hard_stop",
+                "pipeline_stop": "weak_input_hard_stop",
+            }
         )
 
         log_run(log_entry)
@@ -208,7 +221,12 @@ def run_engine(request: str) -> str:
             event="execution_blocked",
             status="unsupported",
             trace_id=plan.get("trace_id"),
-            details={"reason": "Task type is not a travel request"}
+            details={
+                "reason": "Task type is not a travel request",
+                "task_type": plan.get("task_type"),
+                "transition": "unsupported_non_travel_hard_stop",
+                "pipeline_stop": "unsupported_non_travel_hard_stop",
+            }
         )
 
         log_run(log_entry)
@@ -276,8 +294,8 @@ def run_engine(request: str) -> str:
         trace_id=plan.get("trace_id"),
         details={
             "task_type": plan.get("task_type"),
-            "flow_shape": execution_context.get("flow_shape", "direct_ready_completion"),
-            "used_repair": bool(fixer_actions),
+            "final_status": result["status"],
+            "transition": "execution_completed",
         }
     )
 

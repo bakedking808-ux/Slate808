@@ -110,8 +110,6 @@ def test_build_confidence_readout_counts_known_metric_events_only():
         "execution_rejected_by_reason": {},
         "execution_weak_by_reason": {},
         "execution_completed_by_task_type": {},
-        "execution_completed_by_flow_shape": {},
-        "execution_completed_repaired_count": 0,
         "runtime_outcome_events_by_trace": {},
     }
 
@@ -183,17 +181,17 @@ def test_confidence_readout_groups_execution_reasons():
     assert readout["execution_weak_by_reason"] == {"Input too short": 1}
 
 
-def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
+def test_confidence_readout_groups_completed_task_types_and_trace_outcomes():
     readout = logger.build_confidence_readout(
         [
             {
                 "trace_id": "trace-1",
-                "event": "execution_completed",
-                "status": "success",
+                "event": "execution_blocked",
+                "status": "blocked",
                 "details": {
-                    "task_type": "trip",
-                    "flow_shape": "direct_ready_completion",
-                    "used_repair": False,
+                    "reason": "Unsafe input",
+                    "transition": "blocked_input_hard_stop",
+                    "pipeline_stop": "blocked_input_hard_stop",
                 },
             },
             {
@@ -202,26 +200,22 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
                 "status": "success",
                 "details": {
                     "task_type": "trip",
-                    "flow_shape": "clarification_resume_completion",
-                    "used_repair": True,
+                    "final_status": "pass",
+                    "transition": "execution_completed",
                 },
             },
         ]
     )
 
-    assert readout["execution_completed_by_task_type"] == {"trip": 2}
-    assert readout["execution_completed_by_flow_shape"] == {
-        "direct_ready_completion": 1,
-        "clarification_resume_completion": 1,
-    }
-    assert readout["execution_completed_repaired_count"] == 1
+    assert readout["execution_completed_by_task_type"] == {"trip": 1}
     assert readout["runtime_outcome_events_by_trace"] == {
         "trace-1": [
             {
-                "event": "execution_completed",
-                "status": "success",
-                "task_type": "trip",
-                "flow_shape": "direct_ready_completion",
+                "event": "execution_blocked",
+                "status": "blocked",
+                "reason": "Unsafe input",
+                "transition": "blocked_input_hard_stop",
+                "pipeline_stop": "blocked_input_hard_stop",
             }
         ],
         "trace-2": [
@@ -229,8 +223,8 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
                 "event": "execution_completed",
                 "status": "success",
                 "task_type": "trip",
-                "flow_shape": "clarification_resume_completion",
-                "used_repair": True,
+                "transition": "execution_completed",
+                "final_status": "pass",
             }
         ],
     }
