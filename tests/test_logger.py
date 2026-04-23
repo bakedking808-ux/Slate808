@@ -110,6 +110,9 @@ def test_build_confidence_readout_counts_known_metric_events_only():
         "execution_rejected_by_reason": {},
         "execution_weak_by_reason": {},
         "execution_completed_by_task_type": {},
+        "execution_completed_by_flow_shape": {},
+        "execution_completed_repaired_count": 0,
+        "execution_outcomes_by_decision_path": {},
         "runtime_outcome_events_by_trace": {},
     }
 
@@ -191,6 +194,7 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
                 "details": {
                     "task_type": "trip",
                     "flow_shape": "direct_ready_completion",
+                    "decision_path": "input_gate>generate_plan>check_plan>apply_task_layers>check_plan",
                     "used_repair": False,
                 },
             },
@@ -201,6 +205,7 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
                 "details": {
                     "task_type": "trip",
                     "flow_shape": "clarification_resume_completion",
+                    "decision_path": "input_gate>generate_plan>check_plan>fix_plan>check_plan>apply_task_layers>check_plan",
                     "used_repair": True,
                 },
             },
@@ -213,6 +218,10 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
         "clarification_resume_completion": 1,
     }
     assert readout["execution_completed_repaired_count"] == 1
+    assert readout["execution_outcomes_by_decision_path"] == {
+        "input_gate>generate_plan>check_plan>apply_task_layers>check_plan": 1,
+        "input_gate>generate_plan>check_plan>fix_plan>check_plan>apply_task_layers>check_plan": 1,
+    }
     assert readout["runtime_outcome_events_by_trace"] == {
         "trace-1": [
             {
@@ -220,6 +229,7 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
                 "status": "success",
                 "task_type": "trip",
                 "flow_shape": "direct_ready_completion",
+                "decision_path": "input_gate>generate_plan>check_plan>apply_task_layers>check_plan",
             }
         ],
         "trace-2": [
@@ -228,6 +238,7 @@ def test_confidence_readout_groups_completed_flow_shapes_and_repairs():
                 "status": "success",
                 "task_type": "trip",
                 "flow_shape": "clarification_resume_completion",
+                "decision_path": "input_gate>generate_plan>check_plan>fix_plan>check_plan>apply_task_layers>check_plan",
                 "used_repair": True,
             }
         ],
@@ -241,32 +252,39 @@ def test_confidence_readout_groups_completed_task_types_and_trace_outcomes():
                 "trace_id": "trace-1",
                 "event": "execution_blocked",
                 "status": "blocked",
-                "details": {
-                    "reason": "Unsafe input",
-                    "transition": "blocked_input_hard_stop",
-                    "pipeline_stop": "blocked_input_hard_stop",
-                },
+                    "details": {
+                        "reason": "Unsafe input",
+                        "decision_path": "input_gate>blocked_input_hard_stop",
+                        "transition": "blocked_input_hard_stop",
+                        "pipeline_stop": "blocked_input_hard_stop",
+                    },
             },
             {
                 "trace_id": "trace-2",
                 "event": "execution_completed",
                 "status": "success",
-                "details": {
-                    "task_type": "trip",
-                    "final_status": "pass",
-                    "transition": "execution_completed",
-                },
+                    "details": {
+                        "task_type": "trip",
+                        "decision_path": "input_gate>generate_plan>check_plan>apply_task_layers>check_plan",
+                        "final_status": "pass",
+                        "transition": "execution_completed",
+                    },
             },
         ]
     )
 
     assert readout["execution_completed_by_task_type"] == {"trip": 1}
+    assert readout["execution_outcomes_by_decision_path"] == {
+        "input_gate>blocked_input_hard_stop": 1,
+        "input_gate>generate_plan>check_plan>apply_task_layers>check_plan": 1,
+    }
     assert readout["runtime_outcome_events_by_trace"] == {
         "trace-1": [
             {
                 "event": "execution_blocked",
                 "status": "blocked",
                 "reason": "Unsafe input",
+                "decision_path": "input_gate>blocked_input_hard_stop",
                 "transition": "blocked_input_hard_stop",
                 "pipeline_stop": "blocked_input_hard_stop",
             }
@@ -276,6 +294,7 @@ def test_confidence_readout_groups_completed_task_types_and_trace_outcomes():
                 "event": "execution_completed",
                 "status": "success",
                 "task_type": "trip",
+                "decision_path": "input_gate>generate_plan>check_plan>apply_task_layers>check_plan",
                 "transition": "execution_completed",
                 "final_status": "pass",
             }
