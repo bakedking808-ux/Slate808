@@ -38,6 +38,7 @@ def run_engine(request: str) -> str:
     llm_raw_steps = None
     initial_checker_result = None
     run_trace_id = str(uuid4())
+    execution_context = _consume_execution_observability_context()
 
     gate = assess_input(request)
 
@@ -294,6 +295,8 @@ def run_engine(request: str) -> str:
         trace_id=plan.get("trace_id"),
         details={
             "task_type": plan.get("task_type"),
+            "flow_shape": execution_context.get("flow_shape", "direct_ready_completion"),
+            "used_repair": bool(fixer_actions),
             "final_status": result["status"],
             "transition": "execution_completed",
         }

@@ -1,6 +1,7 @@
 import re
 import uuid
 
+from contracts.input_normalization_contract import normalize_travel_input
 from engine.goal_normalizer import normalize_goal
 from engine.planning_policy import build_planning_constraints, validate_planning_constraints
 import engine.travel_brief as travel_brief
@@ -40,8 +41,10 @@ NATURAL_TRAVEL_INTENT_PATTERNS = (
     r"\bi\s+want\s+a\s+warm\s+destination\b.*\bspecific\s+place\b",
     r"\bi\s+need\s+a\s+short\s+break\b.*\btell\s+me\s+what\s+you\s+need\b",
     r"\bplan\s+something\s+for\s+us\b.*\bconfirm\s+the\s+timing\b",
+    rf"\bplan\s+something\s+for\s+us\b.*\b(?:{MONTHS}|next month|this month|budget)\b",
     r"\bi\s+want\s+a\s+premium\s+experience\b.*\b(?:where|when)\b",
     r"^maybe\b.*\b(?:coast|mara|diani|watamu|naivasha|nairobi)\b.*\bor\b.*\b(?:coast|mara|diani|watamu|naivasha|nairobi)\b",
+    r"^(?:the\s+)?(?:coast|mara|diani|watamu|naivasha|nairobi)\b.*\bor\b.*\b(?:coast|mara|diani|watamu|naivasha|nairobi)\b",
     r"\bi\s+want\b.*\bstay\b(?:\s+for\s+[^,]{1,40})?,\s*(?:diani|watamu|naivasha|nairobi|coast|mara)\b",
     r"^uhh\s+plan\s+something\s+for\s+us\b.*\b(?:next month|this month|budget)\b",
     r"^need\s+a\s+calm\s+break\b.*\bno\s+idea\s+where\b.*\bfor\s+\d+\b",
@@ -276,7 +279,7 @@ def _apply_constraint_policy(steps: list[str], details: dict) -> list[str]:
 
 
 def normalize_request(request: str) -> str:
-    text = request.strip().lower()
+    text = normalize_travel_input(request).normalized_input.strip().lower()
 
     replacements = {
         "oneday": "one day",
