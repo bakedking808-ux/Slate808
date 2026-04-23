@@ -105,6 +105,14 @@ def log_event(
 
 def build_confidence_readout(events: list[dict]) -> dict:
     readout = {f"{event}_count": 0 for event in CONFIDENCE_READOUT_EVENTS}
+    readout["runtime_outcome_family_counts"] = {
+        "blocked": 0,
+        "rejected": 0,
+        "weak": 0,
+        "completed": 0,
+    }
+    readout["dominant_runtime_outcome_family"] = None
+    readout["dominant_failure_outcome_family"] = None
     readout["clarification_routed_by_missing_fields"] = {}
     readout["execution_blocked_by_reason"] = {}
     readout["execution_rejected_by_reason"] = {}
@@ -118,6 +126,14 @@ def build_confidence_readout(events: list[dict]) -> dict:
         event = entry.get("event")
         if event in CONFIDENCE_READOUT_EVENTS:
             readout[f"{event}_count"] += 1
+        if event == "execution_blocked":
+            readout["runtime_outcome_family_counts"]["blocked"] += 1
+        if event == "execution_rejected":
+            readout["runtime_outcome_family_counts"]["rejected"] += 1
+        if event == "execution_weak":
+            readout["runtime_outcome_family_counts"]["weak"] += 1
+        if event == "execution_completed":
+            readout["runtime_outcome_family_counts"]["completed"] += 1
         details = entry.get("details") or {}
         trace_id = entry.get("trace_id")
         if event == "clarification_routed":
@@ -159,6 +175,22 @@ def build_confidence_readout(events: list[dict]) -> dict:
             if details.get("used_repair") is True:
                 outcome_detail["used_repair"] = True
             trace_events.append(outcome_detail)
+    readout["dominant_runtime_outcome_family"] = max(
+        readout["runtime_outcome_family_counts"],
+        key=readout["runtime_outcome_family_counts"].get,
+        default=None,
+    )
+    failure_family_counts = {
+        key: value
+        for key, value in readout["runtime_outcome_family_counts"].items()
+        if key != "completed"
+    }
+    if any(failure_family_counts.values()):
+        readout["dominant_failure_outcome_family"] = max(
+            failure_family_counts,
+            key=failure_family_counts.get,
+            default=None,
+        )
     return readout
 
 
