@@ -27,6 +27,11 @@ _EXPLICIT_REPLACEMENTS = (
     (r"\bcoasta rico\b", "costa rica"),
     (r"\bolpejeta\b", "ol pejeta"),
 )
+_MONTH_NAMES = (
+    "january|february|march|april|may|june|july|august|"
+    "september|october|november|december|"
+    "jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec"
+)
 
 
 def _apply_explicit_repairs(text: str, applied_rules: list[str]) -> str:
@@ -60,6 +65,45 @@ def _apply_explicit_repairs(text: str, applied_rules: list[str]) -> str:
     return "".join(parts)
 
 
+def _normalize_traveller_phrases(text: str, applied_rules: list[str]) -> str:
+    normalized = text
+    replacements = (
+        (r"\bjust me\b", "solo"),
+        (r"\bme and my partner\b", "2 people"),
+        (r"\btwo adults and one teen\b", "3 people"),
+        (r"\btwo adults and a child\b", "3 people"),
+    )
+
+    for pattern, replacement in replacements:
+        updated = re.sub(pattern, replacement, normalized, flags=re.IGNORECASE)
+        if updated != normalized:
+            applied_rules.append(f"traveller_phrase_normalization:{pattern}->{replacement}")
+            normalized = updated
+
+    return normalized
+
+
+def _normalize_date_range_variants(text: str, applied_rules: list[str]) -> str:
+    normalized = text
+
+    updated = normalized.replace("–", "-").replace("—", "-")
+    if updated != normalized:
+        applied_rules.append("date_range_separator_normalization")
+        normalized = updated
+
+    updated = re.sub(
+        rf"(\d{{1,2}}(?:st|nd|rd|th)?)(?=({_MONTH_NAMES})\b)",
+        r"\1 ",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    if updated != normalized:
+        applied_rules.append("date_token_spacing_normalization")
+        normalized = updated
+
+    return normalized
+
+
 def _cleanup_punctuation_spacing(text: str, applied_rules: list[str]) -> str:
     cleaned = re.sub(r"\s*([,;:!?])\s*", r"\1 ", text)
     cleaned = re.sub(r"\s+\.", ".", cleaned)
@@ -78,6 +122,8 @@ def _collapse_whitespace(text: str, applied_rules: list[str]) -> str:
 def normalize_travel_input(user_input: str) -> NormalizedInput:
     applied_rules: list[str] = []
     normalized = _apply_explicit_repairs(user_input, applied_rules)
+    normalized = _normalize_traveller_phrases(normalized, applied_rules)
+    normalized = _normalize_date_range_variants(normalized, applied_rules)
     normalized = _cleanup_punctuation_spacing(normalized, applied_rules)
     normalized = _collapse_whitespace(normalized, applied_rules)
     return NormalizedInput(
