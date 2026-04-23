@@ -23,6 +23,7 @@ from engine.travel_brief import (
 
 state_manager = ClarificationStateManager()
 HARD_FIELDS = ("destination", "timing", "traveller_count")
+recent_completed_trip: dict | None = None
 
 EXIT_COMMANDS = {"exit", "cancel", "stop", "restart", "quit"}
 NEW_TASK_OVERRIDE_PATTERNS = [
@@ -41,10 +42,20 @@ EXPLICIT_CORRECTION_PATTERNS = (
     r"^\s*no[, ]",
     r"\bmake it\b",
 )
+POST_COMPLETION_UPDATE_PATTERNS = EXPLICIT_CORRECTION_PATTERNS + (
+    r"\bchange the destination\b",
+    r"\bchange the dates\b",
+    r"\bmove the dates\b",
+    r"\bshift the dates\b",
+    r"\bswitch the destination\b",
+    r"\bwe(?:'re| are)\s+\d+\s+now\b",
+)
 
 
 def reset_state() -> None:
     state_manager.clear()
+    global recent_completed_trip
+    recent_completed_trip = None
 
 
 def run(user_input: str) -> str:
@@ -63,6 +74,10 @@ def run(user_input: str) -> str:
             return _start(user_input, normalized_input.normalized_input)
 
         return _resume(user_input, normalized_input.normalized_input)
+
+    completed_update = _resume_completed_trip_update(user_input, normalized_input.normalized_input)
+    if completed_update is not None:
+        return completed_update
 
     return _start(user_input, normalized_input.normalized_input)
 
@@ -111,6 +126,8 @@ def _start(user_input: str, normalized_input: str) -> str:
             )
             
             return _next_prompt(missing_fields[0], state)
+
+        _remember_completed_trip(user_input, brief)
 
     return _run_with_travel_boundary(normalized_input)
 
@@ -211,6 +228,7 @@ def _resume(user_input: str, normalized_input: str) -> str:
             )
             return _next_prompt("trip_mood", state)
 
+        _remember_completed_fields(state["original_input"], state["collected_fields"])
         full_input = _rebuild_input(state)
         state_manager.clear()
         return run_engine(full_input)
@@ -401,11 +419,11 @@ def _extract_resume_fields(text: str, state: dict) -> dict:
     missing_fields = set(state.get("missing_fields", []))
     fields_to_extract = set(missing_fields)
 
-    if _is_explicit_correction(text):
+    if _is_update_style_reply(text):
         fields_to_extract.update(HARD_FIELDS)
 
     extracted = {}
-    is_correction = _is_explicit_correction(text)
+    is_correction = _is_update_style_reply(text)
     for field in HARD_FIELDS:
         if field not in fields_to_extract:
             continue
@@ -420,7 +438,7 @@ def _extract_resume_fields(text: str, state: dict) -> dict:
 
 
 def _extract_destination_value(text: str):
-    if _is_explicit_correction(text):
+    if _is_update_style_reply(text):
         for fragment in _destination_fragments(text):
             val = extract_destination(fragment)
             if val:
@@ -453,6 +471,37 @@ def _extract_traveller_count_value(text: str) -> int | None:
         return int(match.group(1))
 
     return None
+
+
+def _resume_completed_trip_update(user_input: str, normalized_input: str) -> str | None:
+    if not recent_completed_trip or not _is_update_style_reply(normalized_input):
+        return None
+
+    state = {
+        "task_type": "trip",
+        "original_input": recent_completed_trip["original_input"],
+        "collected_fields": dict(recent_completed_trip["collected_fields"]),
+        "missing_fields": [],
+    }
+    extracted_fields = _extract_resume_fields(normalized_input, state)
+    if not any(field in extracted_fields for field in HARD_FIELDS):
+        return None
+
+    collected_fields = dict(recent_completed_trip["collected_fields"])
+    collected_fields.update(extracted_fields)
+    hard_missing = _remaining_hard_fields(collected_fields)
+
+    if hard_missing:
+        active_state = state_manager.start(
+            task_type="trip",
+            original_input=recent_completed_trip["original_input"],
+            missing_fields=hard_missing,
+            collected_fields=collected_fields,
+        )
+        return _next_prompt(active_state["current_field"], active_state)
+
+    _remember_completed_fields(recent_completed_trip["original_input"], collected_fields)
+    return run_engine(_rebuild_input({"collected_fields": collected_fields}))
 
 
 def _destination_fragments(text: str) -> list[str]:
@@ -506,6 +555,44 @@ def _looks_like_scaffold_fragment(fragment: str) -> bool:
             fragment,
         )
     )
+
+
+def _is_update_style_reply(text: str) -> bool:
+    normalized = text.lower()
+    return any(re.search(pattern, normalized) for pattern in POST_COMPLETION_UPDATE_PATTERNS)
+
+
+def _remember_completed_trip(original_input: str, brief: dict) -> None:
+    collected_fields = _collected_fields_from_brief(brief)
+    _remember_completed_fields(original_input, collected_fields)
+
+
+def _remember_completed_fields(original_input: str, collected_fields: dict) -> None:
+    global recent_completed_trip
+    recent_completed_trip = {
+        "original_input": original_input,
+        "collected_fields": dict(collected_fields),
+    }
+
+
+def _collected_fields_from_brief(brief: dict) -> dict:
+    collected_fields = {}
+    for field in (
+        "destination",
+        "traveller_count",
+        "timing",
+        "budget_amount",
+        "budget_level",
+        "trip_mood",
+    ):
+        value = brief.get(field)
+        if field == "timing":
+            if value and value.get("state") != "missing_timing":
+                collected_fields[field] = value
+            continue
+        if value:
+            collected_fields[field] = value
+    return collected_fields
 
 
 def _rebuild_input(state: dict) -> str:

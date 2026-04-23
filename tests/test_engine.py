@@ -868,6 +868,61 @@ def test_exact_date_ready_trip_still_executes():
     assert "Timing: 10 april to 12 april" in result
 
 
+def test_completed_plan_destination_correction_updates_cleanly():
+    run("Plan a trip to Diani for 2 people 10 April to 12 April")
+    result = run("Actually change the destination to Lamu")
+
+    assert "Status: pass" in result
+    assert "Destination: lamu" in result
+    assert "Destination: diani" not in result
+    assert "Slate808 currently supports travel planning only." not in result
+
+
+def test_completed_plan_timing_correction_updates_cleanly():
+    run("Plan a trip to Diani for 2 people 10 April to 12 April")
+    result = run("No, move the dates to 5 September to 8 September")
+
+    assert "Status: pass" in result
+    assert "Timing: 5 september to 8 september" in result
+    assert "Timing: 10 april to 12 april" not in result
+    assert "Slate808 currently supports travel planning only." not in result
+
+
+def test_completed_plan_traveller_correction_updates_cleanly():
+    run("Plan a trip to Diani for 4 people 10 April to 12 April")
+    result = run("Actually we're 6 now")
+
+    assert "Status: pass" in result
+    assert "Traveller Count: 6" in result
+    assert "Traveller Count: 4" not in result
+    assert "Slate808 currently supports travel planning only." not in result
+
+
+def test_completed_plan_polite_destination_correction_enters_update_path():
+    run("Plan a trip to Diani for 2 people 10 April to 12 April")
+    result = run("Change the destination to Lamu, please")
+
+    assert "Status: pass" in result
+    assert "Destination: lamu" in result
+    assert "Slate808 currently supports travel planning only." not in result
+
+
+def test_completed_plan_relative_timing_shift_stays_in_travel_clarification():
+    run("Plan a trip to Diani for 2 people 10 April to 12 April")
+    result = run("Shift the dates to the last weekend of June")
+
+    assert "Which exact dates in June are you planning?" in result
+    assert "Slate808 currently supports travel planning only." not in result
+
+
+def test_unrelated_followup_after_completed_plan_still_rejects_non_travel():
+    run("Plan a trip to Diani for 2 people 10 April to 12 April")
+    result = run("Plan a meeting agenda for Monday")
+
+    assert "Slate808 currently supports travel planning only." in result
+    assert "Destination: diani" not in result
+
+
 def test_clarification_asks_destination_when_timing_and_travellers_known():
     result = run("I want a getaway next month for 2 people")
 
