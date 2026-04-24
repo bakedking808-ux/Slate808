@@ -457,6 +457,73 @@ def test_accommodation_bias_strengthening_is_idempotent(monkeypatch):
     assert twice == once
 
 
+def test_coastal_accommodation_visibility_strengthens_natural_transport_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="watamu", traveller_count=4, trip_mood="family", budget_level="low"))
+    original = deepcopy(plan)
+
+    refined = refine_plan(plan)
+
+    assert "lodging should account for beachfront or resort-style stays" in refined["steps"][2]
+    assert len(refined["steps"]) == len(original["steps"])
+    assert [step.split()[0] for step in refined["steps"]] == [step.split()[0] for step in original["steps"]]
+
+
+def test_mountain_accommodation_visibility_strengthens_natural_transport_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="mt kenya", traveller_count=2, trip_mood="adventure", budget_level="medium"))
+
+    refined = refine_plan(plan)
+
+    assert "lodging should account for lodges or cabins near access points" in refined["steps"][2]
+
+
+def test_safari_accommodation_visibility_strengthens_natural_transport_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="mara", traveller_count=4, trip_mood="family", budget_level="medium"))
+
+    refined = refine_plan(plan)
+
+    assert "lodging should account for camp or lodge stays aligned with drive times" in refined["steps"][2]
+
+
+def test_city_accommodation_visibility_strengthens_natural_transport_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="nairobi", traveller_count=3, trip_mood="corporate", budget_level="high"))
+
+    refined = refine_plan(plan)
+
+    assert "lodging should account for city hotels near movement corridors" in refined["steps"][2]
+
+
+def test_arid_accommodation_visibility_strengthens_natural_transport_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="chalbi desert", traveller_count=2, trip_mood="adventure", budget_level="medium"))
+
+    refined = refine_plan(plan)
+
+    assert "lodging should account for stays that support remote access logistics" in refined["steps"][2]
+
+
+def test_unknown_destination_does_not_gain_natural_accommodation_visibility(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="hidden valley", traveller_count=2, trip_mood="relaxed", budget_level="medium"))
+
+    refined = refine_plan(plan)
+
+    assert "lodging should account for" not in refined["steps"][2]
+
+
+def test_natural_accommodation_visibility_is_idempotent(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="mara", traveller_count=4, trip_mood="family", budget_level="medium"))
+
+    once = refine_plan(plan)
+    twice = refine_plan(once)
+
+    assert twice == once
+
+
 def test_traveller_group_strengthening_occurs_when_group_context_exists(monkeypatch):
     monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
     plan = _plan(_brief(destination="nairobi", traveller_count=8, trip_mood=None, budget_level="unspecified"))
