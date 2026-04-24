@@ -6,7 +6,9 @@ from engine.input_gate import assess_input
 from engine.task_personality import apply_task_personality
 from engine.task_checks import apply_task_checks
 from engine.plan_refiner import refine_plan
+from engine.execution_readiness import evaluate_execution_readiness
 from engine.formatter import format_output
+from contracts.execution_readiness_contract import ExecutionReadinessRequest
 from uuid import uuid4
 
 
@@ -273,6 +275,16 @@ def run_engine(request: str) -> str:
             planning_constraints=plan.get("planning_constraints"),
         )
 
+    execution_readiness = None
+    if result["status"] == "pass" and plan.get("task_type") == "trip":
+        execution_readiness = evaluate_execution_readiness(
+            ExecutionReadinessRequest(
+                brief=plan.get("brief") or {},
+                planning_constraints=plan.get("planning_constraints"),
+                plan_status=result["status"],
+            )
+        ).model_dump()
+
     decision_path = ["input_gate", "generate_plan", "check_plan"]
     if initial_checker_result and initial_checker_result["status"] == "fail":
         decision_path.extend(["fix_plan", "check_plan"])
@@ -291,6 +303,7 @@ def run_engine(request: str) -> str:
         "mode": plan.get("mode", "normal"),
         "clarification_needed": None,
         "clarification_response": None,
+        "execution_readiness": execution_readiness,
     }
 
     log_entry = create_log_entry(
