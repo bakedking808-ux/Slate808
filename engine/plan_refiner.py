@@ -9,6 +9,12 @@ from contracts.plan_refinement_contract import PlanRefinementInput, PlanRefineme
 from engine.planning_policy import validate_planning_constraints
 
 
+STEP_REFINEMENT_STAGE_ORDER = (
+    "weak_context_strengthening",
+    "semantic_tail_compaction",
+)
+
+
 def _validated_constraints(planning_constraints: dict[str, Any] | None) -> dict[str, Any] | None:
     if not planning_constraints:
         return None
@@ -135,17 +141,21 @@ def _strengthen_weak_step(
     if not destination:
         return step
 
-    if step == "Choose transport and lodging options that fit the trip":
+    transport_template = "Choose transport and lodging options that fit the trip"
+    if step == transport_template or step.startswith(f"{transport_template};"):
         context = f"{destination_label} " if destination_label else ""
         budget = f" with {budget_label} choices" if budget_label else ""
         group = f" for {traveller_label} coordination" if traveller_label else ""
-        return f"Choose {context}transport and lodging options for {destination} that fit the trip{budget}{group}"
+        tail = step.removeprefix(transport_template)
+        return f"Choose {context}transport and lodging options for {destination} that fit the trip{budget}{group}{tail}"
 
-    if step == "Select activities that match your travel goals":
+    activity_template = "Select activities that match your travel goals"
+    if step == activity_template or step.startswith(f"{activity_template} "):
         context = f"{destination_label} " if destination_label else ""
         mood = f"{mood_label} " if mood_label else ""
         group = f" for {traveller_label} needs" if traveller_label else ""
-        return f"Select {context}{mood}activities in {destination} that match your travel goals{group}"
+        tail = step.removeprefix(activity_template)
+        return f"Select {context}{mood}activities in {destination} that match your travel goals{group}{tail}"
 
     return step
 
@@ -155,7 +165,21 @@ def _refine_steps(
     brief: dict[str, Any] | None,
     constraints: dict[str, Any],
 ) -> list[str]:
-    return [_compact_step(_strengthen_weak_step(step, brief, constraints)) for step in steps]
+    return [_refine_step(step, brief, constraints) for step in steps]
+
+
+def _refine_step(
+    step: str,
+    brief: dict[str, Any] | None,
+    constraints: dict[str, Any],
+) -> str:
+    refined_step = step
+    for stage in STEP_REFINEMENT_STAGE_ORDER:
+        if stage == "weak_context_strengthening":
+            refined_step = _strengthen_weak_step(refined_step, brief, constraints)
+        elif stage == "semantic_tail_compaction":
+            refined_step = _compact_step(refined_step)
+    return refined_step
 
 
 def refine_plan(
