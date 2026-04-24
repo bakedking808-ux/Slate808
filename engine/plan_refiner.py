@@ -24,10 +24,56 @@ def _validated_constraints(planning_constraints: dict[str, Any] | None) -> dict[
         return None
 
 
+def _destination_risk_detail(risk_flags: list[str]) -> tuple[str, str] | None:
+    risk_rules = [
+        (
+            "traffic",
+            "Transfer timing should include congestion-aware buffers",
+            "Traffic can disrupt the plan if movement windows are not buffered",
+        ),
+        (
+            "boat_transfer",
+            "Boat-transfer timing should be coordinated before bookings are locked",
+            "Boat connections can disrupt arrival or departure timing if left loose",
+        ),
+        (
+            "early_start",
+            "Early-start activities should be aligned with transport and rest timing",
+            "Early excursions can fail if pickup times and rest windows are not coordinated",
+        ),
+        (
+            "remote_access",
+            "Remote-access logistics should be confirmed before committing to the route",
+            "Remote access can fail if route certainty and support logistics are weak",
+        ),
+        (
+            "rough_access",
+            "Road-condition buffers should be built into transfers",
+            "Rough access can disrupt timing if transfer buffers are too tight",
+        ),
+        (
+            "altitude",
+            "Arrival-day pacing should stay conservative",
+            "Altitude can make an overloaded arrival day harder to manage",
+        ),
+        (
+            "heat",
+            "Movement and activity timing should account for heat exposure",
+            "Heat can make transfers and activities harder if pacing is too tight",
+        ),
+    ]
+
+    for flag, check, risk in risk_rules:
+        if flag in risk_flags:
+            return check, risk
+    return None
+
+
 def _trip_refinement(checks: list[str], risks: list[str], constraints: dict[str, Any]) -> tuple[list[str], list[str]]:
     budget = constraints["budget_policy"]
     traveller = constraints["traveller_policy"]
     timing = constraints["timing_policy"]
+    destination = constraints["destination_policy"]
 
     if budget.get("should_require_cost_check"):
         checks[1] = "Costs should be checked against the stated budget before booking"
@@ -38,6 +84,11 @@ def _trip_refinement(checks: list[str], risks: list[str], constraints: dict[str,
     if timing.get("should_treat_as_provisional"):
         checks[3] = "Timing should remain provisional until exact dates are confirmed"
         risks[1] = "Bookings may be premature until exact travel dates are confirmed"
+    risk_detail = _destination_risk_detail(destination.get("risk_flags") or [])
+    if risk_detail:
+        checks[0] = risk_detail[0]
+        if risk_detail[1] not in risks:
+            risks.append(risk_detail[1])
 
     return checks, risks
 

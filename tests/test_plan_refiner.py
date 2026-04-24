@@ -97,6 +97,70 @@ def test_refinement_specializes_checks_and_risks_without_changing_step_shape(mon
     assert refined["risks"] != original["risks"]
     assert "stated budget" in refined["checks"][1]
     assert "family-safe pacing" in refined["risks"][1]
+    assert any("Heat can make transfers and activities harder" in risk for risk in refined["risks"])
+
+
+def test_city_traffic_risk_strengthens_checks_and_risks(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="nairobi", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+    original_steps = list(plan["steps"])
+
+    refined = refine_plan(plan)
+
+    assert "congestion-aware buffers" in refined["checks"][0]
+    assert any("Traffic can disrupt the plan" in risk for risk in refined["risks"])
+    assert len(refined["steps"]) == len(original_steps)
+    assert [step.split()[0] for step in refined["steps"]] == [step.split()[0] for step in original_steps]
+
+
+def test_coastal_heat_risk_strengthens_checks_and_risks(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="watamu", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+
+    refined = refine_plan(plan)
+
+    assert "heat exposure" in refined["checks"][0]
+    assert any("Heat can make transfers and activities harder" in risk for risk in refined["risks"])
+
+
+def test_safari_rough_access_risk_strengthens_checks_and_risks(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="mara", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+
+    refined = refine_plan(plan)
+
+    assert "Road-condition buffers" in refined["checks"][0]
+    assert any("Rough access can disrupt timing" in risk for risk in refined["risks"])
+
+
+def test_arid_remote_access_risk_strengthens_checks_and_risks(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="chalbi desert", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+
+    refined = refine_plan(plan)
+
+    assert "Remote-access logistics" in refined["checks"][0]
+    assert any("Remote access can fail" in risk for risk in refined["risks"])
+
+
+def test_unknown_destination_without_risk_flags_keeps_generic_destination_risk_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="hidden valley", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+
+    refined = refine_plan(plan)
+
+    assert refined["checks"][0] == "The journey should include a clear destination and smooth arrival"
+    assert refined["risks"][1] == "Poor sequencing of steps"
+
+
+def test_destination_risk_specialization_is_idempotent(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="nairobi", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+
+    once = refine_plan(plan)
+    twice = refine_plan(once)
+
+    assert twice == once
 
 
 def test_refine_plan_is_idempotent_for_multi_signal_plan(monkeypatch):
