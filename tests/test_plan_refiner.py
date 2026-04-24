@@ -212,7 +212,7 @@ def test_weak_generic_steps_upgrade_when_destination_context_exists(monkeypatch)
     assert len(first["steps"]) == len(plan["steps"])
     assert first["steps"][2] == (
         "Choose coastal transport and lodging options for diani that fit the trip "
-        "with cost-conscious choices for family coordination"
+        "with cost-conscious choices for family coordination including beachfront or resort-style stays"
     )
     assert first["steps"][3] == "Select coastal activities in diani that match your travel goals for family needs"
 
@@ -258,8 +258,70 @@ def test_destination_aware_strengthening_uses_destination_type_context(monkeypat
 
     refined = refine_plan(plan)
 
-    assert refined["steps"][2] == "Choose city transport and lodging options for nairobi that fit the trip"
+    assert refined["steps"][2] == (
+        "Choose city transport and lodging options for nairobi that fit the trip "
+        "including city hotels near movement corridors"
+    )
     assert refined["steps"][3] == "Select city activities in nairobi that match your travel goals"
+
+
+def test_coastal_accommodation_bias_strengthens_lodging_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="diani", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+    plan["steps"][2] = "Choose transport and lodging options that fit the trip"
+
+    refined = refine_plan(plan)
+
+    assert "including beachfront or resort-style stays" in refined["steps"][2]
+    assert len(refined["steps"]) == len(plan["steps"])
+    assert refined["steps"][2].startswith("Choose coastal transport")
+
+
+def test_mountain_accommodation_bias_strengthens_lodging_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="mt kenya", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+    plan["steps"][2] = "Choose transport and lodging options that fit the trip"
+
+    refined = refine_plan(plan)
+
+    assert "including lodges or cabins near access points" in refined["steps"][2]
+    assert len(refined["steps"]) == len(plan["steps"])
+
+
+def test_safari_accommodation_bias_strengthens_lodging_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="mara", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+    plan["steps"][2] = "Choose transport and lodging options that fit the trip"
+
+    refined = refine_plan(plan)
+
+    assert "including camp or lodge stays aligned with drive times" in refined["steps"][2]
+    assert len(refined["steps"]) == len(plan["steps"])
+
+
+def test_unknown_destination_does_not_gain_specific_lodging_semantics(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="hidden valley", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+    plan["steps"][2] = "Choose transport and lodging options that fit the trip"
+
+    refined = refine_plan(plan)
+
+    assert "beachfront" not in refined["steps"][2]
+    assert "lodges or cabins" not in refined["steps"][2]
+    assert "camp or lodge" not in refined["steps"][2]
+    assert "city hotels" not in refined["steps"][2]
+    assert "remote access logistics" not in refined["steps"][2]
+
+
+def test_accommodation_bias_strengthening_is_idempotent(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="diani", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+    plan["steps"][2] = "Choose transport and lodging options that fit the trip"
+
+    once = refine_plan(plan)
+    twice = refine_plan(once)
+
+    assert twice == once
 
 
 def test_traveller_group_strengthening_occurs_when_group_context_exists(monkeypatch):
