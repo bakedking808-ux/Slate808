@@ -1836,6 +1836,29 @@ def test_runner_falls_back_to_deterministic_when_llm_enabled_but_fails(monkeypat
     assert "Destination: diani" in result
 
 
+def test_runtime_surfaces_execution_ready_for_exact_timing():
+    result = run_engine("Plan a trip to diani for 2 people 10 April to 12 April")
+
+    assert "Execution Readiness:" in result
+    assert "- Level: execution_ready" in result
+    assert "- Plan Ready: True" in result
+    assert "- Execution Ready: True" in result
+    assert "Execution Blocks:" not in result
+
+
+def test_runtime_surfaces_plan_ready_only_for_relative_timing_without_blocking_plan():
+    result = run_engine("Plan a trip to diani for 2 people next weekend")
+    steps = _extract_numbered_steps(result)
+
+    assert len(steps) == 5
+    assert "Execution Readiness:" in result
+    assert "- Level: plan_ready_only" in result
+    assert "- Plan Ready: True" in result
+    assert "- Execution Ready: False" in result
+    assert "Execution Blocks:" in result
+    assert "- execution_timing_not_exact:relative_timing" in result
+
+
 def test_mood_driven_relaxed_plan_content():
     result = run_engine("Plan a relaxed trip to diani for 2 people next weekend")
     steps = _extract_numbered_steps(result)
