@@ -118,6 +118,22 @@ def _mood_label(mood_policy: dict[str, Any]) -> str:
     return ""
 
 
+def _accommodation_label(destination_policy: dict[str, Any]) -> str:
+    accommodation_bias = destination_policy.get("accommodation_bias")
+    destination_type = destination_policy.get("destination_type")
+    if accommodation_bias in {"resort_or_beachfront", "boutique_or_beachfront", "beachfront"}:
+        return "including beachfront or resort-style stays"
+    if accommodation_bias == "lodge_or_cabin":
+        return "including lodges or cabins near access points"
+    if accommodation_bias == "camp_or_lodge":
+        return "including camp or lodge stays aligned with drive times"
+    if accommodation_bias == "city_hotel":
+        return "including city hotels near movement corridors"
+    if destination_type == "arid" and accommodation_bias in {"basic_lodge", "camp"}:
+        return "including stays that support remote access logistics"
+    return ""
+
+
 def _strengthen_weak_step(
     step: str,
     brief: dict[str, Any] | None,
@@ -128,6 +144,7 @@ def _strengthen_weak_step(
     budget_label = _budget_label(constraints["budget_policy"])
     traveller_label = _traveller_label(constraints["traveller_policy"])
     mood_label = _mood_label(constraints["mood_policy"])
+    accommodation_label = _accommodation_label(constraints["destination_policy"])
     timing_summary = constraints["timing_policy"].get("timing_summary")
 
     if step == "Set a budget and estimate the main costs" and budget_label:
@@ -142,12 +159,13 @@ def _strengthen_weak_step(
         return step
 
     transport_template = "Choose transport and lodging options that fit the trip"
-    if step == transport_template or step.startswith(f"{transport_template};"):
+    if step == transport_template or step.startswith(f"{transport_template};") or step.startswith(f"{transport_template} "):
         context = f"{destination_label} " if destination_label else ""
         budget = f" with {budget_label} choices" if budget_label else ""
         group = f" for {traveller_label} coordination" if traveller_label else ""
+        lodging = f" {accommodation_label}" if accommodation_label else ""
         tail = step.removeprefix(transport_template)
-        return f"Choose {context}transport and lodging options for {destination} that fit the trip{budget}{group}{tail}"
+        return f"Choose {context}transport and lodging options for {destination} that fit the trip{budget}{group}{lodging}{tail}"
 
     activity_template = "Select activities that match your travel goals"
     if step == activity_template or step.startswith(f"{activity_template} "):
