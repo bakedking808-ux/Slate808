@@ -163,6 +163,75 @@ def test_destination_risk_specialization_is_idempotent(monkeypatch):
     assert twice == once
 
 
+def test_city_traffic_pacing_strengthens_timing_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="nairobi", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+    original = deepcopy(plan)
+
+    refined = refine_plan(plan)
+
+    assert "with transfer buffers for traffic-aware movement" in refined["steps"][4]
+    assert len(refined["steps"]) == len(original["steps"])
+    assert [step.split()[0] for step in refined["steps"]] == [step.split()[0] for step in original["steps"]]
+    assert refined["brief"]["destination"] == original["brief"]["destination"]
+
+
+def test_coastal_heat_pacing_strengthens_timing_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="watamu", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+
+    refined = refine_plan(plan)
+
+    assert "with heat-aware pacing and rest windows" in refined["steps"][4]
+
+
+def test_mountain_pacing_strengthens_timing_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="mt kenya", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+
+    refined = refine_plan(plan)
+
+    assert "with conservative arrival-day pacing" in refined["steps"][4]
+
+
+def test_safari_movement_pacing_strengthens_timing_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="mara", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+
+    refined = refine_plan(plan)
+
+    assert "with drive-time buffers for access conditions" in refined["steps"][4]
+
+
+def test_arid_remote_pacing_strengthens_timing_wording(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="chalbi desert", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+
+    refined = refine_plan(plan)
+
+    assert "with conservative remote-access timing" in refined["steps"][4]
+
+
+def test_unknown_destination_without_pacing_signals_keeps_timing_generic(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="hidden valley", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+    original_timing_step = plan["steps"][4]
+
+    refined = refine_plan(plan)
+
+    assert refined["steps"][4] == original_timing_step
+
+
+def test_destination_pacing_strengthening_is_idempotent(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="nairobi", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+
+    once = refine_plan(plan)
+    twice = refine_plan(once)
+
+    assert twice == once
+
+
 def test_refine_plan_is_idempotent_for_multi_signal_plan(monkeypatch):
     monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
     plan = _plan()

@@ -69,6 +69,28 @@ def _destination_risk_detail(risk_flags: list[str]) -> tuple[str, str] | None:
     return None
 
 
+def _destination_pacing_suffix(destination_policy: dict[str, Any]) -> str:
+    risk_flags = destination_policy.get("risk_flags") or []
+    pace_bias = destination_policy.get("pace_bias")
+    destination_type = destination_policy.get("destination_type")
+
+    if "traffic" in risk_flags:
+        return "with transfer buffers for traffic-aware movement"
+    if "remote_access" in risk_flags:
+        return "with conservative remote-access timing"
+    if destination_type == "arid" and ("distance" in risk_flags or pace_bias == "rugged"):
+        return "with daylight-aware movement windows"
+    if "rough_access" in risk_flags or "distance" in risk_flags:
+        return "with drive-time buffers for access conditions"
+    if "altitude" in risk_flags or pace_bias == "active":
+        return "with conservative arrival-day pacing"
+    if "heat" in risk_flags:
+        return "with heat-aware pacing and rest windows"
+    if pace_bias == "early_start":
+        return "with early movement windows aligned"
+    return ""
+
+
 def _trip_refinement(checks: list[str], risks: list[str], constraints: dict[str, Any]) -> tuple[list[str], list[str]]:
     budget = constraints["budget_policy"]
     traveller = constraints["traveller_policy"]
@@ -129,6 +151,16 @@ def _compact_step(step: str) -> str:
     for old, new in replacements:
         compacted = compacted.replace(old, new)
     return compacted
+
+
+def _strengthen_timing_step(step: str, destination_policy: dict[str, Any]) -> str:
+    if not step.startswith("Confirm the trip timing"):
+        return step
+
+    suffix = _destination_pacing_suffix(destination_policy)
+    if not suffix or suffix in step:
+        return step
+    return f"{step} {suffix}"
 
 
 def _destination_label(destination_policy: dict[str, Any]) -> str:
@@ -246,6 +278,7 @@ def _refine_step(
     for stage in STEP_REFINEMENT_STAGE_ORDER:
         if stage == "weak_context_strengthening":
             refined_step = _strengthen_weak_step(refined_step, brief, constraints)
+            refined_step = _strengthen_timing_step(refined_step, constraints["destination_policy"])
         elif stage == "semantic_tail_compaction":
             refined_step = _compact_step(refined_step)
     return refined_step
