@@ -39,6 +39,19 @@ def _decision_path(*stages: str) -> str:
     return ">".join(stage for stage in stages if stage)
 
 
+def _requested_execution_action(request: str) -> str | None:
+    text = request.lower()
+    if "booking" in text or "book " in text or "reserve" in text:
+        return "booking_prep"
+    if "schedule" in text or "add to calendar" in text or "put it on my calendar" in text:
+        return "calendar_schedule"
+    if "calendar" in text and any(
+        marker in text for marker in ("review", "check", "conflict", "available", "best time")
+    ):
+        return "calendar_review"
+    return None
+
+
 def run_engine(request: str) -> str:
     fixer_actions = []
     llm_used = False
@@ -282,6 +295,7 @@ def run_engine(request: str) -> str:
                 brief=plan.get("brief") or {},
                 planning_constraints=plan.get("planning_constraints"),
                 plan_status=result["status"],
+                requested_action=_requested_execution_action(request),
             )
         ).model_dump()
 

@@ -40,6 +40,8 @@ def test_exact_timing_can_become_execution_ready():
     assert readiness.execution_ready is True
     assert readiness.execution_blocked is False
     assert readiness.readiness_level == "execution_ready"
+    assert readiness.requested_action == "calendar_schedule"
+    assert readiness.action_allowed is True
     assert "calendar_schedule" in readiness.allowed_actions
     assert readiness.blocking_reasons == []
 
@@ -147,4 +149,48 @@ def test_calendar_review_readiness_is_distinct_from_calendar_execution_readiness
     assert readiness.plan_ready is True
     assert readiness.execution_ready is False
     assert "calendar_review" in readiness.allowed_actions
+    assert readiness.requested_action == "calendar_review"
+    assert readiness.action_allowed is True
     assert "calendar_schedule" in readiness.blocked_actions
+
+
+def test_calendar_schedule_action_is_blocked_without_execution_ready_timing():
+    readiness = _result(
+        _brief(
+            timing=build_timing(
+                raw_text="next weekend",
+                date_flexibility="fixed",
+                state="relative_timing",
+                confidence="medium",
+            )
+        ),
+        requested_action="calendar_schedule",
+    )
+
+    assert readiness.plan_ready is True
+    assert readiness.execution_ready is False
+    assert readiness.requested_action == "calendar_schedule"
+    assert readiness.action_allowed is False
+    assert "calendar_schedule" in readiness.blocked_actions
+    assert readiness.blocking_reasons == ["execution_timing_not_exact:relative_timing"]
+
+
+def test_booking_prep_action_is_blocked_without_execution_ready_timing():
+    readiness = _result(
+        _brief(
+            timing=build_timing(
+                raw_text="for 3 days",
+                duration_days=3,
+                date_flexibility="unknown",
+                state="duration_only",
+                confidence="medium",
+            )
+        ),
+        requested_action="booking_prep",
+    )
+
+    assert readiness.plan_ready is True
+    assert readiness.execution_ready is False
+    assert readiness.requested_action == "booking_prep"
+    assert readiness.action_allowed is False
+    assert "booking_prep" in readiness.blocked_actions

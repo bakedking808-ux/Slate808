@@ -95,6 +95,10 @@ def format_output(final_output: dict) -> str:
         lines.append(f"- Level: {execution_readiness.get('readiness_level')}")
         lines.append(f"- Plan Ready: {execution_readiness.get('plan_ready')}")
         lines.append(f"- Execution Ready: {execution_readiness.get('execution_ready')}")
+        requested_action = execution_readiness.get("requested_action")
+        if requested_action:
+            lines.append(f"- Requested Action: {requested_action}")
+            lines.append(f"- Action Allowed: {execution_readiness.get('action_allowed')}")
         blocking_reasons = execution_readiness.get("blocking_reasons") or []
         if blocking_reasons:
             lines.append("Execution Blocks:")

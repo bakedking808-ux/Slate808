@@ -35,6 +35,8 @@ class ExecutionReadinessResult(BaseModel):
     execution_ready: bool
     execution_blocked: bool
     readiness_level: ReadinessLevel
+    requested_action: ExecutionAction | None = None
+    action_allowed: bool | None = None
     blocking_reasons: list[str] = Field(default_factory=list)
     allowed_actions: list[ExecutionAction] = Field(default_factory=list)
     blocked_actions: list[ExecutionAction] = Field(default_factory=list)

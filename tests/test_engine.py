@@ -1859,6 +1859,34 @@ def test_runtime_surfaces_plan_ready_only_for_relative_timing_without_blocking_p
     assert "- execution_timing_not_exact:relative_timing" in result
 
 
+def test_calendar_review_action_is_allowed_with_plan_ready_timing():
+    result = run_engine("Plan a trip to diani for 2 people next weekend and review my calendar")
+
+    assert "- Level: plan_ready_only" in result
+    assert "- Requested Action: calendar_review" in result
+    assert "- Action Allowed: True" in result
+    assert "- Execution Ready: False" in result
+
+
+def test_calendar_schedule_action_is_blocked_without_exact_timing():
+    result = run_engine("Plan a trip to diani for 2 people next weekend and schedule it")
+    steps = _extract_numbered_steps(result)
+
+    assert len(steps) == 5
+    assert "- Requested Action: calendar_schedule" in result
+    assert "- Action Allowed: False" in result
+    assert "- execution_timing_not_exact:relative_timing" in result
+
+
+def test_booking_prep_action_is_allowed_with_exact_timing():
+    result = run_engine("Plan a trip to diani for 2 people 10 April to 12 April and book it")
+
+    assert "- Level: execution_ready" in result
+    assert "- Requested Action: booking_prep" in result
+    assert "- Action Allowed: True" in result
+    assert "Execution Blocks:" not in result
+
+
 def test_mood_driven_relaxed_plan_content():
     result = run_engine("Plan a relaxed trip to diani for 2 people next weekend")
     steps = _extract_numbered_steps(result)
