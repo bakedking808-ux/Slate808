@@ -1861,7 +1861,10 @@ def test_runtime_surfaces_plan_ready_only_for_relative_timing_without_blocking_p
 
 def test_calendar_review_action_is_allowed_with_plan_ready_timing():
     result = run_engine("Plan a trip to diani for 2 people next weekend and review my calendar")
+    steps = _extract_numbered_steps(result)
 
+    assert "Status: pass" in result
+    assert len(steps) == 5
     assert "- Level: plan_ready_only" in result
     assert "- Requested Action: calendar_review" in result
     assert "- Action Allowed: True" in result
@@ -1872,10 +1875,24 @@ def test_calendar_schedule_action_is_blocked_without_exact_timing():
     result = run_engine("Plan a trip to diani for 2 people next weekend and schedule it")
     steps = _extract_numbered_steps(result)
 
-    assert len(steps) == 5
+    assert "Status: fail" in result
+    assert steps == []
+    assert "Execution action blocked: calendar_schedule" in result
     assert "- Requested Action: calendar_schedule" in result
     assert "- Action Allowed: False" in result
     assert "- execution_timing_not_exact:relative_timing" in result
+
+
+def test_booking_prep_action_is_blocked_without_exact_timing():
+    result = run_engine("Plan a trip to diani for 2 people for 3 days and book it")
+    steps = _extract_numbered_steps(result)
+
+    assert "Status: fail" in result
+    assert steps == []
+    assert "Execution action blocked: booking_prep" in result
+    assert "- Requested Action: booking_prep" in result
+    assert "- Action Allowed: False" in result
+    assert "- execution_timing_not_exact:duration_only" in result
 
 
 def test_booking_prep_action_is_allowed_with_exact_timing():

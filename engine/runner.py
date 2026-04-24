@@ -299,6 +299,12 @@ def run_engine(request: str) -> str:
             )
         ).model_dump()
 
+    action_blocked = bool(
+        execution_readiness
+        and execution_readiness.get("requested_action")
+        and execution_readiness.get("action_allowed") is False
+    )
+
     decision_path = ["input_gate", "generate_plan", "check_plan"]
     if initial_checker_result and initial_checker_result["status"] == "fail":
         decision_path.extend(["fix_plan", "check_plan"])
@@ -319,6 +325,18 @@ def run_engine(request: str) -> str:
         "clarification_response": None,
         "execution_readiness": execution_readiness,
     }
+
+    if action_blocked:
+        requested_action = execution_readiness.get("requested_action")
+        final_output.update(
+            {
+                "status": "fail",
+                "errors": [f"Execution action blocked: {requested_action}"],
+                "steps": [],
+                "checks": [],
+                "risks": [],
+            }
+        )
 
     log_entry = create_log_entry(
         trace_id=plan.get("trace_id"),
