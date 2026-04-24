@@ -27,7 +27,7 @@ def _trip_refinement(checks: list[str], risks: list[str], constraints: dict[str,
         checks[1] = "Costs should be checked against the stated budget before booking"
         risks[0] = "Costs may drift if transport, lodging, and activities are not priced together"
     if traveller.get("needs_family_safe_planning"):
-        checks[2] = "Activities should remain safe, practical, and well-paced for the group"
+        checks[2] = "Activities should remain family-safe, practical, and well-paced for the group"
         risks[1] = "The plan may become too complex if family-safe pacing is not preserved"
     if timing.get("should_treat_as_provisional"):
         checks[3] = "Timing should remain provisional until exact dates are confirmed"
