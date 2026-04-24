@@ -163,6 +163,19 @@ def _strengthen_timing_step(step: str, destination_policy: dict[str, Any]) -> st
     return f"{step} {suffix}"
 
 
+def _strengthen_accommodation_visibility(step: str, destination_policy: dict[str, Any]) -> str:
+    if not step.startswith("Choose ") or "transport arrangements" not in step:
+        return step
+
+    accommodation_label = _accommodation_label(destination_policy)
+    if not accommodation_label:
+        return step
+    clause = f"; lodging should account for {accommodation_label.removeprefix('including ')}"
+    if clause in step:
+        return step
+    return f"{step}{clause}"
+
+
 def _destination_label(destination_policy: dict[str, Any]) -> str:
     destination_type = destination_policy.get("destination_type")
     if destination_type in {"coastal", "safari", "city", "mountain", "lake", "forest", "arid"}:
@@ -278,6 +291,7 @@ def _refine_step(
     for stage in STEP_REFINEMENT_STAGE_ORDER:
         if stage == "weak_context_strengthening":
             refined_step = _strengthen_weak_step(refined_step, brief, constraints)
+            refined_step = _strengthen_accommodation_visibility(refined_step, constraints["destination_policy"])
             refined_step = _strengthen_timing_step(refined_step, constraints["destination_policy"])
         elif stage == "semantic_tail_compaction":
             refined_step = _compact_step(refined_step)
