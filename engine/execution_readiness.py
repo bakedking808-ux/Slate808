@@ -41,15 +41,20 @@ def evaluate_execution_readiness(
     readiness_level = _readiness_level(plan_ready, execution_ready)
     allowed_actions = _allowed_actions(plan_ready, execution_ready)
     blocked_actions = [action for action in ALL_ACTIONS if action not in allowed_actions]
+    action_allowed = None
 
-    if request.requested_action and request.requested_action not in allowed_actions:
-        blocked_actions = _dedupe(blocked_actions + [request.requested_action])
+    if request.requested_action:
+        action_allowed = request.requested_action in allowed_actions
+        if not action_allowed:
+            blocked_actions = _dedupe(blocked_actions + [request.requested_action])
 
     return ExecutionReadinessResult(
         plan_ready=plan_ready,
         execution_ready=execution_ready,
         execution_blocked=not execution_ready,
         readiness_level=readiness_level,
+        requested_action=request.requested_action,
+        action_allowed=action_allowed,
         blocking_reasons=blocking_reasons,
         allowed_actions=allowed_actions,
         blocked_actions=blocked_actions,
