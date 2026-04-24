@@ -65,6 +65,10 @@ def test_refinement_preserves_plan_schema_step_count_and_semantics(monkeypatch):
 
     assert set(refined.keys()) == set(original.keys())
     assert len(refined["steps"]) == len(original["steps"])
+    assert refined["steps"][0] == original["steps"][0]
+    assert "transport" in refined["steps"][2].lower()
+    assert "activities" in refined["steps"][3].lower()
+    assert "timing" in refined["steps"][4].lower()
     assert refined["task_type"] == original["task_type"]
     assert refined["goal"] == original["goal"]
     assert refined["brief"]["destination"] == original["brief"]["destination"]
@@ -72,18 +76,76 @@ def test_refinement_preserves_plan_schema_step_count_and_semantics(monkeypatch):
     assert refined["brief"]["timing"] == original["brief"]["timing"]
 
 
-def test_refinement_only_changes_checks_and_risks_when_rules_apply(monkeypatch):
+def test_refinement_specializes_checks_and_risks_without_changing_step_shape(monkeypatch):
     monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
     plan = _plan()
     original = deepcopy(plan)
 
     refined = refine_plan(plan)
 
-    assert refined["steps"] == original["steps"]
+    assert len(refined["steps"]) == len(original["steps"])
+    assert [step.split()[0] for step in refined["steps"]] == [step.split()[0] for step in original["steps"]]
     assert refined["checks"] != original["checks"]
     assert refined["risks"] != original["risks"]
     assert "stated budget" in refined["checks"][1]
     assert "family-safe pacing" in refined["risks"][1]
+
+
+def test_refinement_suppresses_repeated_semantic_tails_deterministically(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(trip_mood="luxury", budget_level="high", traveller_count=2))
+    plan["steps"][4] = (
+        "Confirm the trip timing by setting the departure date as 20 july "
+        "and the return date as 24 july, then align bookings and align premium bookings"
+    )
+
+    first = refine_plan(plan)
+    second = refine_plan(plan)
+
+    assert first["steps"] == second["steps"]
+    assert len(first["steps"]) == len(plan["steps"])
+    assert first["steps"][4].count("align") == 1
+    assert "align premium bookings" in first["steps"][4]
+
+
+def test_refinement_compacts_shaped_step_suffixes_without_losing_context(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan()
+    plan["steps"][2] = (
+        "Choose practical transport arrangements that make moving the family easy "
+        "with safe and comfortable movement for everyone; practical and safe movement; "
+        "shared meeting points and aligned movement"
+    )
+    plan["steps"][3] = (
+        "Select family-friendly activities that keep everyone comfortable "
+        "with family-friendly, comfortable options; logistics that keep the group coordinated"
+    )
+
+    refined = refine_plan(plan)
+
+    assert refined["steps"][2].startswith("Choose practical transport arrangements")
+    assert "family easy" in refined["steps"][2]
+    assert "shared meeting points and aligned movement" in refined["steps"][2]
+    assert "practical and safe movement" not in refined["steps"][2]
+    assert "family-friendly activities" in refined["steps"][3]
+    assert "comfortable family options" in refined["steps"][3]
+    assert "logistics that keep the group coordinated" in refined["steps"][3]
+
+
+def test_family_timing_compaction_preserves_booking_anchor(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan()
+    plan["steps"][4] = (
+        "Confirm the trip timing window as next weekend and align bookings "
+        "and align transport and accommodation for the family"
+    )
+
+    refined = refine_plan(plan)
+
+    assert "align bookings" in refined["steps"][4]
+    assert refined["steps"][4].count("align") == 1
+    assert "transport" in refined["steps"][4]
+    assert "accommodation" in refined["steps"][4]
 
 
 def test_refinement_is_noop_without_valid_constraints():
