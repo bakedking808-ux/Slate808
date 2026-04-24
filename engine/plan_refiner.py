@@ -92,6 +92,26 @@ def _budget_label(budget_policy: dict[str, Any]) -> str:
     return ""
 
 
+def _traveller_label(traveller_policy: dict[str, Any]) -> str:
+    group_type = traveller_policy.get("group_type")
+    if traveller_policy.get("needs_family_safe_planning"):
+        return "family"
+    if group_type == "team":
+        return "team"
+    if traveller_policy.get("needs_group_coordination"):
+        return "group"
+    return ""
+
+
+def _mood_label(mood_policy: dict[str, Any]) -> str:
+    trip_mood = mood_policy.get("trip_mood")
+    if trip_mood in {"relaxed", "romantic", "adventure", "luxury"}:
+        return str(trip_mood)
+    if trip_mood == "corporate":
+        return "schedule-aware"
+    return ""
+
+
 def _strengthen_weak_step(
     step: str,
     brief: dict[str, Any] | None,
@@ -100,9 +120,17 @@ def _strengthen_weak_step(
     destination = (brief or {}).get("destination")
     destination_label = _destination_label(constraints["destination_policy"])
     budget_label = _budget_label(constraints["budget_policy"])
+    traveller_label = _traveller_label(constraints["traveller_policy"])
+    mood_label = _mood_label(constraints["mood_policy"])
+    timing_summary = constraints["timing_policy"].get("timing_summary")
 
     if step == "Set a budget and estimate the main costs" and budget_label:
         return f"Set a {budget_label} budget and estimate the main costs"
+
+    if step == "Confirm the trip timing clearly" and timing_summary and timing_summary != "timing not specified":
+        group = f" with {traveller_label} schedule coordination" if traveller_label else ""
+        mood = f" and a {mood_label} pace" if mood_label else ""
+        return f"Confirm the trip timing as {timing_summary}{group}{mood}"
 
     if not destination:
         return step
@@ -110,11 +138,14 @@ def _strengthen_weak_step(
     if step == "Choose transport and lodging options that fit the trip":
         context = f"{destination_label} " if destination_label else ""
         budget = f" with {budget_label} choices" if budget_label else ""
-        return f"Choose {context}transport and lodging options for {destination} that fit the trip{budget}"
+        group = f" for {traveller_label} coordination" if traveller_label else ""
+        return f"Choose {context}transport and lodging options for {destination} that fit the trip{budget}{group}"
 
     if step == "Select activities that match your travel goals":
         context = f"{destination_label} " if destination_label else ""
-        return f"Select {context}activities in {destination} that match your travel goals"
+        mood = f"{mood_label} " if mood_label else ""
+        group = f" for {traveller_label} needs" if traveller_label else ""
+        return f"Select {context}{mood}activities in {destination} that match your travel goals{group}"
 
     return step
 

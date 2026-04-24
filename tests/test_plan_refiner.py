@@ -161,9 +161,9 @@ def test_weak_generic_steps_upgrade_when_destination_context_exists(monkeypatch)
     assert len(first["steps"]) == len(plan["steps"])
     assert first["steps"][2] == (
         "Choose coastal transport and lodging options for diani that fit the trip "
-        "with cost-conscious choices"
+        "with cost-conscious choices for family coordination"
     )
-    assert first["steps"][3] == "Select coastal activities in diani that match your travel goals"
+    assert first["steps"][3] == "Select coastal activities in diani that match your travel goals for family needs"
 
 
 def test_weak_generic_steps_remain_unchanged_without_destination_context(monkeypatch):
@@ -209,6 +209,51 @@ def test_destination_aware_strengthening_uses_destination_type_context(monkeypat
 
     assert refined["steps"][2] == "Choose city transport and lodging options for nairobi that fit the trip"
     assert refined["steps"][3] == "Select city activities in nairobi that match your travel goals"
+
+
+def test_traveller_group_strengthening_occurs_when_group_context_exists(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="nairobi", traveller_count=8, trip_mood=None, budget_level="unspecified"))
+    plan["steps"][2] = "Choose transport and lodging options that fit the trip"
+    plan["steps"][3] = "Select activities that match your travel goals"
+
+    refined = refine_plan(plan)
+
+    assert "for group coordination" in refined["steps"][2]
+    assert "for group needs" in refined["steps"][3]
+    assert len(refined["steps"]) == len(plan["steps"])
+
+
+def test_mood_aware_strengthening_occurs_when_mood_context_exists(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="watamu", traveller_count=2, trip_mood="relaxed", budget_level="unspecified"))
+    plan["steps"][3] = "Select activities that match your travel goals"
+
+    first = refine_plan(plan)
+    second = refine_plan(plan)
+
+    assert first["steps"] == second["steps"]
+    assert first["steps"][3] == "Select coastal relaxed activities in watamu that match your travel goals"
+
+
+def test_mood_aware_strengthening_does_not_apply_without_mood_context(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="watamu", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+    plan["steps"][3] = "Select activities that match your travel goals"
+
+    refined = refine_plan(plan)
+
+    assert refined["steps"][3] == "Select coastal activities in watamu that match your travel goals"
+
+
+def test_timing_strengthening_uses_group_and_mood_context(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination=None, traveller_count=6, trip_mood="corporate", budget_level="unspecified"))
+    plan["steps"][4] = "Confirm the trip timing clearly"
+
+    refined = refine_plan(plan)
+
+    assert refined["steps"][4] == "Confirm the trip timing as next weekend with team schedule coordination and a schedule-aware pace"
 
 
 def test_post_update_like_completed_plan_steps_become_more_specific(monkeypatch):
