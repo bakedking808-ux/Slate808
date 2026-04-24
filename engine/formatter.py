@@ -17,6 +17,18 @@ def _polish_rendered_step(step: str) -> str:
     return updated
 
 
+def _readiness_block_label(reason: str) -> str:
+    labels = {
+        "missing_destination": "Destination is required before execution actions are allowed.",
+        "missing_traveller_count": "Traveller count is required before execution actions are allowed.",
+        "execution_timing_missing_date_range": "Exact start and end dates are required before execution actions are allowed.",
+    }
+    if reason.startswith("execution_timing_not_exact:"):
+        timing_state = reason.split(":", 1)[1]
+        return f"Exact timing is required before execution actions are allowed; current timing is {timing_state}."
+    return reason
+
+
 def format_output(final_output: dict) -> str:
     lines = []
     lines.append("Slate808 Output")
@@ -95,12 +107,17 @@ def format_output(final_output: dict) -> str:
         lines.append(f"- Level: {execution_readiness.get('readiness_level')}")
         lines.append(f"- Plan Ready: {execution_readiness.get('plan_ready')}")
         lines.append(f"- Execution Ready: {execution_readiness.get('execution_ready')}")
+        if execution_readiness.get("plan_ready") and not execution_readiness.get("execution_ready"):
+            lines.append("- Readiness Note: Plan output is available, but execution actions are blocked.")
         requested_action = execution_readiness.get("requested_action")
         if requested_action:
             lines.append(f"- Requested Action: {requested_action}")
             lines.append(f"- Action Allowed: {execution_readiness.get('action_allowed')}")
         blocking_reasons = execution_readiness.get("blocking_reasons") or []
         if blocking_reasons:
+            lines.append("Execution Block Details:")
+            for reason in blocking_reasons:
+                lines.append(f"- {_readiness_block_label(reason)}")
             lines.append("Execution Blocks:")
             for reason in blocking_reasons:
                 lines.append(f"- {reason}")

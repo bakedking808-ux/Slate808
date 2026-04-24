@@ -1855,6 +1855,12 @@ def test_runtime_surfaces_plan_ready_only_for_relative_timing_without_blocking_p
     assert "- Level: plan_ready_only" in result
     assert "- Plan Ready: True" in result
     assert "- Execution Ready: False" in result
+    assert "- Readiness Note: Plan output is available, but execution actions are blocked." in result
+    assert "Execution Block Details:" in result
+    assert (
+        "- Exact timing is required before execution actions are allowed; current timing is relative_timing."
+        in result
+    )
     assert "Execution Blocks:" in result
     assert "- execution_timing_not_exact:relative_timing" in result
 
@@ -1880,6 +1886,10 @@ def test_calendar_schedule_action_is_blocked_without_exact_timing():
     assert "Execution action blocked: calendar_schedule" in result
     assert "- Requested Action: calendar_schedule" in result
     assert "- Action Allowed: False" in result
+    assert (
+        "- Exact timing is required before execution actions are allowed; current timing is relative_timing."
+        in result
+    )
     assert "- execution_timing_not_exact:relative_timing" in result
 
 
@@ -1892,6 +1902,10 @@ def test_booking_prep_action_is_blocked_without_exact_timing():
     assert "Execution action blocked: booking_prep" in result
     assert "- Requested Action: booking_prep" in result
     assert "- Action Allowed: False" in result
+    assert (
+        "- Exact timing is required before execution actions are allowed; current timing is duration_only."
+        in result
+    )
     assert "- execution_timing_not_exact:duration_only" in result
 
 
