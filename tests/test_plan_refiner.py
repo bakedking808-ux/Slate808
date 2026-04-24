@@ -2,6 +2,7 @@ from copy import deepcopy
 
 from engine.formatter import format_output
 from engine.generator import build_steps
+from engine import plan_refiner
 from engine.plan_refiner import refine_plan
 from engine.planning_policy import build_planning_constraints
 from engine.runner import run_engine
@@ -76,6 +77,13 @@ def test_refinement_preserves_plan_schema_step_count_and_semantics(monkeypatch):
     assert refined["brief"]["timing"] == original["brief"]["timing"]
 
 
+def test_refinement_rule_order_is_explicit_and_freeze_auditable():
+    assert plan_refiner.STEP_REFINEMENT_STAGE_ORDER == (
+        "weak_context_strengthening",
+        "semantic_tail_compaction",
+    )
+
+
 def test_refinement_specializes_checks_and_risks_without_changing_step_shape(monkeypatch):
     monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
     plan = _plan()
@@ -89,6 +97,49 @@ def test_refinement_specializes_checks_and_risks_without_changing_step_shape(mon
     assert refined["risks"] != original["risks"]
     assert "stated budget" in refined["checks"][1]
     assert "family-safe pacing" in refined["risks"][1]
+
+
+def test_refine_plan_is_idempotent_for_multi_signal_plan(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan()
+    plan["steps"][1] = "Set a budget and estimate the main costs"
+    plan["steps"][2] = "Choose transport and lodging options that fit the trip"
+    plan["steps"][3] = (
+        "Select activities that match your travel goals "
+        "with family-friendly, comfortable options; practical and safe movement"
+    )
+    plan["steps"][4] = (
+        "Confirm the trip timing window as next weekend and align bookings "
+        "and align transport and accommodation for the family"
+    )
+
+    once = refine_plan(plan)
+    twice = refine_plan(once)
+
+    assert twice == once
+
+
+def test_refinement_families_do_not_erase_context_carrying_strengthening(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan()
+    plan["steps"][2] = (
+        "Choose transport and lodging options that fit the trip; "
+        "practical and safe movement"
+    )
+    plan["steps"][3] = (
+        "Select activities that match your travel goals "
+        "with family-friendly, comfortable options"
+    )
+
+    refined = refine_plan(plan)
+
+    assert "coastal transport and lodging options for diani" in refined["steps"][2]
+    assert "cost-conscious choices" in refined["steps"][2]
+    assert "family coordination" in refined["steps"][2]
+    assert "practical and safe movement" not in refined["steps"][2]
+    assert "coastal activities in diani" in refined["steps"][3]
+    assert "comfortable family options" in refined["steps"][3]
+    assert "family needs" in refined["steps"][3]
 
 
 def test_refinement_suppresses_repeated_semantic_tails_deterministically(monkeypatch):
