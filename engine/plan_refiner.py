@@ -74,24 +74,57 @@ def _compact_step(step: str) -> str:
     return compacted
 
 
-def _strengthen_weak_step(step: str, brief: dict[str, Any] | None) -> str:
+def _destination_label(destination_policy: dict[str, Any]) -> str:
+    destination_type = destination_policy.get("destination_type")
+    if destination_type in {"coastal", "safari", "city", "mountain", "lake", "forest", "arid"}:
+        return str(destination_type)
+    return ""
+
+
+def _budget_label(budget_policy: dict[str, Any]) -> str:
+    budget_posture = budget_policy.get("budget_posture")
+    if budget_posture == "cost_sensitive":
+        return "cost-conscious"
+    if budget_posture == "balanced":
+        return "balanced"
+    if budget_posture == "premium":
+        return "comfort-led"
+    return ""
+
+
+def _strengthen_weak_step(
+    step: str,
+    brief: dict[str, Any] | None,
+    constraints: dict[str, Any],
+) -> str:
     destination = (brief or {}).get("destination")
+    destination_label = _destination_label(constraints["destination_policy"])
+    budget_label = _budget_label(constraints["budget_policy"])
+
+    if step == "Set a budget and estimate the main costs" and budget_label:
+        return f"Set a {budget_label} budget and estimate the main costs"
+
     if not destination:
         return step
 
-    weak_templates = {
-        "Choose transport and lodging options that fit the trip": (
-            f"Choose transport and lodging options for {destination} that fit the trip"
-        ),
-        "Select activities that match your travel goals": (
-            f"Select activities in {destination} that match your travel goals"
-        ),
-    }
-    return weak_templates.get(step, step)
+    if step == "Choose transport and lodging options that fit the trip":
+        context = f"{destination_label} " if destination_label else ""
+        budget = f" with {budget_label} choices" if budget_label else ""
+        return f"Choose {context}transport and lodging options for {destination} that fit the trip{budget}"
+
+    if step == "Select activities that match your travel goals":
+        context = f"{destination_label} " if destination_label else ""
+        return f"Select {context}activities in {destination} that match your travel goals"
+
+    return step
 
 
-def _refine_steps(steps: list[str], brief: dict[str, Any] | None) -> list[str]:
-    return [_compact_step(_strengthen_weak_step(step, brief)) for step in steps]
+def _refine_steps(
+    steps: list[str],
+    brief: dict[str, Any] | None,
+    constraints: dict[str, Any],
+) -> list[str]:
+    return [_compact_step(_strengthen_weak_step(step, brief, constraints)) for step in steps]
 
 
 def refine_plan(
@@ -111,7 +144,7 @@ def refine_plan(
         return PlanRefinementResult(refined_plan=refined).refined_plan
 
     original_steps = list(refined.get("steps") or [])
-    refined["steps"] = _refine_steps(original_steps, refinement_input.brief)
+    refined["steps"] = _refine_steps(original_steps, refinement_input.brief, constraints)
 
     checks = list(refined.get("checks") or [])
     risks = list(refined.get("risks") or [])
