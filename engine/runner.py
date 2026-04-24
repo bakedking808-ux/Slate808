@@ -5,6 +5,7 @@ from engine.logger import log_run, create_log_entry, log_event
 from engine.input_gate import assess_input
 from engine.task_personality import apply_task_personality
 from engine.task_checks import apply_task_checks
+from engine.plan_refiner import refine_plan
 from engine.formatter import format_output
 from uuid import uuid4
 
@@ -264,6 +265,13 @@ def run_engine(request: str) -> str:
         else:
             plan = repaired_plan
             result = recheck
+
+    if result["status"] == "pass":
+        plan = refine_plan(
+            plan,
+            brief=plan.get("brief"),
+            planning_constraints=plan.get("planning_constraints"),
+        )
 
     decision_path = ["input_gate", "generate_plan", "check_plan"]
     if initial_checker_result and initial_checker_result["status"] == "fail":
