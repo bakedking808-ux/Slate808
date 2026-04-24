@@ -885,6 +885,16 @@ def test_completed_plan_destination_correction_updates_cleanly():
     assert "Slate808 currently supports travel planning only." not in result
 
 
+def test_completed_plan_destination_update_strengthens_generic_steps():
+    run("Plan a trip to Diani for 2 people 10 April to 12 April")
+    result = run("Actually change the destination to Lamu")
+    steps = _extract_numbered_steps(result)
+
+    assert "for lamu" in steps[2].lower()
+    assert "in lamu" in steps[3].lower()
+    assert len(steps) == 5
+
+
 def test_completed_plan_timing_correction_updates_cleanly():
     run("Plan a trip to Diani for 2 people 10 April to 12 April")
     result = run("No, move the dates to 5 September to 8 September")
