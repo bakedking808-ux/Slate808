@@ -36,6 +36,48 @@ def _trip_refinement(checks: list[str], risks: list[str], constraints: dict[str,
     return checks, risks
 
 
+def _compact_step(step: str) -> str:
+    compacted = step
+    replacements = [
+        (
+            "then align bookings and align premium bookings",
+            "then align premium bookings",
+        ),
+        (
+            "and align bookings and align premium bookings",
+            "and align premium bookings",
+        ),
+        (
+            "and align bookings and align transport and accommodation for the family",
+            "and align bookings, transport, and accommodation for the family",
+        ),
+        (
+            "and align bookings and align team logistics efficiently",
+            "and align bookings and team logistics efficiently",
+        ),
+        (
+            " with family-friendly, comfortable options",
+            " with comfortable family options",
+        ),
+        (
+            "; practical and safe movement",
+            "",
+        ),
+        (
+            "; in calm and quieter settings",
+            "; in quieter settings",
+        ),
+    ]
+
+    for old, new in replacements:
+        compacted = compacted.replace(old, new)
+    return compacted
+
+
+def _refine_steps(steps: list[str]) -> list[str]:
+    return [_compact_step(step) for step in steps]
+
+
 def refine_plan(
     plan: dict[str, Any],
     brief: dict[str, Any] | None = None,
@@ -52,13 +94,20 @@ def refine_plan(
     if refined.get("task_type") != "trip" or constraints is None:
         return PlanRefinementResult(refined_plan=refined).refined_plan
 
+    original_steps = list(refined.get("steps") or [])
+    refined["steps"] = _refine_steps(original_steps)
+
     checks = list(refined.get("checks") or [])
     risks = list(refined.get("risks") or [])
     if len(checks) < 4 or len(risks) < 2:
         return PlanRefinementResult(refined_plan=refined).refined_plan
 
     refined["checks"], refined["risks"] = _trip_refinement(checks, risks, constraints)
+    changed_sections = ["checks", "risks"]
+    if refined["steps"] != original_steps:
+        changed_sections.insert(0, "steps")
+
     return PlanRefinementResult(
         refined_plan=refined,
-        changed_sections=["checks", "risks"],
+        changed_sections=changed_sections,
     ).refined_plan
