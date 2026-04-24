@@ -148,6 +148,49 @@ def test_family_timing_compaction_preserves_booking_anchor(monkeypatch):
     assert "accommodation" in refined["steps"][4]
 
 
+def test_weak_generic_steps_upgrade_when_destination_context_exists(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan()
+    plan["steps"][2] = "Choose transport and lodging options that fit the trip"
+    plan["steps"][3] = "Select activities that match your travel goals"
+
+    first = refine_plan(plan)
+    second = refine_plan(plan)
+
+    assert first["steps"] == second["steps"]
+    assert len(first["steps"]) == len(plan["steps"])
+    assert first["steps"][2] == "Choose transport and lodging options for diani that fit the trip"
+    assert first["steps"][3] == "Select activities in diani that match your travel goals"
+
+
+def test_weak_generic_steps_remain_unchanged_without_destination_context(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination=None))
+    plan["steps"][2] = "Choose transport and lodging options that fit the trip"
+    plan["steps"][3] = "Select activities that match your travel goals"
+
+    refined = refine_plan(plan)
+
+    assert refined["steps"][2] == plan["steps"][2]
+    assert refined["steps"][3] == plan["steps"][3]
+
+
+def test_post_update_like_completed_plan_steps_become_more_specific(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="lamu", traveller_count=2, trip_mood=None, budget_level="unspecified"))
+    plan["steps"][2] = "Choose transport and lodging options that fit the trip"
+    plan["steps"][3] = "Select activities that match your travel goals"
+    original = deepcopy(plan)
+
+    refined = refine_plan(plan)
+
+    assert len(refined["steps"]) == len(original["steps"])
+    assert [step.split()[0] for step in refined["steps"]] == [step.split()[0] for step in original["steps"]]
+    assert "for lamu" in refined["steps"][2]
+    assert "in lamu" in refined["steps"][3]
+    assert refined["brief"]["destination"] == "lamu"
+
+
 def test_refinement_is_noop_without_valid_constraints():
     plan = _plan()
     plan["planning_constraints"] = None

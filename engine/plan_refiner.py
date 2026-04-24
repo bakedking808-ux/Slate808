@@ -74,8 +74,24 @@ def _compact_step(step: str) -> str:
     return compacted
 
 
-def _refine_steps(steps: list[str]) -> list[str]:
-    return [_compact_step(step) for step in steps]
+def _strengthen_weak_step(step: str, brief: dict[str, Any] | None) -> str:
+    destination = (brief or {}).get("destination")
+    if not destination:
+        return step
+
+    weak_templates = {
+        "Choose transport and lodging options that fit the trip": (
+            f"Choose transport and lodging options for {destination} that fit the trip"
+        ),
+        "Select activities that match your travel goals": (
+            f"Select activities in {destination} that match your travel goals"
+        ),
+    }
+    return weak_templates.get(step, step)
+
+
+def _refine_steps(steps: list[str], brief: dict[str, Any] | None) -> list[str]:
+    return [_compact_step(_strengthen_weak_step(step, brief)) for step in steps]
 
 
 def refine_plan(
@@ -95,7 +111,7 @@ def refine_plan(
         return PlanRefinementResult(refined_plan=refined).refined_plan
 
     original_steps = list(refined.get("steps") or [])
-    refined["steps"] = _refine_steps(original_steps)
+    refined["steps"] = _refine_steps(original_steps, refinement_input.brief)
 
     checks = list(refined.get("checks") or [])
     risks = list(refined.get("risks") or [])
