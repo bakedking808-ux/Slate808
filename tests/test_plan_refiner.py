@@ -159,8 +159,11 @@ def test_weak_generic_steps_upgrade_when_destination_context_exists(monkeypatch)
 
     assert first["steps"] == second["steps"]
     assert len(first["steps"]) == len(plan["steps"])
-    assert first["steps"][2] == "Choose transport and lodging options for diani that fit the trip"
-    assert first["steps"][3] == "Select activities in diani that match your travel goals"
+    assert first["steps"][2] == (
+        "Choose coastal transport and lodging options for diani that fit the trip "
+        "with cost-conscious choices"
+    )
+    assert first["steps"][3] == "Select coastal activities in diani that match your travel goals"
 
 
 def test_weak_generic_steps_remain_unchanged_without_destination_context(monkeypatch):
@@ -173,6 +176,39 @@ def test_weak_generic_steps_remain_unchanged_without_destination_context(monkeyp
 
     assert refined["steps"][2] == plan["steps"][2]
     assert refined["steps"][3] == plan["steps"][3]
+
+
+def test_budget_aware_strengthening_occurs_when_budget_posture_exists(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination=None, budget_level="high", traveller_count=2, trip_mood=None))
+    plan["steps"][1] = "Set a budget and estimate the main costs"
+
+    refined = refine_plan(plan)
+
+    assert refined["steps"][1] == "Set a comfort-led budget and estimate the main costs"
+    assert len(refined["steps"]) == len(plan["steps"])
+
+
+def test_budget_aware_strengthening_does_not_apply_without_budget_posture(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination=None, budget_level="unspecified", traveller_count=2, trip_mood=None))
+    plan["steps"][1] = "Set a budget and estimate the main costs"
+
+    refined = refine_plan(plan)
+
+    assert refined["steps"][1] == plan["steps"][1]
+
+
+def test_destination_aware_strengthening_uses_destination_type_context(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan(_brief(destination="nairobi", budget_level="unspecified", traveller_count=2, trip_mood=None))
+    plan["steps"][2] = "Choose transport and lodging options that fit the trip"
+    plan["steps"][3] = "Select activities that match your travel goals"
+
+    refined = refine_plan(plan)
+
+    assert refined["steps"][2] == "Choose city transport and lodging options for nairobi that fit the trip"
+    assert refined["steps"][3] == "Select city activities in nairobi that match your travel goals"
 
 
 def test_post_update_like_completed_plan_steps_become_more_specific(monkeypatch):
