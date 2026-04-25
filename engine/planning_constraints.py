@@ -36,4 +36,5 @@ class PlanningConstraints(BaseModel):
     mood_policy: dict[str, Any]
     timing_policy: dict[str, Any]
     constraint_policy: ConstraintPolicy
+    sequence_policy: dict[str, Any]
     global_flags: GlobalFlagsModel

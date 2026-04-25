@@ -970,6 +970,73 @@ def resolve_constraint_conflicts(
     }
 
 
+def derive_sequence_policy(
+    brief: Dict[str, Any],
+    destination_policy: Dict[str, Any],
+    traveller_policy: Dict[str, Any],
+    timing_policy: Dict[str, Any],
+    constraint_policy: Dict[str, Any],
+) -> Dict[str, Any]:
+    timing = brief.get("timing") or {}
+    duration_days = _safe_int(timing.get("duration_days"))
+    duration_nights = _safe_int(timing.get("duration_nights"))
+    destination_type = destination_policy.get("destination_type")
+    pace_bias = destination_policy.get("pace_bias")
+    risk_flags = set(destination_policy.get("risk_flags") or [])
+
+    short_trip = bool(
+        timing_policy.get("is_duration_only")
+        and (
+            (duration_days is not None and duration_days <= 2)
+            or (duration_nights is not None and duration_nights <= 1)
+        )
+    )
+    arrival_light = bool(
+        constraint_policy.get("family_safe")
+        or constraint_policy.get("kids_present")
+        or constraint_policy.get("low_mobility")
+        or constraint_policy.get("slow_pace")
+        or destination_type == "mountain"
+        or "altitude" in risk_flags
+    )
+    departure_buffer = bool(
+        "traffic" in risk_flags
+        or "boat_transfer" in risk_flags
+        or "remote_access" in risk_flags
+        or "rough_access" in risk_flags
+        or "distance" in risk_flags
+    )
+    remote_daylight_movement = bool(
+        destination_type == "arid"
+        or bool(risk_flags & {"remote_access", "rough_access", "distance", "boat_transfer"})
+    )
+    early_start_activity = bool(
+        destination_type == "safari"
+        and (pace_bias == "early_start" or "early_start" in risk_flags)
+    )
+    family_recovery_pacing = bool(
+        traveller_policy.get("needs_family_safe_planning")
+        or constraint_policy.get("family_safe")
+        or constraint_policy.get("kids_present")
+    )
+
+    flags = {
+        "arrival_light": arrival_light,
+        "departure_buffer": departure_buffer,
+        "short_trip_compressed": short_trip,
+        "remote_daylight_movement": remote_daylight_movement,
+        "early_start_activity": early_start_activity,
+        "family_recovery_pacing": family_recovery_pacing,
+        "base_first": destination_type in {"mountain", "safari", "arid", "forest"},
+    }
+
+    return {
+        **flags,
+        "activity_grouping": destination_type or "general",
+        "sequence_flags": [name for name, enabled in flags.items() if enabled],
+    }
+
+
 def _derive_global_flags(
     constraint_policy: Dict[str, Any],
     budget_policy: Dict[str, Any],
@@ -1036,6 +1103,13 @@ def build_planning_constraints(
         timing_policy=timing_policy,
     )
     constraint_policy = constraint_resolution["constraint_policy"]
+    sequence_policy = derive_sequence_policy(
+        brief=brief,
+        destination_policy=destination_policy,
+        traveller_policy=traveller_policy,
+        timing_policy=timing_policy,
+        constraint_policy=constraint_policy,
+    )
     global_flags = _derive_global_flags(
         constraint_policy=constraint_policy,
         budget_policy=budget_policy,
@@ -1054,6 +1128,7 @@ def build_planning_constraints(
         "mood_policy": mood_policy,
         "timing_policy": timing_policy,
         "constraint_policy": constraint_policy,
+        "sequence_policy": sequence_policy,
         "global_flags": global_flags,
     }
 
