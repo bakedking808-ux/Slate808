@@ -916,6 +916,13 @@ def resolve_constraint_conflicts(
     conflict_flags: List[str] = []
     resolved_constraints: List[str] = []
 
+    if resolved.get("low_mobility") and resolved.get("high_activity"):
+        conflict_flags.append("low_mobility_vs_high_activity")
+        resolved["high_activity"] = False
+        resolved["slow_pace"] = True
+        resolved["low_risk"] = True
+        resolved_constraints.append("low_mobility_preserved")
+
     if resolved.get("slow_pace") and resolved.get("high_activity"):
         conflict_flags.append("slow_pace_vs_high_activity")
         if trip_mood == "adventure":
@@ -945,6 +952,8 @@ def resolve_constraint_conflicts(
     if resolved.get("quiet_preferred") and destination_type == "city":
         conflict_flags.append("quiet_preferred_vs_city_bias")
         resolved["quiet_preferred"] = True
+        resolved["high_activity"] = False
+        resolved["low_risk"] = True
         resolved_constraints.append("quiet_preference_preserved")
 
     if timing_policy.get("is_month_only") and resolved.get("high_activity"):
@@ -978,7 +987,7 @@ def _derive_global_flags(
         constraints.append("provisional_timing")
     if timing_policy["should_anchor_to_duration"]:
         constraints.append("duration_anchored")
-    if mood_policy["trip_mood"] == "luxury":
+    if mood_policy["trip_mood"] == "luxury" and not constraint_policy.get("avoid_premium"):
         constraints.append("premium_experience")
     if mood_policy["trip_mood"] == "corporate":
         constraints.append("team_structure")

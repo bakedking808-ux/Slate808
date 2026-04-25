@@ -1,4 +1,5 @@
 import engine.generator as generator
+from engine.runner import run_engine
 from engine.planning_policy import (
     build_planning_constraints,
     derive_budget_policy,
@@ -93,8 +94,18 @@ def test_budget_safety_removes_luxury_language_from_generated_steps():
     joined = " ".join(steps).lower()
 
     assert "avoid_premium_vs_premium_experience" in constraints["global_flags"]["conflict_flags"]
+    assert "premium_experience" not in constraints["global_flags"]["constraints"]
     assert "premium" not in joined
     assert "curated" not in joined
+
+
+def test_budget_safety_removes_premium_posture_from_rendered_plan():
+    result = run_engine("Plan a luxury trip to Diani for 2 people next weekend with a budget of 60000")
+    rendered = result.lower()
+
+    assert "premium" not in rendered
+    assert "curated" not in rendered
+    assert "high-quality" not in rendered
 
 
 def test_family_safety_beats_adventure_activity_pressure():
@@ -137,12 +148,41 @@ def test_low_mobility_remains_enforced_for_mountain_bias():
     assert "low_mobility_preserved" in constraints["global_flags"]["resolved_constraints"]
 
 
+def test_low_mobility_suppresses_injected_high_activity():
+    brief = _brief(destination="mt kenya", trip_mood="relaxed")
+
+    resolved = resolve_constraint_conflicts(
+        constraint_policy={
+            "family_safe": False,
+            "low_risk": False,
+            "avoid_premium": False,
+            "value_focused": False,
+            "group_coordination": False,
+            "kids_present": False,
+            "low_mobility": True,
+            "quiet_preferred": False,
+            "slow_pace": True,
+            "high_activity": True,
+        },
+        brief=brief,
+        destination_policy=derive_destination_policy(brief),
+        mood_policy=derive_mood_policy(brief),
+        budget_policy=derive_budget_policy(brief),
+        timing_policy=derive_timing_policy(brief),
+    )
+
+    assert resolved["constraint_policy"]["high_activity"] is False
+    assert "low_mobility_vs_high_activity" in resolved["conflict_flags"]
+
+
 def test_quiet_preferred_remains_enforced_for_city_bias():
     brief = _brief(destination="nairobi", trip_mood="romantic")
 
     constraints = derive_planning_constraints(brief)
 
     assert constraints["constraint_policy"]["quiet_preferred"] is True
+    assert constraints["constraint_policy"]["high_activity"] is False
+    assert constraints["constraint_policy"]["low_risk"] is True
     assert "quiet_preferred_vs_city_bias" in constraints["global_flags"]["conflict_flags"]
     assert "quiet_preference_preserved" in constraints["global_flags"]["resolved_constraints"]
 
