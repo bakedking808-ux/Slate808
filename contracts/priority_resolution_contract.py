@@ -14,6 +14,26 @@ SOURCE_PRIORITY = {
 }
 
 
+CONSTRAINT_PRIORITY = {
+    "execution_readiness": 60,
+    "traveller_safety": 50,
+    "budget_safety": 40,
+    "destination_semantics": 30,
+    "mood_shaping": 20,
+    "generic_fallback": 10,
+}
+
+
+LAYER_OWNERSHIP = {
+    "extraction": "resolve field truth from user, clarification, recovery, inference, and fallback sources",
+    "policy": "resolve competing constraint truth and emit conflict/resolution flags",
+    "planner": "consume resolved policy without restoring weaker conflicting signals",
+    "refiner": "strengthen and compact wording without changing resolved constraint truth",
+    "readiness": "gate execution actions without weakening ordinary plan usefulness",
+    "formatter": "render labels and polish wording without making planning decisions",
+}
+
+
 class ResolvedField(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
