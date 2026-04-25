@@ -278,3 +278,64 @@ def test_generator_preserves_generic_wording_for_unknown_destination_policy():
 
     assert steps[2] == "Choose balanced transport and lodging options"
     assert steps[3] == "Select activities that balance cost and experience"
+
+
+def test_short_trip_sequence_policy_compresses_activity_wording():
+    brief = _brief(
+        timing=build_timing(
+            raw_text="for 2 days",
+            duration_days=2,
+            date_flexibility="unknown",
+            state="duration_only",
+            confidence="medium",
+        )
+    )
+    steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
+
+    assert "focused on essential experiences" in steps[3].lower()
+
+
+def test_family_sequence_policy_adds_recovery_pacing():
+    brief = _brief(traveller_count=4, trip_mood="family", has_children=True)
+    steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
+
+    assert "recovery-aware family pacing" in steps[3].lower()
+
+
+def test_mountain_sequence_policy_keeps_arrival_light_and_base_first():
+    brief = _brief(destination="mt kenya")
+    steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
+
+    assert "base set before wider movement" in steps[2].lower()
+    assert "lighter arrival-day pace" in steps[3].lower()
+
+
+def test_safari_sequence_policy_keeps_base_before_early_activity():
+    brief = _brief(destination="maasai mara")
+    steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
+
+    assert "base set before wider movement" in steps[2].lower()
+    assert "early movement windows for key outings" in steps[3].lower()
+
+
+def test_city_sequence_policy_adds_departure_buffer():
+    brief = _brief(destination="nairobi")
+    steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
+
+    assert "departure transfer margin" in steps[4].lower()
+
+
+def test_remote_arid_sequence_policy_respects_daylight_movement():
+    brief = _brief(destination="chalbi desert")
+    steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
+
+    assert "daylight access windows respected" in steps[2].lower()
+    assert "departure transfer margin" in steps[4].lower()
+
+
+def test_sequence_policy_preserves_trip_step_count_and_order():
+    brief = _brief(destination="maasai mara", trip_mood="adventure")
+    steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
+
+    assert len(steps) == 5
+    assert [step.split()[0] for step in steps] == ["Define", "Set", "Choose", "Select", "Confirm"]
