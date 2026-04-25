@@ -9,6 +9,10 @@ from engine.plan_refiner import refine_plan
 from engine.execution_readiness import evaluate_execution_readiness
 from engine.formatter import format_output
 from contracts.execution_readiness_contract import ExecutionReadinessRequest
+from contracts.operator_workflow_contract import (
+    OperatorWorkflowInput,
+    map_operator_workflow,
+)
 from uuid import uuid4
 
 
@@ -52,6 +56,10 @@ def _requested_execution_action(request: str) -> str | None:
     return None
 
 
+def _operator_workflow_payload(**kwargs) -> dict:
+    return map_operator_workflow(OperatorWorkflowInput(**kwargs)).model_dump()
+
+
 def run_engine(request: str) -> str:
     fixer_actions = []
     llm_used = False
@@ -74,6 +82,7 @@ def run_engine(request: str) -> str:
             "mode": "normal",
             "clarification_needed": None,
             "clarification_response": None,
+            "operator_workflow": _operator_workflow_payload(status="blocked"),
         }
 
         log_entry = create_log_entry(
@@ -122,6 +131,7 @@ def run_engine(request: str) -> str:
             "mode": "normal",
             "clarification_needed": None,
             "clarification_response": None,
+            "operator_workflow": _operator_workflow_payload(status="reject"),
         }
 
         log_entry = create_log_entry(
@@ -170,6 +180,7 @@ def run_engine(request: str) -> str:
             "mode": "normal",
             "clarification_needed": None,
             "clarification_response": None,
+            "operator_workflow": _operator_workflow_payload(status="weak"),
         }
 
         log_entry = create_log_entry(
@@ -220,6 +231,7 @@ def run_engine(request: str) -> str:
             "mode": plan.get("mode", "normal"),
             "clarification_needed": None,
             "clarification_response": None,
+            "operator_workflow": _operator_workflow_payload(status=plan.get("status", "fail")),
         }
 
         log_entry = create_log_entry(
@@ -324,6 +336,12 @@ def run_engine(request: str) -> str:
         "clarification_needed": None,
         "clarification_response": None,
         "execution_readiness": execution_readiness,
+        "operator_workflow": _operator_workflow_payload(
+            status=result["status"],
+            trace_id=plan.get("trace_id"),
+            brief=plan.get("brief"),
+            execution_readiness=execution_readiness,
+        ),
     }
 
     if action_blocked:
