@@ -82,6 +82,11 @@ def _get_constraint_policy(details: dict) -> dict:
     return planning_constraints.get("constraint_policy", {})
 
 
+def _get_sequence_policy(details: dict) -> dict:
+    planning_constraints = _validated_planning_constraints(details)
+    return planning_constraints.get("sequence_policy", {})
+
+
 def _destination_transport_suffix(details: dict) -> str:
     destination_policy = _get_destination_policy(details)
     destination_type = destination_policy.get("destination_type")
@@ -282,6 +287,37 @@ def _apply_constraint_policy(steps: list[str], details: dict) -> list[str]:
     if constraint_policy.get("high_activity"):
         transport_suffixes.append("while keeping movement structured for active segments")
         activity_suffixes.append("with active and well-structured movement")
+
+    steps[2] = _merge_constraint_suffixes(steps[2], transport_suffixes)
+    steps[3] = _merge_constraint_suffixes(steps[3], activity_suffixes)
+    steps[4] = _merge_constraint_suffixes(steps[4], timing_suffixes)
+
+    return steps
+
+
+def _apply_sequence_policy(steps: list[str], details: dict) -> list[str]:
+    sequence_policy = _get_sequence_policy(details)
+    if not sequence_policy:
+        return steps
+
+    transport_suffixes: list[str] = []
+    activity_suffixes: list[str] = []
+    timing_suffixes: list[str] = []
+
+    if sequence_policy.get("base_first"):
+        transport_suffixes.append("with the base set before wider movement")
+    if sequence_policy.get("remote_daylight_movement"):
+        transport_suffixes.append("with daylight access windows respected")
+    if sequence_policy.get("arrival_light"):
+        activity_suffixes.append("with a lighter arrival-day pace")
+    if sequence_policy.get("short_trip_compressed"):
+        activity_suffixes.append("focused on essential experiences")
+    if sequence_policy.get("early_start_activity"):
+        activity_suffixes.append("with early movement windows for key outings")
+    if sequence_policy.get("family_recovery_pacing"):
+        activity_suffixes.append("with recovery-aware family pacing")
+    if sequence_policy.get("departure_buffer"):
+        timing_suffixes.append("with departure transfer margin")
 
     steps[2] = _merge_constraint_suffixes(steps[2], transport_suffixes)
     steps[3] = _merge_constraint_suffixes(steps[3], activity_suffixes)
@@ -582,7 +618,8 @@ def _budget_aware_trip_steps(details: dict) -> list[str]:
 
     steps = [step_1, step_2, step_3, step_4, step_5]
     steps = _apply_mood_to_trip_steps(steps, details)
-    return _apply_constraint_policy(steps, details)
+    steps = _apply_constraint_policy(steps, details)
+    return _apply_sequence_policy(steps, details)
 
 
 def _finalize_trip_steps(steps: list[str], details: dict) -> list[str]:
