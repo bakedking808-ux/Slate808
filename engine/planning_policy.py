@@ -925,6 +925,12 @@ def resolve_constraint_conflicts(
             resolved["high_activity"] = False
             resolved_constraints.append("kept_slow_pace_over_high_activity")
 
+    if resolved.get("family_safe") and resolved.get("high_activity"):
+        conflict_flags.append("family_safe_vs_high_activity")
+        resolved["high_activity"] = False
+        resolved["low_risk"] = True
+        resolved_constraints.append("family_safety_preserved")
+
     if resolved.get("avoid_premium") and mood_policy.get("experience_style") == "elevated":
         conflict_flags.append("avoid_premium_vs_premium_experience")
         if budget_level in {"low", "medium"} or budget_policy.get("budget_posture") in {"cost_sensitive", "balanced"}:

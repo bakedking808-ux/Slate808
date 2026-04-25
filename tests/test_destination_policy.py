@@ -129,6 +129,17 @@ def test_destination_policy_fallback_mixed_or_unknown():
     }
 
 
+def test_unknown_destination_fallback_remains_generic_and_safe(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+
+    constraints = derive_planning_constraints(_brief("hidden valley"))
+
+    assert constraints["destination_policy"]["destination_type"] == "mixed_or_unknown"
+    assert constraints["destination_policy"]["activity_bias"] == ["general"]
+    assert constraints["destination_policy"]["transport_bias"] == "standard"
+    assert constraints["global_flags"]["refinement_flags"] == []
+
+
 def test_destination_policy_partial_match_fallback():
     policy = derive_destination_policy(_brief("south coast diani"))
 

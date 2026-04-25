@@ -85,6 +85,48 @@ def test_avoid_premium_wins_over_premium_pressure_for_medium_budget():
     assert "avoid_premium_preserved" in resolved["resolved_constraints"]
 
 
+def test_budget_safety_removes_luxury_language_from_generated_steps():
+    brief = _brief(trip_mood="luxury", budget_level="medium")
+    constraints = derive_planning_constraints(brief)
+
+    steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": constraints})
+    joined = " ".join(steps).lower()
+
+    assert "avoid_premium_vs_premium_experience" in constraints["global_flags"]["conflict_flags"]
+    assert "premium" not in joined
+    assert "curated" not in joined
+
+
+def test_family_safety_beats_adventure_activity_pressure():
+    brief = _brief(trip_mood="adventure")
+
+    resolved = resolve_constraint_conflicts(
+        constraint_policy={
+            "family_safe": True,
+            "low_risk": False,
+            "avoid_premium": False,
+            "value_focused": False,
+            "group_coordination": True,
+            "kids_present": True,
+            "low_mobility": False,
+            "quiet_preferred": False,
+            "slow_pace": False,
+            "high_activity": True,
+        },
+        brief=brief,
+        destination_policy=derive_destination_policy(brief),
+        mood_policy=derive_mood_policy(brief),
+        budget_policy=derive_budget_policy(brief),
+        timing_policy=derive_timing_policy(brief),
+    )
+
+    assert resolved["constraint_policy"]["family_safe"] is True
+    assert resolved["constraint_policy"]["high_activity"] is False
+    assert resolved["constraint_policy"]["low_risk"] is True
+    assert "family_safe_vs_high_activity" in resolved["conflict_flags"]
+    assert "family_safety_preserved" in resolved["resolved_constraints"]
+
+
 def test_low_mobility_remains_enforced_for_mountain_bias():
     brief = _brief(destination="mt kenya", trip_mood="relaxed")
 

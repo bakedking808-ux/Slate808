@@ -1,4 +1,18 @@
-from contracts.priority_resolution_contract import resolve_field_priorities
+from contracts.priority_resolution_contract import (
+    CONSTRAINT_PRIORITY,
+    LAYER_OWNERSHIP,
+    SOURCE_PRIORITY,
+    resolve_field_priorities,
+)
+
+
+def test_priority_contract_documents_source_constraint_and_layer_ownership():
+    assert SOURCE_PRIORITY["explicit_user_input"] > SOURCE_PRIORITY["inferred_value"]
+    assert CONSTRAINT_PRIORITY["execution_readiness"] > CONSTRAINT_PRIORITY["mood_shaping"]
+    assert CONSTRAINT_PRIORITY["traveller_safety"] > CONSTRAINT_PRIORITY["destination_semantics"]
+    assert "resolve competing constraint truth" in LAYER_OWNERSHIP["policy"]
+    assert "consume resolved policy" in LAYER_OWNERSHIP["planner"]
+    assert "without changing resolved constraint truth" in LAYER_OWNERSHIP["refiner"]
 
 
 def test_explicit_beats_inferred():
