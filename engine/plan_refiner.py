@@ -100,6 +100,12 @@ def _trip_refinement(checks: list[str], risks: list[str], constraints: dict[str,
     if budget.get("should_require_cost_check"):
         checks[1] = "Costs should be checked against the stated budget before booking"
         risks[0] = "Costs may drift if transport, lodging, and activities are not priced together"
+    if constraints["constraint_policy"].get("avoid_premium"):
+        checks = [
+            check.replace("premium trip", "practical trip").replace("Premium", "Practical")
+            for check in checks
+        ]
+        risks = [risk.replace("Premium", "Practical") for risk in risks]
     if traveller.get("needs_family_safe_planning"):
         checks[2] = "Activities should remain family-safe, practical, and well-paced for the group"
         risks[1] = "The plan may become too complex if family-safe pacing is not preserved"
