@@ -239,6 +239,18 @@ def _apply_constraint_policy(steps: list[str], details: dict) -> list[str]:
     timing_suffixes: list[str] = []
 
     if constraint_policy.get("family_safe") or constraint_policy.get("kids_present"):
+        steps[2] = _replace_step_terms(
+            steps[2],
+            [("active excursions", "structured excursions")],
+        )
+        steps[3] = _replace_step_terms(
+            steps[3],
+            [("adventurous activities and outdoor experiences", "family-safe outdoor experiences")],
+        )
+        steps[4] = _replace_step_terms(
+            steps[4],
+            [("reserve time for active excursions", "reserve time for manageable excursions")],
+        )
         transport_suffixes.append("with safe and comfortable movement for everyone")
         activity_suffixes.append("with family-friendly and comfortable options")
         timing_suffixes.append("while keeping the schedule easy for families")

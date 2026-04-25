@@ -1,5 +1,6 @@
 import engine.generator as generator
 from engine.runner import run_engine
+from engine.travel_brief import build_travel_brief
 from engine.planning_policy import (
     build_planning_constraints,
     derive_budget_policy,
@@ -136,6 +137,32 @@ def test_family_safety_beats_adventure_activity_pressure():
     assert resolved["constraint_policy"]["low_risk"] is True
     assert "family_safe_vs_high_activity" in resolved["conflict_flags"]
     assert "family_safety_preserved" in resolved["resolved_constraints"]
+
+
+def test_children_language_reaches_family_safe_policy_truth():
+    brief = build_travel_brief(
+        "Plan an adventure trip to Maasai Mara for 2 adults and 2 children next weekend"
+    )
+    constraints = derive_planning_constraints(brief)
+
+    assert brief["trip_mood"] == "adventure"
+    assert brief["has_children"] is True
+    assert constraints["constraint_policy"]["kids_present"] is True
+    assert constraints["constraint_policy"]["family_safe"] is True
+    assert constraints["constraint_policy"]["high_activity"] is False
+    assert "family_safe_vs_high_activity" in constraints["global_flags"]["conflict_flags"]
+
+
+def test_family_safety_suppresses_strong_adventure_wording_downstream():
+    result = run_engine(
+        "Plan an adventure trip to Maasai Mara for 2 adults and 2 children next weekend"
+    )
+    rendered = result.lower()
+
+    assert "family-safe" in rendered
+    assert "active excursions" not in rendered
+    assert "adventurous activities" not in rendered
+    assert "active and well-structured movement" not in rendered
 
 
 def test_low_mobility_remains_enforced_for_mountain_bias():
