@@ -173,7 +173,12 @@ def _merge_constraint_suffixes(step: str, suffixes: list[str]) -> str:
     for suffix in merged_suffixes[1:]:
         rendered_suffixes.append(re.sub(r"^(with|while|and)\s+", "", suffix))
 
-    return f"{step} {'; '.join(rendered_suffixes)}"
+    suffix_text = "; ".join(rendered_suffixes)
+    if " with " in step and suffix_text.startswith("with "):
+        suffix_text = suffix_text.removeprefix("with ")
+        return f"{step}; {suffix_text}"
+
+    return f"{step} {suffix_text}"
 
 
 def _replace_step_terms(step: str, replacements: list[tuple[str, str]]) -> str:
@@ -271,7 +276,7 @@ def _apply_constraint_policy(steps: list[str], details: dict) -> list[str]:
     if constraint_policy.get("group_coordination"):
         transport_suffixes.append("with shared meeting points and aligned movement")
         activity_suffixes.append("with logistics that keep the group coordinated")
-        timing_suffixes.append("confirm the shared schedule for the group")
+        timing_suffixes.append("while confirming the shared schedule for the group")
 
     if constraint_policy.get("low_mobility"):
         transport_suffixes.append("while keeping transfers easy and low-strain")
@@ -304,17 +309,21 @@ def _apply_sequence_policy(steps: list[str], details: dict) -> list[str]:
     activity_suffixes: list[str] = []
     timing_suffixes: list[str] = []
 
-    if sequence_policy.get("base_first"):
+    if sequence_policy.get("base_first") and sequence_policy.get("remote_daylight_movement"):
+        transport_suffixes.append("with base-first, daylight-aware movement")
+    elif sequence_policy.get("base_first"):
         transport_suffixes.append("with the base set before wider movement")
-    if sequence_policy.get("remote_daylight_movement"):
+    elif sequence_policy.get("remote_daylight_movement"):
         transport_suffixes.append("with daylight access windows respected")
-    if sequence_policy.get("arrival_light"):
+    if sequence_policy.get("arrival_light") and sequence_policy.get("family_recovery_pacing"):
+        activity_suffixes.append("with lighter arrival-day and recovery-aware family pacing")
+    elif sequence_policy.get("arrival_light"):
         activity_suffixes.append("with a lighter arrival-day pace")
     if sequence_policy.get("short_trip_compressed"):
-        activity_suffixes.append("focused on essential experiences")
+        activity_suffixes.append("with essential experiences prioritized")
     if sequence_policy.get("early_start_activity"):
         activity_suffixes.append("with early movement windows for key outings")
-    if sequence_policy.get("family_recovery_pacing"):
+    if sequence_policy.get("family_recovery_pacing") and not sequence_policy.get("arrival_light"):
         activity_suffixes.append("with recovery-aware family pacing")
     if sequence_policy.get("departure_buffer"):
         timing_suffixes.append("with departure transfer margin")
