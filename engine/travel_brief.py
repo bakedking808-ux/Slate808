@@ -99,6 +99,7 @@ class TravelBriefModel(BaseModel):
     budget_amount: Optional[int] = Field(ge=0)
     budget_level: BudgetLevel
     trip_mood: Optional[TripMood]
+    has_children: bool = False
 
     @field_validator("destination", "trip_mood", mode="before")
     @classmethod
@@ -756,6 +757,14 @@ def extract_traveller_count(text: str, decision_log=None) -> Optional[int]:
         return value
 
     return None
+
+
+def extract_has_children(text: str, decision_log=None) -> bool:
+    text = normalize_travel_text(text).lower()
+    has_children = bool(re.search(r"\b(?:kids?|children|child)\b", text))
+    if has_children and decision_log:
+        decision_log("CHILD_TRAVELLER_SIGNAL_DETECTED")
+    return has_children
 
 
 def _infer_budget_level_from_amount(amount: int) -> str:
@@ -1556,6 +1565,7 @@ def build_travel_brief(text: str, decision_log=None) -> Dict[str, Any]:
         budget_amount=budget_info["budget_amount"],
         budget_level=budget_info["budget_level"],
         trip_mood=extract_trip_mood(normalized, decision_log=decision_log),
+        has_children=extract_has_children(normalized, decision_log=decision_log),
     )
 
     return enforce_travel_brief_schema(brief.model_dump())

@@ -665,9 +665,9 @@ def _infer_activity_intensity(trip_mood: str | None, group_type: str) -> str:
 def derive_traveller_policy(brief: Dict[str, Any]) -> Dict[str, Any]:
     traveller_count = _safe_int(brief.get("traveller_count"))
     trip_mood = _normalize_text(brief.get("trip_mood"))
-    group_type = _infer_group_type(traveller_count, trip_mood)
+    has_children = bool(brief.get("has_children")) or trip_mood == "family"
+    group_type = "family" if has_children else _infer_group_type(traveller_count, trip_mood)
 
-    has_children = trip_mood == "family"
     needs_family_safe_planning = has_children or group_type == "family"
     needs_group_coordination = group_type in {"small_group", "large_group", "team", "family"}
     should_reduce_complexity = group_type in {"large_group", "family", "team"}
@@ -818,6 +818,7 @@ def derive_timing_policy(brief: Dict[str, Any]) -> Dict[str, Any]:
 def derive_constraint_policy(brief: Dict[str, Any]) -> Dict[str, Any]:
     traveller_count = _safe_int(brief.get("traveller_count"))
     trip_mood = _normalize_text(brief.get("trip_mood"))
+    has_children = bool(brief.get("has_children")) or trip_mood == "family"
     budget_amount = _safe_int(brief.get("budget_amount"))
     budget_level = _normalize_text(brief.get("budget_level")) or "unspecified"
     budget_posture = _derive_budget_posture(budget_level, budget_amount)
@@ -825,12 +826,12 @@ def derive_constraint_policy(brief: Dict[str, Any]) -> Dict[str, Any]:
     timing_state = _normalize_text(timing.get("state")) or "missing_timing"
 
     policy = ConstraintPolicy(
-        family_safe=trip_mood == "family",
-        low_risk=trip_mood in {"family", "relaxed"} or timing_state == "month_only",
+        family_safe=has_children,
+        low_risk=has_children or trip_mood in {"family", "relaxed"} or timing_state == "month_only",
         avoid_premium=budget_posture in {"cost_sensitive", "balanced"},
         value_focused=budget_posture == "cost_sensitive",
         group_coordination=traveller_count is not None and traveller_count >= 4,
-        kids_present=trip_mood == "family",
+        kids_present=has_children,
         low_mobility=trip_mood == "relaxed",
         quiet_preferred=trip_mood in {"relaxed", "romantic", "family"},
         slow_pace=trip_mood in {"relaxed", "romantic", "family"},
