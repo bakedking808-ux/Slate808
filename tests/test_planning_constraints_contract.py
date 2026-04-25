@@ -40,6 +40,7 @@ def test_planning_constraints_contract_validates_and_preserves_dict_shape(monkey
         "mood_policy",
         "timing_policy",
         "constraint_policy",
+        "sequence_policy",
         "global_flags",
     }
     assert dumped == planning_constraints
@@ -53,6 +54,7 @@ def test_invalid_planning_constraints_shape_fails_loudly():
             mood_policy={},
             timing_policy={},
             constraint_policy={},
+            sequence_policy={},
             global_flags={},
         )
 

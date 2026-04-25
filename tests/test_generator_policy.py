@@ -88,6 +88,17 @@ def test_generator_uses_planning_constraints_instead_of_raw_brief_branching(monk
                 "slow_pace": False,
                 "high_activity": False,
             },
+            "sequence_policy": {
+                "arrival_light": False,
+                "departure_buffer": False,
+                "short_trip_compressed": False,
+                "remote_daylight_movement": False,
+                "early_start_activity": False,
+                "family_recovery_pacing": False,
+                "base_first": False,
+                "activity_grouping": "general",
+                "sequence_flags": [],
+            },
             "global_flags": {
                 "constraints": [],
                 "is_budget_constrained": False,
