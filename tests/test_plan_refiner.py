@@ -170,7 +170,7 @@ def test_city_traffic_pacing_strengthens_timing_wording(monkeypatch):
 
     refined = refine_plan(plan)
 
-    assert "with transfer buffers for traffic-aware movement" in refined["steps"][4]
+    assert "with departure and transfer buffers for traffic-aware movement" in refined["steps"][4]
     assert len(refined["steps"]) == len(original["steps"])
     assert [step.split()[0] for step in refined["steps"]] == [step.split()[0] for step in original["steps"]]
     assert refined["brief"]["destination"] == original["brief"]["destination"]
@@ -200,7 +200,7 @@ def test_safari_movement_pacing_strengthens_timing_wording(monkeypatch):
 
     refined = refine_plan(plan)
 
-    assert "with drive-time buffers for access conditions" in refined["steps"][4]
+    assert "with departure and drive-time buffers for access conditions" in refined["steps"][4]
 
 
 def test_arid_remote_pacing_strengthens_timing_wording(monkeypatch):
@@ -209,7 +209,25 @@ def test_arid_remote_pacing_strengthens_timing_wording(monkeypatch):
 
     refined = refine_plan(plan)
 
-    assert "with conservative remote-access timing" in refined["steps"][4]
+    assert "with departure margin and conservative remote-access timing" in refined["steps"][4]
+
+
+def test_sequence_suffix_compaction_cleans_rendered_multi_flag_outputs(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+
+    family = run_engine("Plan a family trip to Naivasha for 2 adults and 3 kids next weekend with a medium budget")
+    safari = run_engine("Plan an adventure trip to Maasai Mara for 3 people for 5 days with a medium budget")
+    remote = run_engine("Plan a trip to Chalbi Desert for 4 people next weekend with a medium budget")
+    short = run_engine("Plan a trip to Diani for 2 people for 2 days with a medium budget")
+
+    assert "family-friendly, comfortable, and practical options" in family
+    assert "lighter arrival-day pacing, and recovery-aware family time" in family
+    assert "base-first, daylight-aware movement" in safari
+    assert "with departure and drive-time buffers for access conditions" in safari
+    assert "align bookings confirm" not in remote
+    assert "with shared schedule confirmed, departure margin, and conservative remote-access timing" in remote
+    assert "essential experiences prioritized" in short
+    assert "relaxation experiences focused on essential experiences" not in short
 
 
 def test_unknown_destination_without_pacing_signals_keeps_timing_generic(monkeypatch):

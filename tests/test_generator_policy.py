@@ -292,13 +292,14 @@ def test_short_trip_sequence_policy_compresses_activity_wording():
     )
     steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
 
-    assert "focused on essential experiences" in steps[3].lower()
+    assert "essential experiences prioritized" in steps[3].lower()
 
 
 def test_family_sequence_policy_adds_recovery_pacing():
     brief = _brief(traveller_count=4, trip_mood="family", has_children=True)
     steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
 
+    assert "lighter arrival-day and recovery-aware family pacing" in steps[3].lower()
     assert "recovery-aware family pacing" in steps[3].lower()
 
 
@@ -314,7 +315,7 @@ def test_safari_sequence_policy_keeps_base_before_early_activity():
     brief = _brief(destination="maasai mara")
     steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
 
-    assert "base set before wider movement" in steps[2].lower()
+    assert "base-first, daylight-aware movement" in steps[2].lower()
     assert "early movement windows for key outings" in steps[3].lower()
 
 
@@ -329,8 +330,16 @@ def test_remote_arid_sequence_policy_respects_daylight_movement():
     brief = _brief(destination="chalbi desert")
     steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
 
-    assert "daylight access windows respected" in steps[2].lower()
+    assert "base-first, daylight-aware movement" in steps[2].lower()
     assert "departure transfer margin" in steps[4].lower()
+
+
+def test_group_timing_suffix_uses_connector_safe_join():
+    brief = _brief(destination="chalbi desert", traveller_count=4)
+    steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
+
+    assert "align bookings confirm" not in steps[4].lower()
+    assert "while confirming the shared schedule for the group" in steps[4].lower()
 
 
 def test_sequence_policy_preserves_trip_step_count_and_order():

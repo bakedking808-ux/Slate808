@@ -152,6 +152,50 @@ def _compact_step(step: str) -> str:
             "; in calm and quieter settings",
             "; in quieter settings",
         ),
+        (
+            "family-friendly and comfortable options; safe and practical choices",
+            "family-friendly, comfortable, and practical options",
+        ),
+        (
+            "safe and practical choices",
+            "safety and comfort in mind",
+        ),
+        (
+            "fewer activities and more recovery time; lighter arrival-day and recovery-aware family pacing",
+            "fewer activities, lighter arrival-day pacing, and recovery-aware family time",
+        ),
+        (
+            "; confirming the shared schedule for the group",
+            "; shared schedule confirmed for the group",
+        ),
+        (
+            "while confirming the shared schedule for the group with departure margin",
+            "with shared schedule confirmed and departure margin",
+        ),
+        (
+            "while confirming the shared schedule for the group with departure transfer margin",
+            "with shared schedule confirmed and departure margin",
+        ),
+        (
+            "and align transport and accommodation and reserve time for active excursions",
+            "and align transport and accommodation while reserving time for active excursions",
+        ),
+        (
+            "with departure transfer margin with drive-time buffers for access conditions",
+            "with departure and drive-time buffers for access conditions",
+        ),
+        (
+            "with departure transfer margin with conservative remote-access timing",
+            "with departure margin and conservative remote-access timing",
+        ),
+        (
+            "with shared schedule confirmed and departure margin with conservative remote-access timing",
+            "with shared schedule confirmed, departure margin, and conservative remote-access timing",
+        ),
+        (
+            "with departure transfer margin with transfer buffers for traffic-aware movement",
+            "with departure and transfer buffers for traffic-aware movement",
+        ),
     ]
 
     for old, new in replacements:
@@ -165,6 +209,14 @@ def _strengthen_timing_step(step: str, destination_policy: dict[str, Any]) -> st
 
     suffix = _destination_pacing_suffix(destination_policy)
     if not suffix or suffix in step:
+        return step
+    compacted_suffixes = {
+        "with transfer buffers for traffic-aware movement": "with departure and transfer buffers for traffic-aware movement",
+        "with drive-time buffers for access conditions": "with departure and drive-time buffers for access conditions",
+        "with conservative remote-access timing": "with departure margin and conservative remote-access timing",
+    }
+    compacted_suffix = compacted_suffixes.get(suffix)
+    if compacted_suffix and compacted_suffix in step:
         return step
     return f"{step} {suffix}"
 
