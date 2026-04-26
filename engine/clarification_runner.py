@@ -633,8 +633,9 @@ def _extract_single(field: str, text: str):
         return val if val else None
 
     if field == "timing":
-        timing = extract_timing(text)
-        if timing.get("state") in {"exact_timing", "relative_timing", "duration_only", "month_only"}:
+        timing_text = _normalize_timing_correction_scaffold(text)
+        timing = _ioc_timing_from_value(timing_text)
+        if timing and timing.get("state") in {"exact_timing", "relative_timing", "duration_only", "month_only"}:
             return timing
         return None
 
@@ -834,6 +835,29 @@ def _normalize_correction_scaffold(text: str) -> str:
     cleaned = re.sub(r"^\s*make it\b\s*", "", cleaned)
     cleaned = re.sub(r"^\s*(?:move|shift)\s+the\s+dates\b(?:\s+to)?\s*", "", cleaned)
     cleaned = re.sub(r"\b(?:instead|please)\b", "", cleaned)
+    return cleaned.strip(" ,.-")
+
+
+def _normalize_timing_correction_scaffold(text: str) -> str:
+    cleaned = text.strip().lower()
+    cleaned = cleaned.replace("’", "'")
+
+    patterns = [
+        r"^\s*wait\b[\s,\-]*",
+        r"^\s*actually\b[\s,\-]*",
+        r"^\s*no\b[\s,\-]*",
+        r"^\s*change\s+to\b[\s,\-]*",
+        r"^\s*shift\s+to\b[\s,\-]*",
+        r"^\s*move\s+to\b[\s,\-]*",
+    ]
+
+    for pattern in patterns:
+        while True:
+            normalized = re.sub(pattern, "", cleaned)
+            if normalized == cleaned:
+                break
+            cleaned = normalized.strip()
+
     return cleaned.strip(" ,.-")
 
 
