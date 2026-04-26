@@ -153,8 +153,11 @@ def test_handoff_packet_uses_existing_trace_brief_readiness_and_approval():
     assert result.state == "handoff_packet_created"
     assert result.handoff_packet is not None
     assert result.handoff_packet.trace_id == "trace-123"
+    assert result.handoff_packet.goal is None
+    assert result.handoff_packet.travel_brief == brief
     assert result.handoff_packet.brief == brief
     assert result.handoff_packet.readiness == readiness
+    assert result.handoff_packet.operator_workflow_state == "handoff_packet_created"
     assert result.handoff_packet.approval_state == "approved"
 
 
@@ -187,6 +190,50 @@ def test_workflow_mapping_is_deterministic_and_auditable():
     assert first.audit_tags == ["execution_blocked", "plan_ready_only"]
 
 
+def test_blocked_booking_handoff_packet_includes_recovery_guidance():
+    readiness = _readiness(
+        "Plan a trip to Diani for 2 people next weekend",
+        requested_action="booking_prep",
+    )
+
+    result = map_operator_workflow(
+        OperatorWorkflowInput(
+            status="pass",
+            trace_id="trace-123",
+            goal="Plan a trip to Diani",
+            execution_readiness=readiness,
+            create_handoff_packet=True,
+        )
+    )
+
+    guidance = result.handoff_packet.recovery_guidance
+    assert result.state == "execution_blocked"
+    assert result.handoff_packet.requested_action == "booking_prep"
+    assert result.handoff_packet.action_allowed is False
+    assert result.handoff_packet.blockers == ["execution_timing_not_exact:relative_timing"]
+    assert guidance["next_operator_action"] == "collect_exact_date_range"
+    assert guidance["return_state"] == "plan_ready_only"
+
+
+def test_handoff_packet_is_deterministic_across_repeated_workflow_mapping():
+    readiness = _readiness(
+        "Plan a trip to Diani for 2 people next weekend",
+        requested_action="calendar_schedule",
+    )
+    request = OperatorWorkflowInput(
+        status="pass",
+        trace_id="trace-123",
+        goal="Plan a trip to Diani",
+        execution_readiness=readiness,
+        create_handoff_packet=True,
+    )
+
+    first = map_operator_workflow(request)
+    second = map_operator_workflow(request)
+
+    assert first.handoff_packet.model_dump() == second.handoff_packet.model_dump()
+
+
 def test_action_blocked_status_still_maps_to_execution_blocked():
     readiness = _readiness(
         "Plan a trip to Diani for 2 people next weekend",
@@ -209,9 +256,13 @@ def test_runtime_logs_operator_workflow_for_plan_ready_only(monkeypatch):
     run_engine("Plan a trip to diani for 2 people next weekend")
 
     workflow = entries[-1]["final_output"]["operator_workflow"]
+    packet = entries[-1]["final_output"]["handoff_packet"]
     assert workflow["state"] == "plan_ready_only"
     assert workflow["execution_prep_eligible"] is False
     assert workflow["audit_tags"] == ["plan_ready_only"]
+    assert packet["goal"] == entries[-1]["final_output"]["goal"]
+    assert packet["travel_brief"] == entries[-1]["final_output"]["brief"]
+    assert packet["operator_workflow_state"] == "plan_ready_only"
 
 
 def test_runtime_logs_human_approval_required_for_exact_timing(monkeypatch):
@@ -222,9 +273,12 @@ def test_runtime_logs_human_approval_required_for_exact_timing(monkeypatch):
     run_engine("Plan a trip to diani for 2 people 10 April to 12 April")
 
     workflow = entries[-1]["final_output"]["operator_workflow"]
+    packet = entries[-1]["final_output"]["handoff_packet"]
     assert workflow["state"] == "human_approval_required"
     assert workflow["requires_human_approval"] is True
     assert workflow["execution_prep_eligible"] is False
+    assert packet["requires_human_approval"] is True
+    assert packet["recovery_guidance"]["next_operator_action"] == "collect_human_approval"
 
 
 def test_runtime_logs_execution_blocked_for_booking_with_relative_timing(monkeypatch):
@@ -239,3 +293,26 @@ def test_runtime_logs_execution_blocked_for_booking_with_relative_timing(monkeyp
     assert final_output["status"] == "fail"
     assert workflow["state"] == "execution_blocked"
     assert workflow["recovery_action"] == "resolve_execution_blockers"
+    assert final_output["handoff_packet"]["requested_action"] == "booking_prep"
+    assert (
+        final_output["handoff_packet"]["recovery_guidance"]["message"]
+        == "Collect exact start and end dates before execution actions."
+    )
+
+
+def test_runtime_calendar_review_allowed_but_schedule_gets_recovery_guidance(monkeypatch):
+    entries = []
+    monkeypatch.setattr("engine.runner.log_run", lambda entry: entries.append(entry))
+    monkeypatch.setattr("engine.runner.log_event", lambda **_: None)
+
+    run_engine("Plan a trip to diani for 2 people next weekend and check my calendar")
+    review_output = entries[-1]["final_output"]
+
+    run_engine("Plan a trip to diani for 2 people next weekend and schedule it")
+    schedule_output = entries[-1]["final_output"]
+
+    assert review_output["operator_workflow"]["state"] == "plan_ready_only"
+    assert review_output["execution_readiness"]["action_allowed"] is True
+    assert schedule_output["operator_workflow"]["state"] == "execution_blocked"
+    assert schedule_output["handoff_packet"]["requested_action"] == "calendar_schedule"
+    assert schedule_output["handoff_packet"]["recovery_guidance"]["return_state"] == "plan_ready_only"
