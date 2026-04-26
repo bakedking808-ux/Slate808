@@ -893,6 +893,10 @@ def _collected_fields_from_brief(brief: dict) -> dict:
     return collected_fields
 
 
+def _get_indefinite_article(word: str) -> str:
+    return "an" if re.match(r"^[aeiou]", word.strip().lower()) else "a"
+
+
 def _rebuild_input(state: dict) -> str:
     collected = state["collected_fields"]
 
@@ -907,8 +911,11 @@ def _rebuild_input(state: dict) -> str:
         f"{travellers} people" if isinstance(travellers, int) else str(travellers)
     )
 
-    mood_phrase = f"{trip_mood} " if trip_mood else ""
-    rebuilt = f"Plan a {mood_phrase}trip to {destination} for {traveller_phrase}"
+    if trip_mood:
+        article = _get_indefinite_article(trip_mood)
+        rebuilt = f"Plan {article} {trip_mood} trip to {destination} for {traveller_phrase}"
+    else:
+        rebuilt = f"Plan a trip to {destination} for {traveller_phrase}"
 
     if timing:
         if timing.startswith("for "):
