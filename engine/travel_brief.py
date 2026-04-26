@@ -959,13 +959,13 @@ def extract_budget_info(text: str, decision_log=None) -> Dict[str, Any]:
         return {"budget_amount": None, "budget_level": "unspecified"}
 
     amount_patterns = [
-        r"\bbudget(?:\s+is|\s+of|\s+for)?\s+(?:kes|ksh|sh)?\s*([\d,]+)\b",
-        r"\bwith\s+(?:a\s+budget\s+(?:of|is)\s+)?(?:kes|ksh|sh)\s*([\d,]+)\b",
-        r"\b(?:kes|ksh|sh)\s*([\d,]+)\b",
-        r"\b([\d,]+)\s*(?:kes|ksh|sh)\b",
-        r"\bunder\s+([\d,]+)\b",
-        r"\b([\d,]+)\s+budget\b",
-        r"\b([\d,]+)k\b",
+        r"\bbudget(?:\s+is|\s+of|\s+for)?\s+(?:kes|ksh|sh)?\s*(\d[\d,]*)\b",
+        r"\bwith\s+(?:a\s+budget\s+(?:of|is)\s+)?(?:kes|ksh|sh)\s*(\d[\d,]*)\b",
+        r"\b(?:kes|ksh|sh)\s*(\d[\d,]*)\b",
+        r"\b(\d[\d,]*)\s*(?:kes|ksh|sh)\b",
+        r"\bunder\s+(\d[\d,]*)\b",
+        r"\b(\d[\d,]*)\s+budget\b",
+        r"\b(\d[\d,]*)k\b",
     ]
 
     for pattern in amount_patterns:
@@ -975,9 +975,11 @@ def extract_budget_info(text: str, decision_log=None) -> Dict[str, Any]:
                 continue
 
             raw = match.group(1).replace(",", "")
+            if not raw:
+                continue
             amount = int(raw)
 
-            if pattern == r"\b([\d,]+)k\b":
+            if pattern == r"\b(\d[\d,]*)k\b":
                 amount *= 1000
 
             level = _infer_budget_level_from_amount(amount)
@@ -996,7 +998,7 @@ def extract_budget_info(text: str, decision_log=None) -> Dict[str, Any]:
     if re.search(r"\b(?:comfortable|mid-range|moderate|medium\s+budget)\b", text_lower):
         return {"budget_amount": None, "budget_level": "medium"}
 
-    if re.search(r"\b(?:cheap|low\s+budget|affordable)\b", text_lower):
+    if re.search(r"\b(?:cheap|low\s+budget|affordable|budget[-\s]+friendly)\b", text_lower):
         return {"budget_amount": None, "budget_level": "low"}
 
     return {"budget_amount": None, "budget_level": "unspecified"}
@@ -1483,6 +1485,7 @@ MOOD_KEYWORDS = {
         r"\bexciting\b",
         r"\bhiking\b",
         r"\bexploration\b",
+        r"\bexploratory\b",
         r"\baction\b",
         r"\bsport\b",
     ],

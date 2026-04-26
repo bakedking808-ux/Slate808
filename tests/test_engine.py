@@ -555,6 +555,9 @@ def test_budget_and_destination_extraction_with_interleaved_currency_context():
         ("Plan a trip to Diani for 2 people 45,001 budget", 45001, "medium"),
         ("Plan a trip to Diani for 2 people 85,000 budget", 85000, "medium"),
         ("Plan a trip to Diani for 2 people 85,001 budget", 85001, "high"),
+        ("Plan a trip to Diani for 4 people with a budget of 64000", 64000, "medium"),
+        ("Plan a trip with KES 60000 for Diani", 60000, "medium"),
+        ("27th April, 10AM to 3PM, budget friendly", None, "low"),
     ],
 )
 def test_budget_contract_bands_phrases_and_numeric_formats(text, amount, level):
@@ -2091,6 +2094,11 @@ def test_mood_extraction_relaxed():
 
 def test_mood_extraction_adventure():
     brief = build_travel_brief("Plan an adventure trip to mara for 3 people for 5 days")
+    assert brief["trip_mood"] == "adventure"
+
+
+def test_mood_extraction_exploratory_maps_to_adventure():
+    brief = build_travel_brief("Exploratory trip to Diani for 4 people 10 April to 12 April")
     assert brief["trip_mood"] == "adventure"
 
 
