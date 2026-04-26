@@ -73,3 +73,15 @@ def test_clarification_state_merge_does_not_overwrite_trip_mood_with_none():
 
     assert state["collected_fields"]["trip_mood"] == "adventure"
     assert state["collected_fields"]["budget_level"] == "medium"
+
+
+def test_clarification_resume_accepts_time_window_with_budget_friendly_phrase():
+    run("Plan a relaxed trip to tigoni for 2 people tomorrow")
+
+    completed = run("27th April, 10AM to 3PM, budget friendly")
+
+    assert "Slate808 Output" in completed
+    assert "Status: pass" in completed
+    assert "- Destination: tigoni" in completed
+    assert "- Timing: 27 april" in completed
+    assert "- Budget Level: low" in completed
