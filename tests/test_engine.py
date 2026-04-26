@@ -257,6 +257,41 @@ def test_clarification_flow_trip():
     assert "Timing: 10 april to 12 april" in result_5
 
 
+def test_mood_clarification_beach_escape_resolves_relaxed():
+    reset_state()
+    run("Plan a trip to Watamu 10 April to 12 April for 3 people")
+    out = run("beach escape")
+    assert "- Trip Mood: relaxed" in out
+
+
+def test_mood_clarification_escape_resolves_relaxed():
+    reset_state()
+    run("Plan a trip to Watamu 10 April to 12 April for 3 people")
+    out = run("escape")
+    assert "- Trip Mood: relaxed" in out
+
+
+def test_solo_does_not_resolve_as_mood():
+    reset_state()
+    run("Plan a trip to Watamu")
+    run("10 April to 12 April")
+    run("1 person")
+
+    out = run("solo")
+
+    assert "What kind of trip mood should this have?" in out
+    assert "- Trip Mood:" not in out
+
+
+def test_rebuild_goal_uses_an_adventure_trip():
+    reset_state()
+    run("Plan a trip to Naivasha for 3 people")
+    run("Aug 23-30")
+    out = run("adventure")
+    assert "Plan an adventure trip" in out
+    assert "Plan a adventure trip" not in out
+
+
 def test_bare_number_word_reply_supported():
     assert extract_traveller_count("four") == 4
     assert extract_traveller_count("7") == 7
