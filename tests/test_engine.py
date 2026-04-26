@@ -234,9 +234,13 @@ def test_travel_brief_model_timing_field_must_validate_as_timing_model():
 def test_clarification_flow_trip():
     result_1 = run("Plan a trip")
     assert "Where would you like to go?" in result_1
+    assert "Operator Workflow:" in result_1
+    assert "- State: clarification_required" in result_1
 
     result_2 = run("Naivasha")
     assert "What exact dates are you planning?" in result_2
+    assert "Operator Workflow:" in result_2
+    assert "- State: clarification_in_progress" in result_2
 
     result_3 = run("next weekend")
     assert "What exact dates are you planning for next weekend?" in result_3
@@ -1112,6 +1116,8 @@ def test_clarification_restart_clears_active_state():
     restart_result = run("restart")
 
     assert "Session reset. What would you like to plan?" in restart_result
+    assert "Operator Workflow:" in restart_result
+    assert "- State: scope_reset" in restart_result
 
     fresh_request = run("Plan a trip")
     assert "Where would you like to go?" in fresh_request
@@ -1179,6 +1185,8 @@ def test_incomplete_travel_override_restarts_clarification_safely():
     override_result = run("plan a journey")
 
     assert "Where would you like to go?" in override_result
+    assert "Operator Workflow:" in override_result
+    assert "- State: clarification_required" in override_result
     assert "Status: pass" not in override_result
     assert "Destination: None" not in override_result
     assert "Timing: timing not specified" not in override_result
@@ -1878,6 +1886,9 @@ def test_calendar_review_action_is_allowed_with_plan_ready_timing():
     assert "- Requested Action: calendar_review" in result
     assert "- Action Allowed: True" in result
     assert "- Execution Ready: False" in result
+    assert "- Readiness Note: Requested action is allowed; execution-prep actions remain blocked." in result
+    assert "Execution Limitation Details:" in result
+    assert "Execution Block Details:" not in result
     assert "Operator Workflow:" in result
     assert "- State: plan_ready_only" in result
     assert "- Execution Prep Eligible: False" in result
