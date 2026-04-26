@@ -101,6 +101,16 @@ def case_interrupt_with_timing_returns_to_mood():
     assert_contains(out, "What kind of trip mood should this have?", "Interrupt timing advances to mood")
 
 
+def case_correction_style_timing_update_replaces_relative_timing():
+    reset_state()
+    run("Plan a trip to Naivasha for 3 people")
+    run("next weekend")
+    out = run("Wait, actually Aug 23-30")
+
+    assert_contains(out, "23 august to 30 august", "Correction-style timing capture exact range")
+    assert_contains(out, "What kind of trip mood should this have?", "Correction-style timing advances to mood")
+
+
 def case_escape_resolves_relaxed_mood():
     reset_state()
     run("Plan a trip to Watamu")
@@ -150,6 +160,7 @@ CASES = [
     case_actually_watamu_replaces_destination_and_travellers,
     case_actually_diani_preserves_travellers,
     case_interrupt_with_timing_returns_to_mood,
+    case_correction_style_timing_update_replaces_relative_timing,
     case_escape_resolves_relaxed_mood,
     case_beach_escape_resolves_relaxed_mood,
     case_solo_resolves_traveller_count_when_active,

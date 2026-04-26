@@ -906,6 +906,37 @@ def test_timing_correction_overrides_stale_timing_state():
     assert "next month" not in result.lower()
 
 
+def test_correction_style_timing_update_replaces_relative_timing():
+    reset_state()
+    run("Plan a trip to Naivasha for 3 people")
+    run("next weekend")
+    result = run("Wait, actually Aug 23-30")
+
+    assert "23 august to 30 august" in result
+    assert "What kind of trip mood should this have?" in result
+    assert "What exact dates are you planning for next weekend?" not in result
+
+
+def test_correction_style_timing_update_preserves_destination_and_traveller_count():
+    reset_state()
+    run("Plan a trip to Naivasha for 3 people")
+    run("next weekend")
+    result = run("Wait, actually Aug 23-30")
+
+    assert "- Destination: naivasha" in result
+    assert "- Traveller Count: 3" in result
+
+
+def test_correction_style_timing_update_accepts_actually_prefix():
+    reset_state()
+    run("Plan a trip to Naivasha for 3 people")
+    run("next weekend")
+    result = run("Actually Aug 23-30")
+
+    assert "23 august to 30 august" in result
+    assert "What kind of trip mood should this have?" in result
+
+
 def test_later_turn_correction_recomputes_state_from_freshest_reply():
     run("Plan a trip to Diani 10 April to 12 April")
     result = run("Actually Watamu, 3 people")
