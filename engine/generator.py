@@ -20,6 +20,11 @@ TRAVEL_INTENT_KEYWORDS = (
 )
 NATURAL_TRAVEL_INTENT_PATTERNS = (
     r"\bvisit\s+[a-z][a-z\s\-'\/]{1,60}\b(?:\s+(?:for|in|on|at|with)\b|,|$)",
+    r"\bthinking\s+of\s+going\b.*\b(?:coast|watamu|diani|naivasha|nakuru)\b",
+    r"^[a-z][a-z\s\-'\/]{1,40}\s+or\s+[a-z][a-z\s\-'\/]{1,40}\s+or\b.*\b(?:easier|whichever|maybe)\b",
+    r"^somewhere\b.*\b(?:animals|peaceful|full\s+safari|quiet|coast|beach)\b",
+    r"\bi\s+just\s+need\s+to\s+escape\b",
+    r"\b(?:any\s+deals|got\s+any\s+packages|what\s+can\s+i\s+get)\b.*(?:\bcoast\b|\bthis month\b|\b30k\b|\ball in\b|\d+\s*pax\b)",
     rf"\b(?:weekend|holiday|retreat|honeymoon|anniversary|birthday|break|stay)\s+in\s+[a-z][a-z\s\-'\/]{{1,60}}\b.*\b(?:for\s+\d+|for\s+(?:one|two|three|four|five)|\d+\s+(?:days?|nights?)|{MONTHS}|next|this|sometime|dates?\s+(?:open|flexible))\b",
     rf"\b(?:corporate|family|team|work|writing|solo|quiet\s+solo)\s+(?:retreat|holiday|event|trip|visit)\s+in\s+[a-z][a-z\s\-'\/]{{1,60}}\b.*\b(?:for\s+\d+|{MONTHS}|next|this|early|late)\b",
     rf"^[a-z][a-z\s\-'\/]{{1,60}}\b.*\b(?:dates?\s+(?:open|flexible)|sometime\s+after|first\s+week\s+of)\b",

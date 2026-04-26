@@ -521,6 +521,43 @@ def test_sweep_unresolved_destination_choice_preserves_clarification():
     assert "Where would you like to go?" in result
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Thinking of going down coast side… maybe Watamu? Not sure.",
+        "Nakuru or Naivasha or something like that — whichever is easier.",
+        "Somewhere with animals but not a full safari.",
+        "Somewhere that feels peaceful.",
+        "I just need to escape.",
+        "Any deals for coast this month?",
+        "What can I get for 30k all in?",
+        "Got any packages for 4pax?",
+    ],
+)
+def test_conversational_travel_intake_enters_clarification_without_destination_contamination(text):
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert is_travel_intent(text) is True
+    assert brief["destination"] is None or brief["destination"] == "coast"
+    assert "Slate808 currently supports travel planning only." not in result
+    assert "?" in result
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "I want luxury vibes on a normal budget.",
+        "I want something relaxing but also with lots of activities.",
+        "Quiet place but close to nightlife.",
+    ],
+)
+def test_conversational_style_fragments_do_not_contaminate_destination(text):
+    brief = build_travel_brief(text)
+
+    assert brief["destination"] is None
+
+
 def test_build_travel_brief_returns_validated_dict_shape_for_engine_compatibility():
     brief = build_travel_brief("Plan a trip to diani for 2 people next weekend")
 

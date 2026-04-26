@@ -229,6 +229,7 @@ WEAK_DESTINATION_VALUES = {
     "specific destination",
     "a specific destination",
     "destination",
+    "escape",
     "place",
     "somewhere",
     "location",
@@ -258,10 +259,13 @@ CONTAMINATED_DESTINATION_VALUES = {
     "help me",
     "i need a",
     "i need an",
+    "i want",
     "i want a",
     "i want a scenic place",
     "continue",
+    "any deals",
     "anything coastal",
+    "got any packages",
     "looking",
     "me and",
     "me on",
@@ -271,6 +275,7 @@ CONTAMINATED_DESTINATION_VALUES = {
     "we need a",
     "uhh plan something",
     "visit lamuu",
+    "what can i get",
 }
 
 CONTAMINATED_DESTINATION_PATTERNS = (
@@ -281,7 +286,13 @@ CONTAMINATED_DESTINATION_PATTERNS = (
     r"^i\s+want\b.*\b"
     r"(?:trip|travel|getaway|retreat|vacation|holiday|journey|escape)\b",
     r"^i\s+want\b.*\bstay\b",
+    r"^i\s+want\s+something\b",
     r"^a\s+quick\s+escape\b",
+    r"^quiet\s+place\b",
+    r"\bnightlife\b",
+    r"^any\s+deals\b",
+    r"^got\s+any\s+packages\b",
+    r"^what\s+can\s+i\s+get\b",
     r"^i\s+need\s+an?\s+(?:escape|weekend\s+away)\b",
     r"^i\s+need\s+a\s+trip\s+near\b",
     r"^i\s+need\s+a\s+break\b",
