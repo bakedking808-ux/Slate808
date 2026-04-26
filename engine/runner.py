@@ -324,6 +324,18 @@ def run_engine(request: str) -> str:
     if len(fixer_actions) > 0 and decision_path[-2:] != ["fix_plan", "check_plan"]:
         decision_path.extend(["fix_plan", "check_plan"])
 
+    operator_workflow = _operator_workflow_payload(
+        status=result["status"],
+        trace_id=plan.get("trace_id"),
+        goal=plan.get("goal", ""),
+        brief=plan.get("brief"),
+        steps=plan.get("steps", []),
+        checks=plan.get("checks", []),
+        risks=plan.get("risks", []),
+        execution_readiness=execution_readiness,
+        create_handoff_packet=True,
+    )
+
     final_output = {
         "status": result["status"],
         "errors": result["errors"],
@@ -336,12 +348,8 @@ def run_engine(request: str) -> str:
         "clarification_needed": None,
         "clarification_response": None,
         "execution_readiness": execution_readiness,
-        "operator_workflow": _operator_workflow_payload(
-            status=result["status"],
-            trace_id=plan.get("trace_id"),
-            brief=plan.get("brief"),
-            execution_readiness=execution_readiness,
-        ),
+        "operator_workflow": operator_workflow,
+        "handoff_packet": operator_workflow.get("handoff_packet"),
     }
 
     if action_blocked:
