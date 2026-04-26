@@ -246,6 +246,7 @@ DESTINATION_PREFIX_TOKENS = {
     "someplace",
 }
 DESTINATION_TRAILING_TIMING_TOKENS = {
+    "in",
     "sometime",
     "soon",
     "later",
@@ -467,8 +468,20 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
 
     patterns = [
         (
+            r"\bvisit\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60}?)(?=\s+(?:for|in|on|at|with)\b|,|$)",
+            "visit_destination",
+        ),
+        (
             r"\b(?:plan|curate|organize|arrange|help me plan|make|design|execute|prepare|create|schedule)\s+(?:a\s+)?(?:trip|travel plan|travel|holiday|getaway|retreat|escape|journey|staycation)\s+to\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
             "trip_to",
+        ),
+        (
+            r"\b(?:weekend|holiday|retreat|honeymoon|anniversary|birthday|break|stay)\s+in\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
+            "purpose_in_destination",
+        ),
+        (
+            r"\b(?:corporate|family|team|work|writing|solo|quiet\s+solo)\s+(?:retreat|holiday|event|trip|visit)\s+in\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
+            "workload_in_destination",
         ),
         (
             r"\b(?:plan|curate|organize|arrange|help me plan|make|design|execute|prepare|create|schedule)\s+(?:a\s+)?(?:trip|travel plan|travel|holiday|getaway|retreat|escape|journey)\b.*?\bfor\s+([a-zA-Z][a-zA-Z\s\-'\/]{1,60})",
@@ -527,7 +540,7 @@ def extract_destination(text: str, decision_log=None) -> Optional[str]:
             return canonical_candidate
 
     shorthand_match = re.match(
-        r"^\s*([a-zA-Z][a-zA-Z\s\-'\/]{1,60}?)(?=\s+(?:for|with|budget|next|this|tomorrow|today|in|at)\b)",
+        r"^\s*([a-zA-Z][a-zA-Z\s\-'\/]{1,60}?)(?=\s+(?:for|with|budget|next|this|tomorrow|today|in|at|sometime)\b)",
         text,
         re.IGNORECASE,
     )

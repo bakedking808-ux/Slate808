@@ -469,6 +469,58 @@ def test_stay_support_preserves_non_travel_rejection():
     assert "Slate808 currently supports travel planning only." in result
 
 
+@pytest.mark.parametrize(
+    ("text", "destination"),
+    [
+        ("Plan a weekend in Naivasha for two adults.", "naivasha"),
+        ("Luxury anniversary trip to Diani in July.", "diani"),
+        ("Visit Mombasa for 3 nights, luxury.", "mombasa"),
+        ("Corporate retreat in Nanyuki for 12 in September.", "nanyuki"),
+        ("Honeymoon in Zanzibar, 5 days, late August.", "zanzibar"),
+    ],
+)
+def test_sweep_concise_travel_phrasing_admitted_with_clean_destination(text, destination):
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert is_travel_intent(text) is True
+    assert brief["destination"] == destination
+    assert "Slate808 currently supports travel planning only." not in result
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Nanyuki sometime after mid-June.",
+        "Watamu for 5 adults, dates open.",
+        "Visit Watamu for snorkeling.",
+    ],
+)
+def test_sweep_concise_travel_phrasing_enters_controlled_flow(text):
+    result = run(text)
+
+    assert is_travel_intent(text) is True
+    assert "Slate808 currently supports travel planning only." not in result
+    assert "?" in result
+
+
+def test_sweep_sometime_after_phrase_keeps_destination_boundary():
+    brief = build_travel_brief("Nanyuki sometime after mid-June.")
+
+    assert brief["destination"] == "nanyuki"
+    assert brief["timing"]["state"] == "month_only"
+
+
+def test_sweep_unresolved_destination_choice_preserves_clarification():
+    text = "Naivasha or Nakuru, still deciding."
+    brief = build_travel_brief(text)
+    result = run(text)
+
+    assert is_travel_intent(text) is True
+    assert brief["destination"] is None
+    assert "Where would you like to go?" in result
+
+
 def test_build_travel_brief_returns_validated_dict_shape_for_engine_compatibility():
     brief = build_travel_brief("Plan a trip to diani for 2 people next weekend")
 
