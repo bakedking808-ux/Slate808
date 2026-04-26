@@ -6,6 +6,12 @@ from engine.runner import run_engine, set_execution_observability_context
 from engine.logger import log_event
 from clarification_state import ClarificationStateManager
 from contracts.input_normalization_contract import normalize_travel_input
+from engine.interpretation import interpret_input
+from contracts.interpretation_outcome_contract import (
+    InterpretationContext,
+    InterpretationOutcome,
+    InterpretationTargetField,
+)
 from engine.travel_brief import (
     MONTHS,
     build_travel_brief,
@@ -20,6 +26,7 @@ from engine.travel_brief import (
     is_timing_usable,
     summarize_timing,
 )
+from contracts.timing_parsing_contract import parse_timing_text
 from contracts.operator_workflow_contract import OperatorWorkflowInput, map_operator_workflow
 
 state_manager = ClarificationStateManager()
@@ -148,7 +155,77 @@ def _run_with_travel_boundary(user_input: str) -> str:
 def _resume(user_input: str, normalized_input: str) -> str:
     state = state_manager.get_state()
     current_field = state["current_field"]
-    extracted_fields = _extract_resume_fields(normalized_input, state)
+
+    extracted_fields = None
+
+    if current_field and not _should_bypass_ioc_for_legacy_resume(normalized_input):
+        ioc_context = InterpretationContext(
+            active_field=_ioc_target_for_field(current_field),
+            workflow_state=state.get("workflow_state"),
+            clarification_attempt_count=state.get("retry_count", 0),
+            previous_prompt=state.get("last_prompt"),
+            has_active_clarification=True,
+            approval_expected=(state.get("workflow_state") == "human_approval_required"),
+        )
+        ioc_result = interpret_input(normalized_input, ioc_context)
+
+        if ioc_result.outcome == InterpretationOutcome.INTERPRET:
+            target_field = _field_for_ioc_result(current_field, ioc_result)
+            extracted_fields = _ioc_extracted_fields(
+                target_field,
+                ioc_result.extracted_value,
+            )
+
+            # If IOC captured a supplemental field such as budget or mood while
+            # the active hard field is still unresolved, also run legacy
+            # extraction on the same reply. This preserves mixed replies like:
+            # "27th April, 10AM to 3PM, budget friendly".
+            if (
+                extracted_fields
+                and current_field not in extracted_fields
+                and _has_supplemental_update(extracted_fields)
+            ):
+                legacy_fields = _extract_resume_fields(normalized_input, state)
+                legacy_fields.update(extracted_fields)
+                extracted_fields = legacy_fields
+
+            # If IOC understood the input but the value cannot be adapted to
+            # Slate's native field shape, fall back to legacy extraction instead
+            # of turning IOC into a second state machine.
+            if not extracted_fields:
+                extracted_fields = None
+
+        elif ioc_result.outcome == InterpretationOutcome.CLARIFY:
+            if _ioc_has_specific_prompt(ioc_result):
+                state_manager.increment_retry()
+                return _format_clarification_prompt(
+                    ioc_result.clarification_prompt
+                    or _plain_prompt_for_field(current_field, state_manager.get_state(), retry=True),
+                    state_manager.get_state(),
+                )
+            extracted_fields = None
+
+        elif ioc_result.outcome == InterpretationOutcome.CORRECT:
+            state_manager.increment_retry()
+            return _format_clarification_prompt(
+                ioc_result.correction_prompt
+                or _plain_prompt_for_field(current_field, state_manager.get_state(), retry=True),
+                state_manager.get_state(),
+            )
+
+        elif ioc_result.outcome == InterpretationOutcome.REJECT:
+            reason = getattr(ioc_result.reason_code, "value", None) or ""
+            if reason == "approval_not_expected":
+                state_manager.increment_retry()
+                return _format_clarification_prompt(
+                    "Approval is not expected at this step.",
+                    state_manager.get_state(),
+                )
+            extracted_fields = None
+
+    if extracted_fields is None:
+        extracted_fields = _extract_resume_fields(normalized_input, state)
+
     if extracted_fields:
         state_manager.merge_fields(extracted_fields)
 
@@ -167,6 +244,15 @@ def _resume(user_input: str, normalized_input: str) -> str:
             )
             return _next_prompt(state["current_field"], state)
 
+    if value is None and _has_supplemental_update(extracted_fields):
+        state_manager.increment_retry()
+        label = _supplemental_acknowledgement(extracted_fields)
+        prompt = _plain_prompt_for_field(current_field, state_manager.get_state(), retry=False)
+        return _format_clarification_prompt(
+            f"{label} {prompt}",
+            state_manager.get_state(),
+        )
+
     if value is None:
         state_manager.increment_retry()
         return _retry_prompt(current_field, state_manager.get_state())
@@ -178,7 +264,6 @@ def _resume(user_input: str, normalized_input: str) -> str:
     if current_field == "timing" and current_field in hard_missing and _needs_exact_timing_refinement(value):
         state_manager.increment_retry()
 
-        # Emit relative timing refinement metric
         log_event(
             filename="engine.log",
             source="clarification_runner",
@@ -188,8 +273,8 @@ def _resume(user_input: str, normalized_input: str) -> str:
             trace_id=state["trace_id"],
             details={
                 "current_state": value.get("state"),
-                "retry_count": state_manager.get_state()["retry_count"]
-            }
+                "retry_count": state_manager.get_state()["retry_count"],
+            },
         )
 
         return _retry_prompt(current_field, state_manager.get_state())
@@ -197,7 +282,7 @@ def _resume(user_input: str, normalized_input: str) -> str:
     if current_field == "timing" and _duration_conflicts_with_exact_range(state, value):
         state_manager.increment_retry()
         prompt = _timing_prompt(state_manager.get_state(), retry=True)
-        return f"\n==============================\n{prompt}\n==============================\n"
+        return "\\n==============================\\n" + prompt + "\\n==============================\\n"
 
     if current_field in HARD_FIELDS:
         if hard_missing:
@@ -237,6 +322,211 @@ def _resume(user_input: str, normalized_input: str) -> str:
         return run_engine(full_input)
 
     return _next_prompt(state["current_field"], state)
+
+
+def _ioc_has_specific_prompt(result) -> bool:
+    prompt = (
+        result.clarification_prompt
+        or result.correction_prompt
+        or ""
+    ).strip().lower()
+
+    return bool(prompt) and prompt not in {
+        "could you clarify your request?",
+        "please give a specific answer.",
+    }
+
+
+def _should_bypass_ioc_for_legacy_resume(text: str) -> bool:
+    normalized = text.strip().lower()
+
+    # Explicit corrections already have stable legacy handling that can replace
+    # previously collected fields and recompute the next clarification target.
+    if _is_update_style_reply(normalized):
+        return True
+
+    # Relative/provisional timing should stay in the legacy timing pipeline so
+    # prompts preserve context: "for next weekend", "for tomorrow", etc.
+    if re.search(
+        r"\b(?:next weekend|this weekend|tomorrow|next month|this month|next week|this week)\b",
+        normalized,
+    ):
+        return True
+
+    # Mixed destination + broad timing answers, e.g. "Watamu next month", are
+    # better handled by legacy multi-field extraction than by active-field IOC.
+    if current_destination := extract_destination(normalized):
+        timing = extract_timing(normalized)
+        if timing and timing.get("state") in {"relative_timing", "month_only"}:
+            return True
+
+    return False
+
+
+
+
+def _field_for_ioc_result(current_field: str, result) -> str:
+    target = result.target_field
+
+    if target == InterpretationTargetField.BUDGET:
+        if isinstance(result.extracted_value, int):
+            return "budget_amount"
+        return "budget_level"
+
+    if target == InterpretationTargetField.MOOD:
+        return "trip_mood"
+
+    if target == InterpretationTargetField.TIMING:
+        return "timing"
+
+    if target == InterpretationTargetField.DESTINATION:
+        return "destination"
+
+    if target == InterpretationTargetField.TRAVELLER_COUNT:
+        return "traveller_count"
+
+    return current_field
+
+
+def _ioc_target_for_field(field: str):
+    value_map = {
+        "destination": "destination",
+        "timing": "timing",
+        "traveller_count": "traveller_count",
+        "budget_amount": "budget",
+        "budget_level": "budget",
+        "trip_mood": "mood",
+        "approval": "approval",
+    }
+    target_value = value_map.get(field, "unknown")
+
+    try:
+        return InterpretationTargetField(target_value)
+    except Exception:
+        enum_name = target_value.upper()
+        return getattr(
+            InterpretationTargetField,
+            enum_name,
+            getattr(InterpretationTargetField, "UNKNOWN"),
+        )
+
+
+def _ioc_extracted_fields(field: str, value) -> dict:
+    if value is None:
+        return {}
+
+    if field == "timing":
+        timing = _ioc_timing_from_value(value)
+        if timing:
+            return {"timing": timing}
+        return {}
+
+    if field == "destination":
+        if isinstance(value, str) and value.strip():
+            return {"destination": value.strip().lower()}
+        return {}
+
+    if field == "traveller_count":
+        if isinstance(value, int):
+            return {"traveller_count": value}
+        return {}
+
+    if field == "budget_amount":
+        if isinstance(value, int):
+            info = extract_budget_info(f"budget {value}")
+            return {
+                "budget_amount": value,
+                "budget_level": info.get("budget_level", "unspecified"),
+            }
+        return {}
+
+    if field == "budget_level":
+        if isinstance(value, str):
+            mapped = {
+                "budget_friendly": "low",
+                "low": "low",
+                "medium": "medium",
+                "high": "high",
+                "unspecified": "unspecified",
+            }.get(value.strip().lower())
+            if mapped:
+                return {"budget_level": mapped}
+        return {}
+
+    if field == "trip_mood":
+        if isinstance(value, str) and value.strip():
+            mood = extract_trip_mood(value) or value.strip().lower()
+            return {"trip_mood": mood}
+        return {}
+
+    return {field: value}
+
+
+def _ioc_timing_from_value(value) -> dict | None:
+    if isinstance(value, dict):
+        if value.get("state") and value.get("state") != "missing_timing":
+            return value
+        return None
+
+    if not isinstance(value, str):
+        return None
+
+    parsed = extract_timing(value)
+    if parsed and parsed.get("state") != "missing_timing":
+        return parsed
+
+    contract_result = parse_timing_text(value)
+    if not contract_result.matched or contract_result.parsed is None:
+        return None
+
+    contract_timing = contract_result.parsed
+    if contract_timing.category not in {"exact_date", "date_range", "composite_timing"}:
+        return None
+
+    if not (contract_timing.start_date or contract_timing.end_date):
+        return None
+
+    return {
+        "raw_text": contract_timing.normalized_text or contract_timing.raw_text,
+        "start_date": contract_timing.start_date,
+        "end_date": contract_timing.end_date,
+        "duration_days": contract_timing.duration_days,
+        "duration_nights": contract_timing.duration_nights,
+        "date_flexibility": "fixed",
+        "state": "exact_timing",
+        "confidence": contract_timing.confidence,
+    }
+
+
+def _has_supplemental_update(extracted_fields: dict) -> bool:
+    return any(
+        field in extracted_fields
+        for field in ("budget_amount", "budget_level", "trip_mood")
+    )
+
+
+def _supplemental_acknowledgement(extracted_fields: dict) -> str:
+    if "budget_amount" in extracted_fields or "budget_level" in extracted_fields:
+        return "Budget noted."
+    if "trip_mood" in extracted_fields:
+        return "Trip mood noted."
+    return "Detail noted."
+
+
+def _plain_prompt_for_field(field: str, state: dict | None = None, retry: bool = False) -> str:
+    if field == "destination":
+        return "Where would you like to go?"
+
+    if field == "traveller_count":
+        return "How many travellers?"
+
+    if field == "timing":
+        return _timing_prompt(state, retry=retry)
+
+    if field == "trip_mood":
+        return "What kind of trip mood should this have?"
+
+    return "Please give a specific answer."
 
 
 def _duration_conflicts_with_exact_range(state: dict, timing: dict) -> bool:

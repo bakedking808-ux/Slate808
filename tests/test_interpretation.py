@@ -166,3 +166,20 @@ def test_determinism():
     r1 = interpret_input("4th-8th May", ctx)
     r2 = interpret_input("4th-8th May", ctx)
     assert r1 == r2
+
+
+def test_malformed_budget_80000k_caught_even_when_active_field_is_traveller_count():
+    context = InterpretationContext(
+        active_field=InterpretationTargetField.TRAVELLER_COUNT,
+        workflow_state="clarification_in_progress",
+        clarification_attempt_count=0,
+        previous_prompt="How many travellers?",
+        has_active_clarification=True,
+        approval_expected=False,
+    )
+
+    result = interpret_input("80000K", context)
+
+    assert result.outcome == InterpretationOutcome.CORRECT
+    assert result.target_field == InterpretationTargetField.BUDGET
+    assert result.reason_code == InterpretationReasonCode.MALFORMED_BUDGET

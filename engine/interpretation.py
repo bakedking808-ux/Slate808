@@ -11,7 +11,15 @@ def interpret_input(text: str, context: InterpretationContext) -> Interpretation
     if month_correction:
         return month_correction
     # Budget
-    if context.active_field == InterpretationTargetField.BUDGET or 'budget' in text.lower():
+    # Check explicit budget wording and dangerous bare K-shorthand forms.
+    # This catches malformed values like 80000K even when the active field
+    # is not budget.
+    budget_like = bool(
+        context.active_field == InterpretationTargetField.BUDGET
+        or "budget" in text.lower()
+        or re.fullmatch(r"\s*\d[\d,]*k\s*", text.strip().lower())
+    )
+    if budget_like:
         budget_result = interpret_budget(text, context)
         if budget_result:
             return budget_result
@@ -85,8 +93,22 @@ def interpret_month_typo(text: str, context: InterpretationContext) -> Interpret
     return None
 
 def interpret_budget(text: str, context: InterpretationContext) -> InterpretationResult | None:
-    # Acceptable: 80k, 30k, 80,000 (but NOT 80000K or 80,000K)
-    cleaned = text.strip().replace(' ', '').lower()
+    # Acceptable: 80k, 30k, 80,000.
+    # Also accept explicit phrases like "Budget 80k" and "budget is 80k".
+    normalized = text.strip().lower()
+    normalized = re.sub(
+        r"^budget(?:\s+is|\s+of|\s+for)?\s*",
+        "",
+        normalized,
+    )
+    normalized = re.sub(
+        r"^with\s+(?:a\s+)?budget(?:\s+of|\s+is)?\s*",
+        "",
+        normalized,
+    )
+
+    cleaned = normalized.replace(" ", "")
+
     # Malformed: 80000K, 80,000K (full numeric value followed by K)
     if re.fullmatch(r"\d{5,}k", cleaned) or re.fullmatch(r"\d{2,},\d{3}k", cleaned):
         return correct_result(
@@ -94,6 +116,7 @@ def interpret_budget(text: str, context: InterpretationContext) -> Interpretatio
             correction_prompt="Please enter the budget as either 80k or 80,000, not both.",
             reason_code=InterpretationReasonCode.MALFORMED_BUDGET
         )
+
     # Acceptable: 80k, 30k, 80,000
     m = re.fullmatch(r"(\d{1,3}(,\d{3})*|\d+)(k)?", cleaned)
     if m:
@@ -167,6 +190,10 @@ def interpret_resume_answer(text: str, context: InterpretationContext) -> Interp
                 reason_code=InterpretationReasonCode.VALID_FIELD_ANSWER
             )
     if field == InterpretationTargetField.TRAVELLER_COUNT:
+        # Do not let budget answers such as "Budget 80k" become traveller_count=80.
+        if re.search(r"\b(?:budget|kes|ksh|sh)\b", text.lower()) or re.fullmatch(r"\s*\d[\d,]*k\s*", text.strip().lower()):
+            return None
+
         m = re.search(r"(\d+)", text)
         if m:
             return interpret_result(
