@@ -34,6 +34,8 @@ HARD_FIELDS = ("destination", "timing", "traveller_count")
 recent_completed_trip: dict | None = None
 
 EXIT_COMMANDS = {"exit", "cancel", "stop", "restart", "quit"}
+APPROVAL_ACCEPT_COMMANDS = {"approved", "approve", "yes approved", "yes, approved"}
+APPROVAL_REJECT_COMMANDS = {"declined", "reject", "rejected", "not approved", "no, declined"}
 NEW_TASK_OVERRIDE_PATTERNS = [
     r"^\s*(?:plan|book|organize|arrange|schedule|prepare)\s+(?:a|an|the|my|your)\b",
     r"^\s*(?:plan|book|organize|arrange|schedule|prepare)\b.*\b(?:trip|travel|journey|getaway|holiday|vacation|retreat|escape|staycation)\b",
@@ -86,6 +88,10 @@ def run(user_input: str) -> str:
     completed_update = _resume_completed_trip_update(user_input, normalized_input.normalized_input)
     if completed_update is not None:
         return completed_update
+
+    approval_update = _resume_recent_approval(normalized_input.normalized_input)
+    if approval_update is not None:
+        return approval_update
 
     return _start(user_input, normalized_input.normalized_input)
 
@@ -870,7 +876,69 @@ def _remember_completed_fields(original_input: str, collected_fields: dict) -> N
     recent_completed_trip = {
         "original_input": original_input,
         "collected_fields": dict(collected_fields),
+        "approval_state": "pending" if _completed_fields_require_approval(collected_fields) else "not_requested",
     }
+
+
+def _completed_fields_require_approval(collected_fields: dict) -> bool:
+    timing = collected_fields.get("timing") or {}
+    return bool(
+        collected_fields.get("destination")
+        and collected_fields.get("traveller_count") is not None
+        and timing.get("state") == "exact_timing"
+        and timing.get("start_date")
+        and timing.get("end_date")
+    )
+
+
+def _resume_recent_approval(normalized_input: str) -> str | None:
+    global recent_completed_trip
+
+    if not recent_completed_trip:
+        return None
+
+    if recent_completed_trip.get("approval_state") != "pending":
+        return None
+
+    text = normalized_input.strip().lower()
+
+    if text in APPROVAL_ACCEPT_COMMANDS:
+        recent_completed_trip["approval_state"] = "approved"
+        return _format_approval_continuation_prompt(
+            workflow_state="execution_prep_ready",
+            approval_state="approved",
+            message="Approval recorded. Execution-prep may continue through the guarded adapter path.",
+        )
+
+    if text in APPROVAL_REJECT_COMMANDS:
+        recent_completed_trip["approval_state"] = "rejected"
+        return _format_approval_continuation_prompt(
+            workflow_state="plan_ready_only",
+            approval_state="rejected",
+            message="Approval declined. Execution-prep remains blocked.",
+        )
+
+    return None
+
+
+def _format_approval_continuation_prompt(
+    *,
+    workflow_state: str,
+    approval_state: str,
+    message: str,
+) -> str:
+    return (
+        "Slate808 Output\n"
+        "==============================\n\n"
+        "Status: pass\n\n"
+        "Operator Workflow:\n"
+        f"- State: {workflow_state}\n"
+        f"- Approval State: {approval_state}\n"
+        f"- Human Approval Required: False\n"
+        f"- Execution Prep Eligible: {workflow_state == 'execution_prep_ready'}\n\n"
+        f"{message}\n"
+        "=============================="
+    )
 
 
 def _collected_fields_from_brief(brief: dict) -> dict:
