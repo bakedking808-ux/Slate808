@@ -115,18 +115,24 @@ def format_output(final_output: dict) -> str:
         lines.append(f"- Level: {execution_readiness.get('readiness_level')}")
         lines.append(f"- Plan Ready: {execution_readiness.get('plan_ready')}")
         lines.append(f"- Execution Ready: {execution_readiness.get('execution_ready')}")
-        if execution_readiness.get("plan_ready") and not execution_readiness.get("execution_ready"):
-            lines.append("- Readiness Note: Plan output is available, but execution actions are blocked.")
         requested_action = execution_readiness.get("requested_action")
+        action_allowed = execution_readiness.get("action_allowed")
+        if execution_readiness.get("plan_ready") and not execution_readiness.get("execution_ready"):
+            if requested_action and action_allowed is True:
+                lines.append("- Readiness Note: Requested action is allowed; execution-prep actions remain blocked.")
+            else:
+                lines.append("- Readiness Note: Plan output is available, but execution actions are blocked.")
         if requested_action:
             lines.append(f"- Requested Action: {requested_action}")
-            lines.append(f"- Action Allowed: {execution_readiness.get('action_allowed')}")
+            lines.append(f"- Action Allowed: {action_allowed}")
         blocking_reasons = execution_readiness.get("blocking_reasons") or []
         if blocking_reasons:
-            lines.append("Execution Block Details:")
+            details_label = "Execution Limitation Details:" if action_allowed is True else "Execution Block Details:"
+            blocks_label = "Execution Limitations:" if action_allowed is True else "Execution Blocks:"
+            lines.append(details_label)
             for reason in blocking_reasons:
                 lines.append(f"- {_readiness_block_label(reason)}")
-            lines.append("Execution Blocks:")
+            lines.append(blocks_label)
             for reason in blocking_reasons:
                 lines.append(f"- {reason}")
         lines.append("")

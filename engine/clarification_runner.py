@@ -20,6 +20,7 @@ from engine.travel_brief import (
     is_timing_usable,
     summarize_timing,
 )
+from contracts.operator_workflow_contract import OperatorWorkflowInput, map_operator_workflow
 
 state_manager = ClarificationStateManager()
 HARD_FIELDS = ("destination", "timing", "traveller_count")
@@ -65,7 +66,7 @@ def run(user_input: str) -> str:
     # 🔴 HARD EXIT / RESET
     if text in EXIT_COMMANDS:
         state_manager.clear()
-        return "\n==============================\nSession reset. What would you like to plan?\n==============================\n"
+        return _format_session_control_prompt("Session reset. What would you like to plan?", "scope_reset")
 
     # 🔴 DETECT NEW TASK INTENT (override active session)
     if state_manager.has_active_state():
@@ -673,11 +674,16 @@ def _timing_prompt(state: dict | None, retry: bool = False) -> str:
 
 def _format_clarification_prompt(prompt: str, state: dict | None = None) -> str:
     collected = (state or {}).get("collected_fields", {})
+    workflow_lines = _prompt_workflow_lines(state)
     if (
         not collected.get("trip_mood")
         and prompt != "What kind of trip mood should this have?"
     ):
-        return f"\n==============================\n{prompt}\n==============================\n"
+        lines = ["", "=============================="]
+        lines.extend(workflow_lines)
+        lines.append(prompt)
+        lines.append("==============================")
+        return "\n".join(lines) + "\n"
 
     lines = ["Slate808 Output", "==============================", "", "Status: pass", ""]
     brief_lines = []
@@ -702,10 +708,48 @@ def _format_clarification_prompt(prompt: str, state: dict | None = None) -> str:
         lines.extend(brief_lines)
         lines.append("")
 
+    lines.extend(workflow_lines)
+    if workflow_lines:
+        lines.append("")
+
     lines.append("==============================")
     lines.append(prompt)
     lines.append("==============================")
     return "\n".join(lines)
+
+
+def _format_session_control_prompt(prompt: str, workflow_state: str) -> str:
+    return (
+        "\n==============================\n"
+        "Operator Workflow:\n"
+        f"- State: {workflow_state}\n"
+        f"{prompt}\n"
+        "==============================\n"
+    )
+
+
+def _prompt_workflow_lines(state: dict | None) -> list[str]:
+    if not state:
+        return []
+
+    workflow = map_operator_workflow(
+        OperatorWorkflowInput(
+            clarification_active=_has_meaningful_prompt_context(state.get("collected_fields", {})),
+            clarification_needed=True,
+            missing_fields=list(state.get("missing_fields") or []),
+        )
+    )
+    return [
+        "Operator Workflow:",
+        f"- State: {workflow.state}",
+    ]
+
+
+def _has_meaningful_prompt_context(collected_fields: dict) -> bool:
+    return any(
+        value is not None and not (field == "budget_level" and value == "unspecified")
+        for field, value in collected_fields.items()
+    )
 
 
 def _next_prompt(field: str, state: dict | None = None) -> str:
