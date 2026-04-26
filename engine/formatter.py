@@ -29,6 +29,14 @@ def _readiness_block_label(reason: str) -> str:
     return reason
 
 
+def _format_bool(value) -> str:
+    if value is True:
+        return "True"
+    if value is False:
+        return "False"
+    return "unknown"
+
+
 def format_output(final_output: dict) -> str:
     lines = []
     lines.append("Slate808 Output")
@@ -121,6 +129,31 @@ def format_output(final_output: dict) -> str:
             lines.append("Execution Blocks:")
             for reason in blocking_reasons:
                 lines.append(f"- {reason}")
+        lines.append("")
+
+    operator_workflow = final_output.get("operator_workflow")
+    handoff_packet = final_output.get("handoff_packet") or {}
+    if operator_workflow:
+        lines.append("Operator Workflow:")
+        lines.append(f"- State: {operator_workflow.get('state')}")
+        lines.append(f"- Human Approval Required: {_format_bool(operator_workflow.get('requires_human_approval'))}")
+        lines.append(f"- Execution Prep Eligible: {_format_bool(operator_workflow.get('execution_prep_eligible'))}")
+        requested_action = handoff_packet.get("requested_action")
+        if requested_action:
+            lines.append(f"- Requested Action: {requested_action}")
+            lines.append(f"- Action Allowed: {_format_bool(handoff_packet.get('action_allowed'))}")
+        guidance = handoff_packet.get("recovery_guidance") or {}
+        if guidance:
+            lines.append(f"- Recovery Next Step: {guidance.get('next_operator_action')}")
+            lines.append(f"- Recovery State: {guidance.get('return_state')}")
+            lines.append(f"- Recovery Guidance: {guidance.get('message')}")
+        lines.append("")
+
+    if handoff_packet:
+        lines.append("Handoff Summary:")
+        lines.append(f"- Workflow State: {handoff_packet.get('operator_workflow_state')}")
+        lines.append(f"- Blockers: {len(handoff_packet.get('blockers') or [])}")
+        lines.append(f"- Plan Steps: {len(handoff_packet.get('steps') or [])}")
         lines.append("")
 
     if clarification_needed and clarification_response:

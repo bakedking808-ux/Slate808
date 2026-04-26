@@ -1878,6 +1878,9 @@ def test_calendar_review_action_is_allowed_with_plan_ready_timing():
     assert "- Requested Action: calendar_review" in result
     assert "- Action Allowed: True" in result
     assert "- Execution Ready: False" in result
+    assert "Operator Workflow:" in result
+    assert "- State: plan_ready_only" in result
+    assert "- Execution Prep Eligible: False" in result
 
 
 def test_calendar_schedule_action_is_blocked_without_exact_timing():
@@ -1894,6 +1897,12 @@ def test_calendar_schedule_action_is_blocked_without_exact_timing():
         in result
     )
     assert "- execution_timing_not_exact:relative_timing" in result
+    assert "Operator Workflow:" in result
+    assert "- State: execution_blocked" in result
+    assert "- Requested Action: calendar_schedule" in result
+    assert "- Action Allowed: False" in result
+    assert "- Recovery Next Step: collect_exact_date_range" in result
+    assert "- Recovery State: plan_ready_only" in result
 
 
 def test_booking_prep_action_is_blocked_without_exact_timing():
@@ -1910,6 +1919,8 @@ def test_booking_prep_action_is_blocked_without_exact_timing():
         in result
     )
     assert "- execution_timing_not_exact:duration_only" in result
+    assert "- State: execution_blocked" in result
+    assert "- Recovery Guidance: Collect exact start and end dates before execution actions." in result
 
 
 def test_booking_prep_action_is_allowed_with_exact_timing():
@@ -1918,7 +1929,23 @@ def test_booking_prep_action_is_allowed_with_exact_timing():
     assert "- Level: execution_ready" in result
     assert "- Requested Action: booking_prep" in result
     assert "- Action Allowed: True" in result
+    assert "- State: human_approval_required" in result
+    assert "- Human Approval Required: True" in result
+    assert "- Execution Prep Eligible: False" in result
     assert "Execution Blocks:" not in result
+
+
+def test_successful_plan_output_shows_operator_workflow_and_handoff_summary():
+    result = run_engine("Plan a trip to diani for 2 people next weekend")
+
+    assert "Operator Workflow:" in result
+    assert "- State: plan_ready_only" in result
+    assert "- Human Approval Required: False" in result
+    assert "- Execution Prep Eligible: False" in result
+    assert "Handoff Summary:" in result
+    assert "- Workflow State: plan_ready_only" in result
+    assert "- Blockers: 1" in result
+    assert "- Plan Steps: 5" in result
 
 
 def test_mood_driven_relaxed_plan_content():
