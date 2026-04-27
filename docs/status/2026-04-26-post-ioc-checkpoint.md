@@ -1,3 +1,22 @@
+## Latest Update: Approval + Correction-Style Timing
+
+After the initial IOC stabilization checkpoint, two additional seams were hardened:
+
+1. Approval continuation
+   - `Approved` is now accepted only when approval is pending.
+   - `Declined` blocks execution-prep safely.
+   - Approval does not create a travel request outside approval context.
+
+2. Correction-style timing update
+   - Replies like `Wait, actually Aug 23-30` now update timing correctly.
+   - Destination and traveller count are preserved.
+   - The flow advances to mood clarification instead of looping on the old relative timing prompt.
+
+Current validation:
+
+```text
+Full suite: 757 passed
+Post-IOC regression harvest: 14/14 passed
 # Post-IOC Stabilization Checkpoint
 
 **Date:** 2026-04-26  
