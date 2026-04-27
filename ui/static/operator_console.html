@@ -32,12 +32,19 @@
     </section>
 
     <section class="panel output-panel">
-      <div class="panel-header">
-        <h2>Plan Output</h2>
-        <p>Formatted engine response</p>
+      <div class="panel-header output-header">
+        <div>
+          <h2>Plan Output</h2>
+          <p>Formatted engine response, split into operator-readable sections</p>
+        </div>
+        <button id="rawToggleBtn" class="secondary">Show raw</button>
       </div>
 
-      <pre id="outputBox" class="output-box">No output yet.</pre>
+      <div id="sectionedOutput" class="sectioned-output">
+        <div class="empty-state">No output yet.</div>
+      </div>
+
+      <pre id="outputBox" class="output-box hidden">No output yet.</pre>
     </section>
 
     <section class="panel state-panel">
@@ -76,7 +83,7 @@
       </dl>
 
       <div class="note">
-        This panel now reads structured JSON state from the backend instead of scraping the formatted output.
+        This panel reads structured JSON state from the backend instead of scraping the formatted output.
       </div>
     </section>
   </main>
@@ -84,6 +91,8 @@
   <script>
     const input = document.getElementById("requestInput");
     const outputBox = document.getElementById("outputBox");
+    const sectionedOutput = document.getElementById("sectionedOutput");
+    const rawToggleBtn = document.getElementById("rawToggleBtn");
     const statusText = document.getElementById("statusText");
 
     const backendState = document.getElementById("backendState");
@@ -96,8 +105,106 @@
     const blockersState = document.getElementById("blockersState");
     const lastAction = document.getElementById("lastAction");
 
+    let showingRaw = false;
+
+    const SECTION_TITLES = [
+      "Status:",
+      "Goal:",
+      "Travel Brief:",
+      "Brief Gaps:",
+      "Steps:",
+      "Checks:",
+      "Risks:",
+      "Execution Readiness:",
+      "Execution Block Details:",
+      "Execution Blocks:",
+      "Operator Workflow:",
+      "Handoff Summary:",
+      "Errors:"
+    ];
+
     function setStatus(message) {
       statusText.textContent = message;
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function normalizeLine(line) {
+      return line.trim();
+    }
+
+    function sectionTitleForLine(line) {
+      const normalized = normalizeLine(line);
+      return SECTION_TITLES.find((title) => normalized === title);
+    }
+
+    function parseSections(output) {
+      const lines = output.split("\n");
+      const sections = [];
+      let current = null;
+
+      for (const line of lines) {
+        const normalized = normalizeLine(line);
+
+        if (!normalized || normalized.startsWith("=") || normalized === "Slate808 Output") {
+          continue;
+        }
+
+        const title = sectionTitleForLine(line);
+
+        if (title) {
+          current = {
+            title: title.replace(":", ""),
+            lines: []
+          };
+          sections.push(current);
+          continue;
+        }
+
+        if (!current) {
+          current = {
+            title: "Output",
+            lines: []
+          };
+          sections.push(current);
+        }
+
+        current.lines.push(line);
+      }
+
+      return sections.filter((section) => section.lines.length > 0 || section.title === "Status");
+    }
+
+    function renderSectionedOutput(output) {
+      const sections = parseSections(output);
+
+      if (!sections.length) {
+        sectionedOutput.innerHTML = '<div class="empty-state">No structured output available.</div>';
+        return;
+      }
+
+      sectionedOutput.innerHTML = sections.map((section) => {
+        const body = section.lines.length
+          ? `<pre>${escapeHtml(section.lines.join("\n"))}</pre>`
+          : `<pre></pre>`;
+
+        return `
+          <article class="output-section">
+            <h3>${escapeHtml(section.title)}</h3>
+            ${body}
+          </article>
+        `;
+      }).join("");
+    }
+
+    function setOutput(output) {
+      outputBox.textContent = output;
+      renderSectionedOutput(output);
     }
 
     function renderState(state) {
@@ -168,18 +275,18 @@
         const data = await response.json();
 
         if (data.status !== "ok") {
-          outputBox.textContent = data.error || "Unknown error.";
+          setOutput(data.error || "Unknown error.");
           renderState(data.state);
           setStatus("Error.");
           return;
         }
 
-        outputBox.textContent = data.output;
+        setOutput(data.output);
         renderState(data.state);
         input.value = "";
         setStatus("Done.");
       } catch (error) {
-        outputBox.textContent = String(error);
+        setOutput(String(error));
         setStatus("Request failed.");
       }
     }
@@ -192,18 +299,33 @@
         const response = await fetch("/reset", {method: "POST"});
         const data = await response.json();
 
-        outputBox.textContent = data.output || "Session reset.";
+        setOutput(data.output || "Session reset.");
         renderState(data.state);
         input.value = "";
         setStatus("Session reset.");
       } catch (error) {
-        outputBox.textContent = String(error);
+        setOutput(String(error));
         setStatus("Reset failed.");
+      }
+    }
+
+    function toggleRawOutput() {
+      showingRaw = !showingRaw;
+
+      if (showingRaw) {
+        outputBox.classList.remove("hidden");
+        sectionedOutput.classList.add("hidden");
+        rawToggleBtn.textContent = "Show sections";
+      } else {
+        outputBox.classList.add("hidden");
+        sectionedOutput.classList.remove("hidden");
+        rawToggleBtn.textContent = "Show raw";
       }
     }
 
     document.getElementById("submitBtn").addEventListener("click", submitRequest);
     document.getElementById("resetBtn").addEventListener("click", resetSession);
+    rawToggleBtn.addEventListener("click", toggleRawOutput);
 
     document.querySelectorAll("[data-fill]").forEach((button) => {
       button.addEventListener("click", () => {
