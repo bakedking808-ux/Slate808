@@ -277,7 +277,7 @@ def _apply_constraint_policy(steps: list[str], details: dict) -> list[str]:
 
     if constraint_policy.get("low_risk"):
         transport_suffixes.append("with practical and safe movement")
-        activity_suffixes.append("with safe and practical choices")
+        activity_suffixes.append("with calm, practical choices")
 
     if constraint_policy.get("value_focused"):
         transport_suffixes.append("using practical and cost-conscious routing")
@@ -463,7 +463,7 @@ def _build_timing_step(details: dict, mood: str | None = None) -> str:
     is_duration_only = timing_policy.get("is_duration_only", timing_state == "duration_only")
 
     mood_suffixes = {
-        "relaxed": "and keep the itinerary relaxed",
+        "relaxed": "with heat-aware booking buffers and a relaxed rhythm",
         "adventure": "and reserve time for active excursions",
         "luxury": "and align premium bookings",
         "romantic": "and protect shared time for special moments",
@@ -477,19 +477,19 @@ def _build_timing_step(details: dict, mood: str | None = None) -> str:
 
         if start_date and end_date and start_date != end_date:
             step = (
-                f"Confirm the trip timing by setting the departure date as {start_date} and the return date as {end_date}, "
-                "then align bookings"
+                f"Confirm the trip timing by setting the departure date as {start_date} and the return date as {end_date}; "
+                "align bookings"
             )
         elif start_date:
-            step = f"Confirm the trip timing by setting the travel date as {start_date} and align bookings"
+            step = f"Confirm the trip timing by setting the travel date as {start_date}; align bookings"
         else:
-            step = f"Confirm the trip timing as {timing_text} and align bookings"
+            step = f"Confirm the trip timing as {timing_text}; align bookings"
 
     elif is_relative_timing and timing_text != "timing not specified":
-        step = f"Confirm the trip timing window as {timing_text} and align bookings"
+        step = f"Confirm the trip timing window as {timing_text}; align bookings"
 
     elif is_month_only and timing_text != "timing not specified":
-        step = f"Confirm the trip timing by choosing preferred dates within {timing_text} and align bookings"
+        step = f"Confirm the trip timing by choosing preferred dates within {timing_text}; align bookings"
 
     elif is_duration_only:
         step = (
@@ -517,11 +517,11 @@ def _apply_mood_to_trip_steps(steps: list[str], details: dict) -> list[str]:
 
     if mood == "relaxed":
         steps[2] = _append_destination_suffix(
-            "Choose transport arrangements that keep movement calm, smooth, and low-friction",
+            "Choose coastal transport options with simple transfers and heat-aware timing",
             transport_suffix,
         )
         steps[3] = _append_destination_suffix(
-            "Select restful and scenic activities that support a calm travel pace",
+            "Select relaxed beach and water activities that leave room for light pacing, quiet breaks, and recovery",
             activity_suffix,
         )
         steps[4] = _build_timing_step(details, mood="relaxed")

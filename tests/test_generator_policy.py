@@ -150,7 +150,7 @@ def test_generator_timing_step_can_follow_policy_flags_over_raw_timing_state():
         },
     )
 
-    assert steps[4] == "Confirm the trip timing by choosing preferred dates within april and align bookings"
+    assert steps[4] == "Confirm the trip timing by choosing preferred dates within april; align bookings"
 
 
 def test_timing_steps_remain_concrete_and_checker_safe_across_usable_timing_states():
@@ -189,8 +189,8 @@ def test_policy_aligned_outputs_for_supported_moods():
     cases = [
         (
             "Plan a relaxed trip to diani for 2 people next weekend",
-            "choose transport arrangements that keep movement calm, smooth, and low-friction",
-            "select restful and scenic activities that support a calm travel pace",
+            "choose coastal transport options with simple transfers and heat-aware timing",
+            "select relaxed beach and water activities that leave room for light pacing, quiet breaks, and recovery",
         ),
         (
             "Plan an adventure trip to mara for 3 people for 5 days",

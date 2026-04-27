@@ -7,9 +7,11 @@ def _polish_rendered_step(step: str) -> str:
         ("and align bookings and align premium bookings", "and align premium bookings"),
         ("and align team logistics efficiently confirm the shared schedule for the group", "and align team logistics efficiently while keeping the shared schedule coordinated"),
         ("with family-friendly and comfortable options; safe and practical choices", "with family-friendly, comfortable options"),
+        ("with family-friendly and comfortable options; calm, practical choices", "with family-friendly, comfortable, and practical options"),
         ("with practical and safe movement; while keeping transfers easy and low-strain", "with safe, low-friction movement while keeping transfers easy and low-strain"),
         ("with practical and safe movement; using practical and cost-conscious routing", "with safe, cost-conscious routing"),
-        ("with safe and practical choices", "with safety and comfort in mind"),
+        ("with safe and practical choices", "with calm, practical choices"),
+        ("and keep the itinerary relaxed while leaving room for rest between activities with heat-aware pacing and rest windows", "with a relaxed rhythm and heat-aware buffers"),
     )
     updated = step
     for old, new in replacements:
