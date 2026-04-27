@@ -2119,8 +2119,8 @@ def test_mood_driven_relaxed_plan_content():
     steps = _extract_numbered_steps(result)
 
     assert "transport" in steps[2].lower()
-    assert "smooth" in steps[2].lower() or "low-friction" in steps[2].lower()
-    assert "restful" in steps[3].lower()
+    assert "heat-aware" in steps[2].lower() or "simple transfers" in steps[2].lower()
+    assert "restful" in steps[3].lower() or "light pacing" in steps[3].lower()
     assert "timing" in steps[4].lower()
     assert "relaxed" in steps[4].lower()
 
@@ -2233,7 +2233,23 @@ def test_relaxed_trip_step_wording_suppresses_old_repeated_phrases():
 
     assert "safe and practical choices" not in joined
     assert "itinerary relaxed keep enough room" not in joined
-    assert "while leaving room for rest between activities" in joined
+    assert "rest between activities" in joined
+
+
+def test_relaxed_watamu_output_is_compact_and_date_budget_specific():
+    result = run_engine("Plan a relaxed trip to Watamu for 3 people 10 April to 12 April with a budget of 80000")
+    steps = _extract_numbered_steps(result)
+    joined = " ".join(steps).lower()
+    normalized = result.lower()
+
+    assert len(steps) == 5
+    assert "watamu" in normalized
+    assert "10 april to 12 april" in normalized
+    assert "budget of 80000" in normalized
+    assert "relaxed" in normalized
+    assert "align bookings and keep the itinerary relaxed while leaving room for rest between activities with heat-aware pacing and rest windows" not in joined
+    assert "low-friction" not in joined
+    assert "safety and comfort in mind" not in normalized
 
 
 def test_luxury_and_low_budget_outputs_keep_distinct_checks_and_risks():
@@ -2263,7 +2279,7 @@ def test_no_mood_preserves_default_plan_behavior():
 @pytest.mark.parametrize(
     ("trip_request", "expected_mood", "expected_phrase"),
     [
-        ("Plan a cheap relaxed trip to diani for 2 people next weekend", "relaxed", "smooth"),
+        ("Plan a cheap relaxed trip to diani for 2 people next weekend", "relaxed", "heat-aware"),
         ("Plan a romantic luxury getaway to zanzibar for 2 people next month", "romantic", "intimate"),
         ("Plan a family trip to mombasa for 5 people next weekend", "family", "family-friendly"),
         ("Plan a corporate retreat to nairobi for 12 people next month", "corporate", "efficient"),

@@ -157,8 +157,12 @@ def _compact_step(step: str) -> str:
             "family-friendly, comfortable, and practical options",
         ),
         (
+            "family-friendly and comfortable options; calm, practical choices",
+            "family-friendly, comfortable, and practical options",
+        ),
+        (
             "safe and practical choices",
-            "safety and comfort in mind",
+            "calm, practical choices",
         ),
         (
             "fewer activities and more recovery time; lighter arrival-day and recovery-aware family pacing",
@@ -208,7 +212,9 @@ def _strengthen_timing_step(step: str, destination_policy: dict[str, Any]) -> st
         return step
 
     suffix = _destination_pacing_suffix(destination_policy)
-    if not suffix or suffix in step:
+    if not suffix or suffix in step or (
+        "heat-aware" in suffix and "heat-aware" in step
+    ):
         return step
     compacted_suffixes = {
         "with transfer buffers for traffic-aware movement": "with departure and transfer buffers for traffic-aware movement",
