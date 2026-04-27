@@ -1166,3 +1166,45 @@ def _retry_prompt(field: str, state: dict | None = None) -> str:
 
 def _looks_like_new_request(text: str) -> bool:
     return any(re.search(pattern, text) for pattern in NEW_TASK_OVERRIDE_PATTERNS)
+
+
+def get_console_state() -> dict:
+    """Return a small read-only state snapshot for the operator console.
+
+    This is intentionally narrow. It exposes enough state for the local console
+    to explain what Slate is waiting for without leaking or mutating internals.
+    """
+    state = state_manager.get_state()
+
+    if state and state.get("active"):
+        collected_fields = state.get("collected_fields") or {}
+
+        return {
+            "active": True,
+            "current_field": state.get("current_field"),
+            "missing_fields": list(state.get("missing_fields") or []),
+            "workflow_state": state.get("workflow_state") or "clarification_in_progress",
+            "approval_state": "pending"
+            if (recent_completed_trip or {}).get("approval_state") == "pending"
+            else (recent_completed_trip or {}).get("approval_state", "not_requested"),
+            "readiness_level": None,
+            "blockers": [],
+            "collected_fields": {
+                key: value
+                for key, value in collected_fields.items()
+                if key in {"destination", "traveller_count", "budget_amount", "budget_level", "trip_mood"}
+            },
+        }
+
+    approval_state = (recent_completed_trip or {}).get("approval_state", "not_requested")
+
+    return {
+        "active": False,
+        "current_field": None,
+        "missing_fields": [],
+        "workflow_state": "idle",
+        "approval_state": approval_state,
+        "readiness_level": None,
+        "blockers": [],
+        "collected_fields": {},
+    }

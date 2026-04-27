@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from engine.clarification_runner import run, reset_state
+from engine.clarification_runner import get_console_state, reset_state, run
 
 
 HOST = "127.0.0.1"
@@ -58,6 +58,17 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
             )
             return
 
+        if path == "/state":
+            _json_response(
+                self,
+                200,
+                {
+                    "status": "ok",
+                    "state": get_console_state(),
+                },
+            )
+            return
+
         if path == "/":
             self._serve_static_file("operator_console.html", "text/html")
             return
@@ -73,6 +84,7 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
                 "status": "error",
                 "error": "Route not found.",
                 "output": None,
+                "state": get_console_state(),
             },
         )
 
@@ -94,6 +106,7 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
                 "status": "error",
                 "error": "Route not found.",
                 "output": None,
+                "state": get_console_state(),
             },
         )
 
@@ -109,6 +122,7 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
                     "status": "error",
                     "error": "Request field 'input' must be a non-empty string.",
                     "output": None,
+                    "state": get_console_state(),
                 },
             )
             return
@@ -121,6 +135,7 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
             {
                 "status": "ok",
                 "output": output,
+                "state": get_console_state(),
             },
         )
 
@@ -133,6 +148,7 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
             {
                 "status": "ok",
                 "output": "Session reset.",
+                "state": get_console_state(),
             },
         )
 
@@ -147,6 +163,7 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
                     "status": "error",
                     "error": "Static file not found.",
                     "output": None,
+                    "state": get_console_state(),
                 },
             )
             return
@@ -160,7 +177,6 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def log_message(self, format: str, *args: Any) -> None:
-        # Keep the v1 console backend quiet during tests/manual use.
         return
 
 

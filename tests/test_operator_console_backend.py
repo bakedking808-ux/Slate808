@@ -53,6 +53,25 @@ def test_operator_console_health_route():
         server.server_close()
 
 
+def test_operator_console_state_route_returns_default_state():
+    server, _thread = _start_test_server()
+
+    try:
+        _request(server, "POST", "/reset")
+        status, data = _request(server, "GET", "/state")
+
+        assert status == 200
+        assert data["status"] == "ok"
+        assert data["state"]["active"] is False
+        assert data["state"]["current_field"] is None
+        assert data["state"]["missing_fields"] == []
+        assert data["state"]["workflow_state"] == "idle"
+        assert data["state"]["approval_state"] in {"not_requested", "approved", "rejected"}
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
 def test_operator_console_root_serves_frontend_html():
     server, _thread = _start_test_server()
 
@@ -64,6 +83,7 @@ def test_operator_console_root_serves_frontend_html():
         assert "Request Workspace" in body
         assert "Plan Output" in body
         assert "System State" in body
+        assert "Structured backend state" in body
     finally:
         server.shutdown()
         server.server_close()
@@ -93,12 +113,13 @@ def test_operator_console_run_requires_non_empty_input():
         assert data["status"] == "error"
         assert "non-empty string" in data["error"]
         assert data["output"] is None
+        assert "state" in data
     finally:
         server.shutdown()
         server.server_close()
 
 
-def test_operator_console_run_returns_engine_output():
+def test_operator_console_run_returns_engine_output_and_state():
     server, _thread = _start_test_server()
 
     try:
@@ -109,12 +130,17 @@ def test_operator_console_run_returns_engine_output():
         assert data["status"] == "ok"
         assert "Operator Workflow:" in data["output"]
         assert "What exact dates are you planning?" in data["output"]
+
+        assert data["state"]["active"] is True
+        assert data["state"]["current_field"] == "timing"
+        assert "timing" in data["state"]["missing_fields"]
+        assert data["state"]["workflow_state"] == "clarification_in_progress"
     finally:
         server.shutdown()
         server.server_close()
 
 
-def test_operator_console_reset_route_resets_session():
+def test_operator_console_reset_route_resets_session_and_returns_state():
     server, _thread = _start_test_server()
 
     try:
@@ -126,9 +152,30 @@ def test_operator_console_reset_route_resets_session():
         assert reset_status == 200
         assert reset_data["status"] == "ok"
         assert reset_data["output"] == "Session reset."
+        assert reset_data["state"]["active"] is False
+        assert reset_data["state"]["current_field"] is None
+        assert reset_data["state"]["missing_fields"] == []
 
         assert next_status == 200
         assert "Slate808 currently supports travel planning only" in next_data["output"]
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_operator_console_state_changes_after_clarification_starts():
+    server, _thread = _start_test_server()
+
+    try:
+        _request(server, "POST", "/reset")
+        _request(server, "POST", "/run", {"input": "Plan a trip to Naivasha"})
+
+        status, data = _request(server, "GET", "/state")
+
+        assert status == 200
+        assert data["state"]["active"] is True
+        assert data["state"]["current_field"] == "timing"
+        assert data["state"]["workflow_state"] == "clarification_in_progress"
     finally:
         server.shutdown()
         server.server_close()
