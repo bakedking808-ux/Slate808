@@ -3,6 +3,7 @@
   --bg: #101216;
   --panel: #171a21;
   --panel-soft: #1f2430;
+  --panel-dark: #0b0d11;
   --text: #edf0f6;
   --muted: #9aa3b2;
   --line: #2b3140;
@@ -40,10 +41,22 @@ body {
   margin-bottom: 20px;
 }
 
+.output-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 h1,
-h2 {
+h2,
+h3 {
   margin: 0;
   letter-spacing: -0.02em;
+}
+
+h3 {
+  font-size: 0.95rem;
 }
 
 p {
@@ -99,15 +112,53 @@ button.secondary,
   color: var(--accent);
 }
 
-.output-box {
-  white-space: pre-wrap;
-  background: #0b0d11;
+.output-box,
+.sectioned-output {
+  background: var(--panel-dark);
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 16px;
   min-height: calc(100vh - 130px);
   overflow: auto;
   line-height: 1.45;
+}
+
+.output-box {
+  white-space: pre-wrap;
+}
+
+.sectioned-output {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.output-section {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.output-section h3 {
+  margin-bottom: 10px;
+  color: var(--accent);
+}
+
+.output-section pre {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+}
+
+.empty-state {
+  color: var(--muted);
+}
+
+.hidden {
+  display: none;
 }
 
 dl {
@@ -149,7 +200,8 @@ dd {
     min-height: auto;
   }
 
-  .output-box {
+  .output-box,
+  .sectioned-output {
     min-height: 420px;
   }
 }

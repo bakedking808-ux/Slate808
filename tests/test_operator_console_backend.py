@@ -84,6 +84,8 @@ def test_operator_console_root_serves_frontend_html():
         assert "Plan Output" in body
         assert "System State" in body
         assert "Structured backend state" in body
+        assert "sectionedOutput" in body
+        assert "Show raw" in body
     finally:
         server.shutdown()
         server.server_close()
@@ -98,6 +100,8 @@ def test_operator_console_serves_css():
         assert status == 200
         assert ".console" in body
         assert ".panel" in body
+        assert ".output-section" in body
+        assert ".sectioned-output" in body
     finally:
         server.shutdown()
         server.server_close()
