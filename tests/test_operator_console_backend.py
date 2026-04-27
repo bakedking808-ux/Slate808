@@ -27,6 +27,18 @@ def _request(server, method: str, path: str, payload: dict | None = None):
     return response.status, json.loads(response_body)
 
 
+def _raw_request(server, method: str, path: str):
+    host, port = server.server_address
+    connection = HTTPConnection(host, port)
+
+    connection.request(method, path)
+    response = connection.getresponse()
+    response_body = response.read().decode("utf-8")
+    connection.close()
+
+    return response.status, response_body
+
+
 def test_operator_console_health_route():
     server, _thread = _start_test_server()
 
@@ -36,6 +48,36 @@ def test_operator_console_health_route():
         assert status == 200
         assert data["status"] == "ok"
         assert data["service"] == "slate808-operator-console-backend"
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_operator_console_root_serves_frontend_html():
+    server, _thread = _start_test_server()
+
+    try:
+        status, body = _raw_request(server, "GET", "/")
+
+        assert status == 200
+        assert "Slate808 Operator Console" in body
+        assert "Request Workspace" in body
+        assert "Plan Output" in body
+        assert "System State" in body
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_operator_console_serves_css():
+    server, _thread = _start_test_server()
+
+    try:
+        status, body = _raw_request(server, "GET", "/static/operator_console.css")
+
+        assert status == 200
+        assert ".console" in body
+        assert ".panel" in body
     finally:
         server.shutdown()
         server.server_close()
