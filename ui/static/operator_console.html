@@ -43,15 +43,24 @@
     <section class="panel state-panel">
       <div class="panel-header">
         <h2>System State</h2>
-        <p>Diagnostic view</p>
+        <p>Structured backend state</p>
       </div>
 
       <dl>
         <dt>Backend</dt>
         <dd id="backendState">Not checked</dd>
 
+        <dt>Active Session</dt>
+        <dd id="activeState">Unknown</dd>
+
         <dt>Workflow State</dt>
         <dd id="workflowState">Unknown</dd>
+
+        <dt>Current Field</dt>
+        <dd id="currentField">Unknown</dd>
+
+        <dt>Missing Fields</dt>
+        <dd id="missingFields">Unknown</dd>
 
         <dt>Readiness</dt>
         <dd id="readinessState">Unknown</dd>
@@ -59,12 +68,15 @@
         <dt>Approval</dt>
         <dd id="approvalState">Unknown</dd>
 
+        <dt>Blockers</dt>
+        <dd id="blockersState">Unknown</dd>
+
         <dt>Last Action</dt>
         <dd id="lastAction">None</dd>
       </dl>
 
       <div class="note">
-        State values are currently inferred from formatted output. Structured state exposure comes in a later pass.
+        This panel now reads structured JSON state from the backend instead of scraping the formatted output.
       </div>
     </section>
   </main>
@@ -73,24 +85,44 @@
     const input = document.getElementById("requestInput");
     const outputBox = document.getElementById("outputBox");
     const statusText = document.getElementById("statusText");
+
     const backendState = document.getElementById("backendState");
+    const activeState = document.getElementById("activeState");
     const workflowState = document.getElementById("workflowState");
+    const currentField = document.getElementById("currentField");
+    const missingFields = document.getElementById("missingFields");
     const readinessState = document.getElementById("readinessState");
     const approvalState = document.getElementById("approvalState");
+    const blockersState = document.getElementById("blockersState");
     const lastAction = document.getElementById("lastAction");
 
     function setStatus(message) {
       statusText.textContent = message;
     }
 
-    function inferState(output) {
-      const workflowMatch = output.match(/- State: ([^\n]+)/);
-      const readinessMatch = output.match(/- Level: ([^\n]+)/);
-      const approvalMatch = output.match(/- Approval State: ([^\n]+)/);
+    function renderState(state) {
+      if (!state) {
+        activeState.textContent = "Unknown";
+        workflowState.textContent = "Unknown";
+        currentField.textContent = "Unknown";
+        missingFields.textContent = "Unknown";
+        readinessState.textContent = "Unknown";
+        approvalState.textContent = "Unknown";
+        blockersState.textContent = "Unknown";
+        return;
+      }
 
-      workflowState.textContent = workflowMatch ? workflowMatch[1] : "Unknown";
-      readinessState.textContent = readinessMatch ? readinessMatch[1] : "Unknown";
-      approvalState.textContent = approvalMatch ? approvalMatch[1] : "Unknown";
+      activeState.textContent = state.active ? "Yes" : "No";
+      workflowState.textContent = state.workflow_state || "Unknown";
+      currentField.textContent = state.current_field || "None";
+      missingFields.textContent = Array.isArray(state.missing_fields) && state.missing_fields.length
+        ? state.missing_fields.join(", ")
+        : "None";
+      readinessState.textContent = state.readiness_level || "None";
+      approvalState.textContent = state.approval_state || "not_requested";
+      blockersState.textContent = Array.isArray(state.blockers) && state.blockers.length
+        ? state.blockers.join(", ")
+        : "None";
     }
 
     async function checkHealth() {
@@ -100,6 +132,18 @@
         backendState.textContent = data.status === "ok" ? "Online" : "Unknown";
       } catch (error) {
         backendState.textContent = "Offline";
+      }
+    }
+
+    async function refreshState() {
+      try {
+        const response = await fetch("/state");
+        const data = await response.json();
+        if (data.status === "ok") {
+          renderState(data.state);
+        }
+      } catch (error) {
+        renderState(null);
       }
     }
 
@@ -125,12 +169,14 @@
 
         if (data.status !== "ok") {
           outputBox.textContent = data.error || "Unknown error.";
+          renderState(data.state);
           setStatus("Error.");
           return;
         }
 
         outputBox.textContent = data.output;
-        inferState(data.output);
+        renderState(data.state);
+        input.value = "";
         setStatus("Done.");
       } catch (error) {
         outputBox.textContent = String(error);
@@ -147,9 +193,7 @@
         const data = await response.json();
 
         outputBox.textContent = data.output || "Session reset.";
-        workflowState.textContent = "Unknown";
-        readinessState.textContent = "Unknown";
-        approvalState.textContent = "Unknown";
+        renderState(data.state);
         input.value = "";
         setStatus("Session reset.");
       } catch (error) {
@@ -175,6 +219,7 @@
     });
 
     checkHealth();
+    refreshState();
   </script>
 </body>
 </html>
