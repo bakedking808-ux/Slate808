@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
@@ -10,6 +11,7 @@ from engine.clarification_runner import run, reset_state
 
 HOST = "127.0.0.1"
 PORT = 8080
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
 def _json_response(
@@ -54,6 +56,14 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
                     "service": "slate808-operator-console-backend",
                 },
             )
+            return
+
+        if path == "/":
+            self._serve_static_file("operator_console.html", "text/html")
+            return
+
+        if path == "/static/operator_console.css":
+            self._serve_static_file("operator_console.css", "text/css")
             return
 
         _json_response(
@@ -125,6 +135,29 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
                 "output": "Session reset.",
             },
         )
+
+    def _serve_static_file(self, filename: str, content_type: str) -> None:
+        file_path = STATIC_DIR / filename
+
+        if not file_path.exists():
+            _json_response(
+                self,
+                404,
+                {
+                    "status": "error",
+                    "error": "Static file not found.",
+                    "output": None,
+                },
+            )
+            return
+
+        body = file_path.read_bytes()
+
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def log_message(self, format: str, *args: Any) -> None:
         # Keep the v1 console backend quiet during tests/manual use.

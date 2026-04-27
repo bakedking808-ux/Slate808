@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Slate808 Operator Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/static/operator_console.css">
+</head>
+<body>
+  <main class="console">
+    <section class="panel request-panel">
+      <div class="panel-header">
+        <h1>Slate808</h1>
+        <p>Operator Console v1</p>
+      </div>
+
+      <label for="requestInput">Request Workspace</label>
+      <textarea id="requestInput" rows="8" placeholder="Plan a relaxed trip to Watamu for 3 people 10 April to 12 April..."></textarea>
+
+      <div class="actions">
+        <button id="submitBtn">Submit</button>
+        <button id="resetBtn" class="secondary">Reset</button>
+      </div>
+
+      <div class="quick-actions">
+        <button data-fill="Approved">Approved</button>
+        <button data-fill="Declined">Declined</button>
+        <button data-fill="Wait, actually Aug 23-30">Timing correction</button>
+      </div>
+
+      <p id="statusText" class="status-text">Ready.</p>
+    </section>
+
+    <section class="panel output-panel">
+      <div class="panel-header">
+        <h2>Plan Output</h2>
+        <p>Formatted engine response</p>
+      </div>
+
+      <pre id="outputBox" class="output-box">No output yet.</pre>
+    </section>
+
+    <section class="panel state-panel">
+      <div class="panel-header">
+        <h2>System State</h2>
+        <p>Diagnostic view</p>
+      </div>
+
+      <dl>
+        <dt>Backend</dt>
+        <dd id="backendState">Not checked</dd>
+
+        <dt>Workflow State</dt>
+        <dd id="workflowState">Unknown</dd>
+
+        <dt>Readiness</dt>
+        <dd id="readinessState">Unknown</dd>
+
+        <dt>Approval</dt>
+        <dd id="approvalState">Unknown</dd>
+
+        <dt>Last Action</dt>
+        <dd id="lastAction">None</dd>
+      </dl>
+
+      <div class="note">
+        State values are currently inferred from formatted output. Structured state exposure comes in a later pass.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const input = document.getElementById("requestInput");
+    const outputBox = document.getElementById("outputBox");
+    const statusText = document.getElementById("statusText");
+    const backendState = document.getElementById("backendState");
+    const workflowState = document.getElementById("workflowState");
+    const readinessState = document.getElementById("readinessState");
+    const approvalState = document.getElementById("approvalState");
+    const lastAction = document.getElementById("lastAction");
+
+    function setStatus(message) {
+      statusText.textContent = message;
+    }
+
+    function inferState(output) {
+      const workflowMatch = output.match(/- State: ([^\n]+)/);
+      const readinessMatch = output.match(/- Level: ([^\n]+)/);
+      const approvalMatch = output.match(/- Approval State: ([^\n]+)/);
+
+      workflowState.textContent = workflowMatch ? workflowMatch[1] : "Unknown";
+      readinessState.textContent = readinessMatch ? readinessMatch[1] : "Unknown";
+      approvalState.textContent = approvalMatch ? approvalMatch[1] : "Unknown";
+    }
+
+    async function checkHealth() {
+      try {
+        const response = await fetch("/health");
+        const data = await response.json();
+        backendState.textContent = data.status === "ok" ? "Online" : "Unknown";
+      } catch (error) {
+        backendState.textContent = "Offline";
+      }
+    }
+
+    async function submitRequest() {
+      const value = input.value.trim();
+
+      if (!value) {
+        setStatus("Enter a request first.");
+        return;
+      }
+
+      setStatus("Running...");
+      lastAction.textContent = "Submit";
+
+      try {
+        const response = await fetch("/run", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({input: value})
+        });
+
+        const data = await response.json();
+
+        if (data.status !== "ok") {
+          outputBox.textContent = data.error || "Unknown error.";
+          setStatus("Error.");
+          return;
+        }
+
+        outputBox.textContent = data.output;
+        inferState(data.output);
+        setStatus("Done.");
+      } catch (error) {
+        outputBox.textContent = String(error);
+        setStatus("Request failed.");
+      }
+    }
+
+    async function resetSession() {
+      setStatus("Resetting...");
+      lastAction.textContent = "Reset";
+
+      try {
+        const response = await fetch("/reset", {method: "POST"});
+        const data = await response.json();
+
+        outputBox.textContent = data.output || "Session reset.";
+        workflowState.textContent = "Unknown";
+        readinessState.textContent = "Unknown";
+        approvalState.textContent = "Unknown";
+        input.value = "";
+        setStatus("Session reset.");
+      } catch (error) {
+        outputBox.textContent = String(error);
+        setStatus("Reset failed.");
+      }
+    }
+
+    document.getElementById("submitBtn").addEventListener("click", submitRequest);
+    document.getElementById("resetBtn").addEventListener("click", resetSession);
+
+    document.querySelectorAll("[data-fill]").forEach((button) => {
+      button.addEventListener("click", () => {
+        input.value = button.dataset.fill;
+        input.focus();
+      });
+    });
+
+    input.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        submitRequest();
+      }
+    });
+
+    checkHealth();
+  </script>
+</body>
+</html>
