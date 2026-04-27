@@ -7,85 +7,261 @@
   <link rel="stylesheet" href="/static/operator_console.css">
 </head>
 <body>
-  <main class="console">
-    <section class="panel request-panel">
-      <div class="panel-header">
-        <h1>Slate808</h1>
-        <p>Operator Console v1</p>
-      </div>
-
-      <label for="requestInput">Request Workspace</label>
-      <textarea id="requestInput" rows="8" placeholder="Plan a relaxed trip to Watamu for 3 people 10 April to 12 April..."></textarea>
-
-      <div class="actions">
-        <button id="submitBtn">Submit</button>
-        <button id="resetBtn" class="secondary">Reset</button>
-      </div>
-
-      <div class="quick-actions">
-        <button data-fill="Approved">Approved</button>
-        <button data-fill="Declined">Declined</button>
-        <button data-fill="Wait, actually Aug 23-30">Timing correction</button>
-      </div>
-
-      <p id="statusText" class="status-text">Ready.</p>
-    </section>
-
-    <section class="panel output-panel">
-      <div class="panel-header output-header">
-        <div>
-          <h2>Plan Output</h2>
-          <p>Formatted engine response, split into operator-readable sections</p>
+  <main class="app-shell">
+    <header class="app-header" aria-label="Slate808 console header">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3 3.8 7.5 12 12l8.2-4.5L12 3Z"></path>
+            <path d="M3.8 12 12 16.5 20.2 12"></path>
+            <path d="M3.8 16.5 12 21l8.2-4.5"></path>
+          </svg>
         </div>
-        <button id="rawToggleBtn" class="secondary">Show raw</button>
+        <div>
+          <h1>SLATE</h1>
+          <p>Travel Planning Engine</p>
+        </div>
       </div>
 
-      <div id="sectionedOutput" class="sectioned-output">
-        <div class="empty-state">No output yet.</div>
+      <div class="header-tools">
+        <div class="trace-pill">
+          <span>BACKEND</span>
+          <strong id="backendTopState">Checking</strong>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="9" y="9" width="10" height="10" rx="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </div>
       </div>
+    </header>
 
-      <pre id="outputBox" class="output-box hidden">No output yet.</pre>
+    <section class="layout-grid">
+      <aside class="left-column">
+        <section class="console-card numbered-card request-card">
+          <div class="card-title-row">
+            <span class="step-badge">1</span>
+            <div>
+              <h2>New Trip Request</h2>
+              <p>Request Workspace</p>
+            </div>
+          </div>
+
+          <label class="sr-only" for="requestInput">Request Workspace</label>
+          <div class="textarea-shell">
+            <textarea id="requestInput" rows="5" maxlength="1000" placeholder=""></textarea>
+            <span id="charCount" class="char-count">0 / 1000</span>
+          </div>
+
+          <div class="actions">
+            <button id="submitBtn" class="primary-button" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22 2 11 13"></path>
+                <path d="M22 2 15 22l-4-9-9-4 20-7Z"></path>
+              </svg>
+              Run through Slate
+            </button>
+            <button id="resetBtn" class="ghost-button" type="button">Reset</button>
+          </div>
+        </section>
+
+        <section class="console-card numbered-card">
+          <div class="card-title-row">
+            <span class="step-badge teal">2</span>
+            <div>
+              <h2><span>Travel Brief</span> <em>(Extracted)</em></h2>
+              <p>Truthful fields from backend output/state</p>
+            </div>
+          </div>
+
+          <div class="brief-table">
+            <div class="brief-row">
+              <span class="row-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 21s7-4.4 7-11A7 7 0 0 0 5 10c0 6.6 7 11 7 11Z"></path><circle cx="12" cy="10" r="2.4"></circle></svg>
+              </span>
+              <strong>Destination</strong>
+              <span id="briefDestination">None</span>
+            </div>
+            <div class="brief-row">
+              <span class="row-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              </span>
+              <strong>Travellers</strong>
+              <span id="briefTravellers">None</span>
+            </div>
+            <div class="brief-row">
+              <span class="row-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+              </span>
+              <strong>Timing</strong>
+              <span id="briefTiming">None</span>
+            </div>
+            <div class="brief-row">
+              <span class="row-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z"></path><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path></svg>
+              </span>
+              <strong>Budget</strong>
+              <span id="briefBudget">None</span>
+            </div>
+            <div class="brief-row">
+              <span class="row-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 3 3 7.5v6c0 5.2 3.8 7.5 9 7.5s9-2.3 9-7.5v-6L12 3Z"></path><path d="m9 12 2 2 4-5"></path></svg>
+              </span>
+              <strong>Readiness State</strong>
+              <span id="briefReadiness" class="state-chip">None</span>
+            </div>
+          </div>
+
+          <button class="missing-row" type="button" disabled>
+            <span>Missing / Unclear</span>
+            <strong id="briefMissing">None</strong>
+            <span>›</span>
+          </button>
+        </section>
+
+        <section class="console-card numbered-card">
+          <div class="card-title-row">
+            <span class="step-badge teal">3</span>
+            <div>
+              <h2><span>Clarification</span> / Readiness</h2>
+              <p>Current blocking state</p>
+            </div>
+          </div>
+
+          <div id="clarificationBox" class="clarification-box">
+            <div class="question-icon">?</div>
+            <div>
+              <strong>Awaiting input state</strong>
+              <p id="clarificationText">No clarification currently shown.</p>
+            </div>
+          </div>
+
+          <div class="mini-state-grid">
+            <div>
+              <span>Current State</span>
+              <strong id="workflowStateMini">Unknown</strong>
+            </div>
+            <div>
+              <span>Blocking Execution</span>
+              <strong id="blockingMini">Unknown</strong>
+            </div>
+          </div>
+
+          <div class="quick-actions">
+            <button data-fill="Approved" type="button">Approved</button>
+            <button data-fill="Declined" type="button">Declined</button>
+            <button data-fill="Wait, actually Aug 23-30" type="button">Timing correction</button>
+          </div>
+
+          <p id="statusText" class="status-text">Ready.</p>
+        </section>
+      </aside>
+
+      <section class="console-card plan-column">
+        <div class="plan-header">
+          <div class="card-title-row">
+            <span class="step-badge teal">4</span>
+            <div>
+              <h2>Slate Plan</h2>
+              <p>Plan Output</p>
+            </div>
+          </div>
+
+          <div class="export-group">
+            <button class="ghost-button icon-label" type="button" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <path d="M7 10l5 5 5-5"></path>
+                <path d="M12 15V3"></path>
+              </svg>
+              Export
+            </button>
+            <button id="rawToggleBtn" class="ghost-button split-button" type="button">
+              <span>Raw</span>
+              <span class="contract-anchor">Show raw</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="sectionedOutput" class="sectioned-output">
+          <div class="empty-state">No output yet.</div>
+        </div>
+
+        <pre id="outputBox" class="output-box hidden">No output yet.</pre>
+      </section>
+
+      <aside class="right-column">
+        <section class="console-card system-card">
+          <div class="side-card-header">
+            <div>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 18 6-6-6-6"></path><path d="m8 6-6 6 6 6"></path></svg>
+              <h2>Trace & System Info</h2>
+              <span class="contract-anchor">System State</span>
+            </div>
+            <span>⌁</span>
+          </div>
+
+          <dl class="system-list">
+            <dt>Backend</dt>
+            <dd id="backendState">Not checked</dd>
+
+            <dt>Active Session</dt>
+            <dd id="activeState">Unknown</dd>
+
+            <dt>Workflow State</dt>
+            <dd id="workflowState">Unknown</dd>
+
+            <dt>Current Field</dt>
+            <dd id="currentField">Unknown</dd>
+
+            <dt>Missing Fields</dt>
+            <dd id="missingFields">Unknown</dd>
+
+            <dt>Readiness</dt>
+            <dd id="readinessState">Unknown</dd>
+
+            <dt>Approval</dt>
+            <dd id="approvalState">Unknown</dd>
+
+            <dt>Blockers</dt>
+            <dd id="blockersState">Unknown</dd>
+
+            <dt>Last Action</dt>
+            <dd id="lastAction">None</dd>
+          </dl>
+        </section>
+
+        <section class="console-card raw-card">
+          <div class="side-card-header">
+            <div>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3Z"></path><path d="M12 12 3 7.5"></path><path d="M12 12v9"></path><path d="m12 12 9-4.5"></path></svg>
+              <h2>Raw State</h2>
+            </div>
+            <span>⌃</span>
+          </div>
+          <pre id="stateDump" class="state-dump">{}</pre>
+          <p class="note">Structured backend state. No fabricated UI data.</p>
+        </section>
+
+        <section class="console-card notes-card">
+          <div class="side-card-header">
+            <div>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5v6c0 5.2 3.8 7.5 9 7.5s9-2.3 9-7.5v-6L12 3Z"></path></svg>
+              <h2>Safety Notes</h2>
+            </div>
+            <span>⌃</span>
+          </div>
+          <p>No external mutation is available in this v1 console. Planning and readiness review only.</p>
+        </section>
+      </aside>
     </section>
 
-    <section class="panel state-panel">
-      <div class="panel-header">
-        <h2>System State</h2>
-        <p>Structured backend state</p>
-      </div>
-
-      <dl>
-        <dt>Backend</dt>
-        <dd id="backendState">Not checked</dd>
-
-        <dt>Active Session</dt>
-        <dd id="activeState">Unknown</dd>
-
-        <dt>Workflow State</dt>
-        <dd id="workflowState">Unknown</dd>
-
-        <dt>Current Field</dt>
-        <dd id="currentField">Unknown</dd>
-
-        <dt>Missing Fields</dt>
-        <dd id="missingFields">Unknown</dd>
-
-        <dt>Readiness</dt>
-        <dd id="readinessState">Unknown</dd>
-
-        <dt>Approval</dt>
-        <dd id="approvalState">Unknown</dd>
-
-        <dt>Blockers</dt>
-        <dd id="blockersState">Unknown</dd>
-
-        <dt>Last Action</dt>
-        <dd id="lastAction">None</dd>
-      </dl>
-
-      <div class="note">
-        This panel reads structured JSON state from the backend instead of scraping the formatted output.
-      </div>
-    </section>
+    <footer class="footer">
+      <span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5v6c0 5.2 3.8 7.5 9 7.5s9-2.3 9-7.5v-6L12 3Z"></path><path d="m9 12 2 2 4-5"></path></svg>
+      </span>
+      <p>Slate808 • Deterministic Planning. Execution Readiness. Operational Clarity.</p>
+    </footer>
   </main>
 
   <script>
@@ -94,8 +270,10 @@
     const sectionedOutput = document.getElementById("sectionedOutput");
     const rawToggleBtn = document.getElementById("rawToggleBtn");
     const statusText = document.getElementById("statusText");
+    const charCount = document.getElementById("charCount");
 
     const backendState = document.getElementById("backendState");
+    const backendTopState = document.getElementById("backendTopState");
     const activeState = document.getElementById("activeState");
     const workflowState = document.getElementById("workflowState");
     const currentField = document.getElementById("currentField");
@@ -104,6 +282,17 @@
     const approvalState = document.getElementById("approvalState");
     const blockersState = document.getElementById("blockersState");
     const lastAction = document.getElementById("lastAction");
+
+    const briefDestination = document.getElementById("briefDestination");
+    const briefTravellers = document.getElementById("briefTravellers");
+    const briefTiming = document.getElementById("briefTiming");
+    const briefBudget = document.getElementById("briefBudget");
+    const briefReadiness = document.getElementById("briefReadiness");
+    const briefMissing = document.getElementById("briefMissing");
+    const clarificationText = document.getElementById("clarificationText");
+    const workflowStateMini = document.getElementById("workflowStateMini");
+    const blockingMini = document.getElementById("blockingMini");
+    const stateDump = document.getElementById("stateDump");
 
     let showingRaw = false;
 
@@ -123,12 +312,61 @@
       "Errors:"
     ];
 
+    const SECTION_ICONS = {
+      "Goal": "target",
+      "Travel Brief": "clipboard",
+      "Brief Gaps": "alert",
+      "Steps": "list",
+      "Checks": "check",
+      "Risks": "warning",
+      "Execution Readiness": "shield",
+      "Execution Block Details": "shield",
+      "Execution Blocks": "shield",
+      "Operator Workflow": "code",
+      "Handoff Summary": "box",
+      "Errors": "warning",
+      "Status": "check",
+      "Output": "box"
+    };
+
+    function iconSvg(type) {
+      const icons = {
+        target: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3"></path><path d="M12 19v3"></path><path d="M2 12h3"></path><path d="M19 12h3"></path></svg>',
+        clipboard: '<svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4a3 3 0 0 1 6 0"></path><path d="M9 9h6"></path><path d="M9 13h6"></path></svg>',
+        list: '<svg viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>',
+        check: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16 9"></path></svg>',
+        warning: '<svg viewBox="0 0 24 24"><path d="m12 3 10 18H2L12 3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>',
+        shield: '<svg viewBox="0 0 24 24"><path d="M12 3 4 7v6c0 5 3.5 7.5 8 8 4.5-.5 8-3 8-8V7l-8-4Z"></path><path d="m9 12 2 2 4-5"></path></svg>',
+        code: '<svg viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"></path><path d="m8 6-6 6 6 6"></path></svg>',
+        box: '<svg viewBox="0 0 24 24"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3Z"></path><path d="M12 12 3 7.5"></path><path d="M12 12v9"></path><path d="m12 12 9-4.5"></path></svg>',
+        alert: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6"></path><path d="M12 17h.01"></path></svg>'
+      };
+      return icons[type] || icons.box;
+    }
+
+    function normalizeOutputText(output) {
+      return String(output || "").replaceAll("\\n", "\n");
+    }
+
+    function formatStateValue(value) {
+      if (value === null || value === undefined || value === "") {
+        return "None";
+      }
+
+      return String(value)
+        .replaceAll("_", " ")
+        .split(" ")
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+    }
+
     function setStatus(message) {
       statusText.textContent = message;
     }
 
     function escapeHtml(value) {
-      return value
+      return String(value)
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;");
@@ -180,11 +418,44 @@
       return sections.filter((section) => section.lines.length > 0 || section.title === "Status");
     }
 
+    function valueFromSection(sections, title, labels) {
+      const section = sections.find((item) => item.title === title);
+      if (!section) {
+        return "None";
+      }
+
+      for (const label of labels) {
+        const line = section.lines.find((item) => item.toLowerCase().includes(label.toLowerCase()));
+        if (line) {
+          const parts = line.split(":");
+          if (parts.length > 1) {
+            return parts.slice(1).join(":").trim().replace(/^[-•]\s*/, "") || "None";
+          }
+          return line.replace(/^[-•]\s*/, "").trim() || "None";
+        }
+      }
+
+      return "None";
+    }
+
+    function updateBriefFromOutput(output) {
+      const sections = parseSections(output);
+      const missing = valueFromSection(sections, "Brief Gaps", ["missing", "unclear", "budget"]);
+      const readiness = valueFromSection(sections, "Execution Readiness", ["readiness", "level", "status"]);
+
+      briefDestination.textContent = valueFromSection(sections, "Travel Brief", ["destination"]);
+      briefTravellers.textContent = valueFromSection(sections, "Travel Brief", ["traveller", "traveler", "people", "adults"]);
+      briefTiming.textContent = valueFromSection(sections, "Travel Brief", ["timing", "date", "weekend"]);
+      briefBudget.textContent = valueFromSection(sections, "Travel Brief", ["budget"]);
+      briefReadiness.textContent = readiness;
+      briefMissing.textContent = missing;
+    }
+
     function renderSectionedOutput(output) {
       const sections = parseSections(output);
 
       if (!sections.length) {
-        sectionedOutput.innerHTML = '<div class="empty-state">No structured output available.</div>';
+        sectionedOutput.innerHTML = '<div class="empty-state">No output yet.</div>';
         return;
       }
 
@@ -192,10 +463,14 @@
         const body = section.lines.length
           ? `<pre>${escapeHtml(section.lines.join("\n"))}</pre>`
           : `<pre></pre>`;
+        const iconType = SECTION_ICONS[section.title] || "box";
 
         return `
-          <article class="output-section">
-            <h3>${escapeHtml(section.title)}</h3>
+          <article class="output-section ${section.title.toLowerCase().replaceAll(" ", "-")}">
+            <div class="output-title">
+              ${iconSvg(iconType)}
+              <h3>${escapeHtml(section.title)}</h3>
+            </div>
             ${body}
           </article>
         `;
@@ -203,11 +478,15 @@
     }
 
     function setOutput(output) {
-      outputBox.textContent = output;
-      renderSectionedOutput(output);
+      const normalizedOutput = normalizeOutputText(output);
+      outputBox.textContent = normalizedOutput;
+      renderSectionedOutput(normalizedOutput);
+      updateBriefFromOutput(normalizedOutput);
     }
 
     function renderState(state) {
+      stateDump.textContent = JSON.stringify(state || {}, null, 2);
+
       if (!state) {
         activeState.textContent = "Unknown";
         workflowState.textContent = "Unknown";
@@ -216,20 +495,40 @@
         readinessState.textContent = "Unknown";
         approvalState.textContent = "Unknown";
         blockersState.textContent = "Unknown";
+        workflowStateMini.textContent = "Unknown";
+        blockingMini.textContent = "Unknown";
+        clarificationText.textContent = "No clarification currently shown.";
         return;
       }
 
-      activeState.textContent = state.active ? "Yes" : "No";
-      workflowState.textContent = state.workflow_state || "Unknown";
-      currentField.textContent = state.current_field || "None";
-      missingFields.textContent = Array.isArray(state.missing_fields) && state.missing_fields.length
+      const missing = Array.isArray(state.missing_fields) && state.missing_fields.length
         ? state.missing_fields.join(", ")
         : "None";
-      readinessState.textContent = state.readiness_level || "None";
-      approvalState.textContent = state.approval_state || "not_requested";
-      blockersState.textContent = Array.isArray(state.blockers) && state.blockers.length
+      const blockers = Array.isArray(state.blockers) && state.blockers.length
         ? state.blockers.join(", ")
         : "None";
+
+      activeState.textContent = state.active ? "Yes" : "No";
+      workflowState.textContent = formatStateValue(state.workflow_state || "Unknown");
+      currentField.textContent = formatStateValue(state.current_field || "None");
+      missingFields.textContent = missing === "None" ? "None" : formatStateValue(missing);
+      readinessState.textContent = formatStateValue(state.readiness_level || "None");
+      approvalState.textContent = formatStateValue(state.approval_state || "not_requested");
+      blockersState.textContent = blockers === "None" ? "None" : formatStateValue(blockers);
+
+      workflowStateMini.textContent = formatStateValue(state.workflow_state || "Unknown");
+      blockingMini.textContent = blockers === "None" ? "No" : "Yes";
+
+      briefMissing.textContent = missing;
+      briefReadiness.textContent = state.readiness_level || briefReadiness.textContent || "None";
+
+      if (state.current_field && state.current_field !== "None") {
+        clarificationText.textContent = `Waiting for: ${state.current_field}`;
+      } else if (missing !== "None") {
+        clarificationText.textContent = `Missing: ${missing}`;
+      } else {
+        clarificationText.textContent = "No clarification currently shown.";
+      }
     }
 
     async function checkHealth() {
@@ -237,8 +536,10 @@
         const response = await fetch("/health");
         const data = await response.json();
         backendState.textContent = data.status === "ok" ? "Online" : "Unknown";
+        backendTopState.textContent = data.status === "ok" ? "Online" : "Unknown";
       } catch (error) {
         backendState.textContent = "Offline";
+        backendTopState.textContent = "Offline";
       }
     }
 
@@ -263,7 +564,7 @@
       }
 
       setStatus("Running...");
-      lastAction.textContent = "Submit";
+      lastAction.textContent = "Run through Slate";
 
       try {
         const response = await fetch("/run", {
@@ -284,6 +585,7 @@
         setOutput(data.output);
         renderState(data.state);
         input.value = "";
+        updateCharCount();
         setStatus("Done.");
       } catch (error) {
         setOutput(String(error));
@@ -302,6 +604,7 @@
         setOutput(data.output || "Session reset.");
         renderState(data.state);
         input.value = "";
+        updateCharCount();
         setStatus("Session reset.");
       } catch (error) {
         setOutput(String(error));
@@ -315,21 +618,27 @@
       if (showingRaw) {
         outputBox.classList.remove("hidden");
         sectionedOutput.classList.add("hidden");
-        rawToggleBtn.textContent = "Show sections";
+        rawToggleBtn.querySelector("span").textContent = "Sections";
       } else {
         outputBox.classList.add("hidden");
         sectionedOutput.classList.remove("hidden");
-        rawToggleBtn.textContent = "Show raw";
+        rawToggleBtn.querySelector("span").textContent = "Raw";
       }
+    }
+
+    function updateCharCount() {
+      charCount.textContent = `${input.value.length} / 1000`;
     }
 
     document.getElementById("submitBtn").addEventListener("click", submitRequest);
     document.getElementById("resetBtn").addEventListener("click", resetSession);
     rawToggleBtn.addEventListener("click", toggleRawOutput);
+    input.addEventListener("input", updateCharCount);
 
     document.querySelectorAll("[data-fill]").forEach((button) => {
       button.addEventListener("click", () => {
         input.value = button.dataset.fill;
+        updateCharCount();
         input.focus();
       });
     });
@@ -340,6 +649,7 @@
       }
     });
 
+    updateCharCount();
     checkHealth();
     refreshState();
   </script>
