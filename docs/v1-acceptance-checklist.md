@@ -1,3 +1,43 @@
+## Operator Console Acceptance
+
+Status: PASS
+
+The Operator Console v1 foundation is complete enough for internal validation.
+
+Accepted capabilities:
+
+- local backend starts successfully
+- `/health` route works
+- `/run` route submits requests to Slate808
+- `/reset` route clears session state
+- local browser UI loads at `http://127.0.0.1:8080`
+- request workspace accepts new requests and clarification replies
+- input clears after successful submit
+- plan output is split into readable sections
+- raw output toggle works
+- system state panel reads structured backend state
+- approval flow works
+- decline flow works
+- correction-style timing works
+- malformed budget guard still works
+- no live external mutation is possible
+
+Latest manual validation:
+
+- Operator Console smoke validation: 10/10 passed
+
+Out of scope for v1:
+
+- customer-facing portal
+- authentication
+- database persistence
+- calendar writes
+- live booking actions
+- vendor API calls
+- payment handling
+- CRM writes
+
+
 ## Stable v1 Definition
 
 Slate808 stable v1 is not a live execution system.
