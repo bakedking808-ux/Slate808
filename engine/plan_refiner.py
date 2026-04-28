@@ -91,6 +91,51 @@ def _destination_pacing_suffix(destination_policy: dict[str, Any]) -> str:
     return ""
 
 
+OPERATIONAL_CHECK_LABELS = (
+    "Plan Integrity",
+    "Travel Documents",
+    "Transport & Stay",
+    "Budget & Payments",
+    "Safety & Local Conditions",
+)
+
+
+def _default_operational_checks() -> list[str]:
+    return [
+        "Plan Integrity: Confirm destination, traveller count, timing, budget, and trip mood remain consistent across the Travel Brief and Plan Steps.",
+        "Travel Documents: Confirm guest identification, booking names, and any passport, visa, entry, health, or insurance requirements before booking.",
+        "Transport & Stay: Confirm transport availability, route feasibility, accommodation availability, room setup, check-in window, and cancellation terms before locking the plan.",
+        "Budget & Payments: Confirm the plan aligns with the stated budget, including hidden costs, peak-season surcharges, refund terms, and secure payment channels.",
+        "Safety & Local Conditions: Review destination safety, weather, road conditions, local regulations, emergency contacts, and local support before final confirmation.",
+    ]
+
+
+def _default_operational_risks() -> list[str]:
+    return [
+        "Plan Integrity Risk: Missing information, contradictions, or mismatched brief details can weaken the plan before handoff.",
+        "Availability Pressure: Transport, stay, and activity options may narrow if availability is not checked early.",
+        "Budget Stretch: Hidden costs, peak-season surcharges, or unclear payment terms can push the trip beyond the intended budget.",
+        "Safety Exposure: Weather, road conditions, local rules, or weak emergency support can increase travel friction.",
+    ]
+
+
+def _has_operational_check_categories(checks: list[str]) -> bool:
+    return all(
+        any(check.startswith(f"{label}:") for check in checks)
+        for label in OPERATIONAL_CHECK_LABELS
+    )
+
+
+def _replace_check(checks: list[str], label: str, value: str) -> list[str]:
+    prefix = f"{label}:"
+    for index, check in enumerate(checks):
+        if check.startswith(prefix):
+            checks[index] = value
+            return checks
+    checks.append(value)
+    return checks
+
+
 def _trip_refinement(checks: list[str], risks: list[str], constraints: dict[str, Any]) -> tuple[list[str], list[str]]:
     budget = constraints["budget_policy"]
     traveller = constraints["traveller_policy"]
@@ -98,23 +143,43 @@ def _trip_refinement(checks: list[str], risks: list[str], constraints: dict[str,
     destination = constraints["destination_policy"]
 
     if budget.get("should_require_cost_check"):
-        checks[1] = "Costs should be checked against the stated budget before booking"
-        risks[0] = "Costs may drift if transport, lodging, and activities are not priced together"
+        checks = _replace_check(
+            checks,
+            "Budget & Payments",
+            "Budget & Payments: Confirm stated costs across transport, stay, activities, hidden fees, refund terms, and secure payment channels before booking.",
+        )
+        risks[0] = "Budget Stretch: Costs may drift if transport, lodging, activities, and payment terms are not priced together."
+
     if constraints["constraint_policy"].get("avoid_premium"):
         checks = [
-            check.replace("premium trip", "practical trip").replace("Premium", "Practical")
+            check.replace("premium trip", "practical trip").replace("Premium", "Practical").replace("premium", "practical")
             for check in checks
         ]
-        risks = [risk.replace("Premium", "Practical") for risk in risks]
+        risks = [risk.replace("Premium", "Practical").replace("premium", "practical") for risk in risks]
+
     if traveller.get("needs_family_safe_planning"):
-        checks[2] = "Activities should remain family-safe, practical, and well-paced for the group"
-        risks[1] = "The plan may become too complex if family-safe pacing is not preserved"
+        checks = _replace_check(
+            checks,
+            "Plan Integrity",
+            "Plan Integrity: Confirm the family traveller count, child suitability, pacing, and comfort needs remain consistent across the Travel Brief and Plan Steps.",
+        )
+        risks[1] = "Plan Integrity Risk: The plan may become too complex if family-safe pacing and child suitability are not preserved."
+
     if timing.get("should_treat_as_provisional"):
-        checks[3] = "Timing should remain provisional until exact dates are confirmed"
-        risks[1] = "Bookings may be premature until exact travel dates are confirmed"
+        checks = _replace_check(
+            checks,
+            "Transport & Stay",
+            "Transport & Stay: Keep transport, accommodation, and transfer decisions provisional until exact travel dates are confirmed.",
+        )
+        risks[1] = "Availability Pressure: Bookings may be premature until exact travel dates are confirmed."
+
     risk_detail = _destination_risk_detail(destination.get("risk_flags") or [])
     if risk_detail:
-        checks[0] = risk_detail[0]
+        checks = _replace_check(
+            checks,
+            "Safety & Local Conditions",
+            f"Safety & Local Conditions: {risk_detail[0]}",
+        )
         if risk_detail[1] not in risks:
             risks.append(risk_detail[1])
 
@@ -383,8 +448,12 @@ def refine_plan(
 
     checks = list(refined.get("checks") or [])
     risks = list(refined.get("risks") or [])
-    if len(checks) < 4 or len(risks) < 2:
-        return PlanRefinementResult(refined_plan=refined).refined_plan
+
+    if not _has_operational_check_categories(checks):
+        checks = _default_operational_checks()
+
+    if len(risks) < 4:
+        risks = _default_operational_risks()
 
     refined["checks"], refined["risks"] = _trip_refinement(checks, risks, constraints)
     changed_sections = ["checks", "risks"]

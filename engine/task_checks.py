@@ -6,48 +6,50 @@ Task-aware checks layer for Slate808
 
 def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
     brief = plan.get("brief") or {}
-    destination = brief.get("destination") or "the destination"
     budget_level = brief.get("budget_level")
     trip_mood = brief.get("trip_mood")
     timing_state = ((brief.get("timing") or {}).get("state")) or "missing_timing"
 
     checks = [
-        f"Arrival and local movement should stay practical for {destination}",
-        "Spending choices should stay realistic for the transport, stay, and activity mix",
-        "The pace and activities should fit the group and the purpose of the trip",
-        "Timing should support the plan without forcing rushed bookings or transfers",
+        "Plan Integrity: Confirm destination, traveller count, timing, budget, and trip mood remain consistent across the Travel Brief and Plan Steps.",
+        "Travel Documents: Confirm guest identification, booking names, and any passport, visa, entry, health, or insurance requirements before booking.",
+        "Transport & Stay: Confirm transport availability, route feasibility, accommodation availability, room setup, check-in window, and cancellation terms before locking the plan.",
+        "Budget & Payments: Confirm the plan aligns with the stated budget, including hidden costs, peak-season surcharges, refund terms, and secure payment channels.",
+        "Safety & Local Conditions: Review destination safety, weather, road conditions, local regulations, emergency contacts, and local support before final confirmation.",
     ]
     risks = [
-        "Costs may drift if the main spending decisions are not confirmed early",
-        "The plan can lose coherence if transport, stay, and activity timing are confirmed too late",
+        "Plan Integrity Risk: Missing information, contradictions, or mismatched brief details can weaken the plan before handoff.",
+        "Availability Pressure: Transport, stay, and activity options may narrow if availability is not checked early.",
+        "Budget Stretch: Hidden costs, peak-season surcharges, or unclear payment terms can push the trip beyond the intended budget.",
+        "Safety Exposure: Weather, road conditions, local rules, or weak emergency support can increase travel friction.",
     ]
 
     if trip_mood == "family":
-        checks[2] = "Activities and transfers should stay comfortable for the whole family"
-        risks[1] = "Tight transfers or overpacked activities can wear out the family group"
+        checks[0] = "Plan Integrity: Confirm the family traveller count, child suitability, pacing, and comfort needs remain consistent across the Travel Brief and Plan Steps."
+        risks[0] = "Plan Integrity Risk: The plan may become too complex if family-safe pacing and child suitability are not preserved."
     elif trip_mood == "corporate":
-        checks[2] = "Group logistics and activities should stay coordinated for the team"
-        risks[1] = "Group coordination can slip if meeting points and timing are not confirmed early"
+        checks[0] = "Plan Integrity: Confirm group coordination, meeting points, timing, and shared movement remain consistent across the Travel Brief and Plan Steps."
+        risks[0] = "Plan Integrity Risk: Group coordination can slip if meeting points, timing, and shared movement are not confirmed early."
     elif trip_mood == "relaxed":
-        checks[2] = "The pace should stay calm enough for rest between movements and activities"
-        risks[1] = "A packed schedule can undercut the slower pace the trip needs"
+        checks[0] = "Plan Integrity: Confirm the trip pace, rest windows, and activity load remain aligned with the relaxed travel mood."
+        risks[0] = "Plan Integrity Risk: Overscheduling can undercut the slower pace the trip needs."
     elif trip_mood == "luxury":
-        checks[2] = "Transport, stay, and experiences should feel consistent with a premium trip"
-        risks[1] = "Premium experiences may lose quality if key bookings are confirmed too late"
+        checks[0] = "Plan Integrity: Confirm transport, stay, and experience choices remain aligned with the premium trip mood."
+        risks[0] = "Plan Integrity Risk: Premium experiences may lose quality if key bookings are confirmed too late."
 
     if budget_level == "low":
-        checks[1] = "Lower-cost transport, stay, and activity choices should remain practical and consistent"
-        risks[0] = "Lower-cost options may narrow quickly if bookings are left too late"
+        checks[3] = "Budget & Payments: Confirm lower-cost transport, stay, and activity choices remain practical, secure, and consistent with the stated budget."
+        risks[2] = "Budget Stretch: Lower-cost options may narrow quickly if bookings are left too late."
     elif budget_level == "high":
-        checks[1] = "Premium spending should still map cleanly to the trip priorities and timing"
-        risks[0] = "Premium bookings may need early confirmation to avoid last-minute compromises"
+        checks[3] = "Budget & Payments: Confirm premium spending maps cleanly to the trip priorities, supplier quality, refund terms, and secure payment channels."
+        risks[2] = "Budget Stretch: Premium bookings may require early confirmation to avoid last-minute compromises."
     elif budget_level == "unspecified":
-        checks[1] = "Budget assumptions should be set before transport and stay decisions are locked in"
-        risks[0] = "Costs may drift quickly while the budget remains unspecified"
+        checks[3] = "Budget & Payments: Confirm the working budget, hidden costs, refund terms, and payment method before supplier shortlisting."
+        risks[2] = "Budget Stretch: Costs may drift quickly while the budget remains unspecified."
 
     if timing_state != "exact_timing":
-        checks[3] = "Timing should be confirmed clearly enough to support realistic booking decisions"
-        risks[1] = "Bookings may remain provisional until the exact travel dates are confirmed"
+        checks[2] = "Transport & Stay: Keep transport, accommodation, and transfer decisions provisional until exact travel dates are confirmed."
+        risks[1] = "Availability Pressure: Bookings may remain provisional until exact travel dates are confirmed."
 
     return checks, risks
 

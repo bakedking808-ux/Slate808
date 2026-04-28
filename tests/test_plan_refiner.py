@@ -95,7 +95,7 @@ def test_refinement_specializes_checks_and_risks_without_changing_step_shape(mon
     assert [step.split()[0] for step in refined["steps"]] == [step.split()[0] for step in original["steps"]]
     assert refined["checks"] != original["checks"]
     assert refined["risks"] != original["risks"]
-    assert "stated budget" in refined["checks"][1]
+    assert any(check.startswith("Budget & Payments:") for check in refined["checks"])
     assert "family-safe pacing" in refined["risks"][1]
     assert any("Heat can make transfers and activities harder" in risk for risk in refined["risks"])
 
@@ -107,7 +107,7 @@ def test_city_traffic_risk_strengthens_checks_and_risks(monkeypatch):
 
     refined = refine_plan(plan)
 
-    assert "congestion-aware buffers" in refined["checks"][0]
+    assert "congestion-aware buffers" in "\n".join(refined["checks"])
     assert any("Traffic can disrupt the plan" in risk for risk in refined["risks"])
     assert len(refined["steps"]) == len(original_steps)
     assert [step.split()[0] for step in refined["steps"]] == [step.split()[0] for step in original_steps]
@@ -119,7 +119,7 @@ def test_coastal_heat_risk_strengthens_checks_and_risks(monkeypatch):
 
     refined = refine_plan(plan)
 
-    assert "heat exposure" in refined["checks"][0]
+    assert "heat exposure" in "\n".join(refined["checks"])
     assert any("Heat can make transfers and activities harder" in risk for risk in refined["risks"])
 
 
@@ -129,7 +129,7 @@ def test_safari_rough_access_risk_strengthens_checks_and_risks(monkeypatch):
 
     refined = refine_plan(plan)
 
-    assert "Road-condition buffers" in refined["checks"][0]
+    assert "Road-condition buffers" in "\n".join(refined["checks"])
     assert any("Rough access can disrupt timing" in risk for risk in refined["risks"])
 
 
@@ -139,7 +139,7 @@ def test_arid_remote_access_risk_strengthens_checks_and_risks(monkeypatch):
 
     refined = refine_plan(plan)
 
-    assert "Remote-access logistics" in refined["checks"][0]
+    assert "Remote-access logistics" in "\n".join(refined["checks"])
     assert any("Remote access can fail" in risk for risk in refined["risks"])
 
 
@@ -149,8 +149,8 @@ def test_unknown_destination_without_risk_flags_keeps_generic_destination_risk_w
 
     refined = refine_plan(plan)
 
-    assert refined["checks"][0] == "The journey should include a clear destination and smooth arrival"
-    assert refined["risks"][1] == "Poor sequencing of steps"
+    assert refined["checks"][0].startswith("Plan Integrity:")
+    assert not any("Remote access" in risk or "Heat can make" in risk or "Traffic pressure" in risk for risk in refined["risks"])
 
 
 def test_destination_risk_specialization_is_idempotent(monkeypatch):
@@ -630,8 +630,8 @@ def test_refined_plan_still_renders_with_same_structural_sections(monkeypatch):
 def test_runner_routes_successful_plan_through_refinement_layer():
     output = run_engine("Plan a family trip to diani for 4 people next weekend with a low budget")
 
-    assert "Costs should be checked against the stated budget before booking" in output
-    assert "The plan may become too complex if family-safe pacing is not preserved" in output
+    assert "Budget & Payments:" in output
+    assert "family-safe pacing" in output
 
 def test_pre_v1_output_contract_section_order(monkeypatch):
     monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
