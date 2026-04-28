@@ -5,7 +5,7 @@ import re
 from pydantic import BaseModel, ConfigDict, Field
 
 from contracts.input_normalization_contract import normalize_travel_input
-from slate808_catalogue import CatalogueItem, FULL_CATALOGUE
+from engine.catalogue import CatalogueItem, FULL_CATALOGUE
 
 
 REQUIRED_FAMILIES = ("destination", "traveller", "timing")

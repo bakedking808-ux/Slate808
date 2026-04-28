@@ -1,4 +1,4 @@
-from slate808_catalogue import CatalogueItem, FULL_CATALOGUE
+from engine.catalogue import CatalogueItem, FULL_CATALOGUE
 
 
 def test_full_catalogue_contains_expected_family_coverage():

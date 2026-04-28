@@ -1,5 +1,5 @@
 from contracts.extractor_contract import extract_catalogue_signals
-from slate808_catalogue import FULL_CATALOGUE
+from engine.catalogue import FULL_CATALOGUE
 
 
 EXPANSION_KEYS = {
