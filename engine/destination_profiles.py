@@ -23,11 +23,14 @@ DESTINATION_ALIASES: dict[str, str] = {
 DESTINATION_PROFILES: dict[str, dict[str, Any]] = {
     "diani": {
         "destination_type": "coastal",
+        "profile_category": "coastal",
         "activity_bias": ["beach", "water", "relaxation"],
         "transport_bias": "road_or_air_connection",
         "accommodation_bias": "resort_or_beachfront",
         "pace_bias": "relaxed",
         "risk_flags": ["heat", "weekend_crowds"],
+        "planning_notes": ["coastal_weather_review", "meal_basis_check", "route_cushion"],
+        "verification_flags": ["transport_availability", "stay_availability", "activity_access_check"],
     },
     "mombasa": {
         "destination_type": "coastal",
@@ -207,11 +210,14 @@ DESTINATION_PROFILES: dict[str, dict[str, Any]] = {
     },
     "nairobi": {
         "destination_type": "city",
+        "profile_category": "urban",
         "activity_bias": ["urban", "dining", "culture", "logistics"],
         "transport_bias": "urban_road_transfer",
         "accommodation_bias": "city_hotel",
         "pace_bias": "fast",
         "risk_flags": ["traffic"],
+        "planning_notes": ["traffic_review", "route_cushion", "guest_communication"],
+        "verification_flags": ["transport_availability", "timing_feasibility", "local_support_check"],
     },
     "kisumu": {
         "destination_type": "city",
@@ -279,11 +285,14 @@ DESTINATION_PROFILES: dict[str, dict[str, Any]] = {
     },
     "maasai mara": {
         "destination_type": "safari",
+        "profile_category": "safari",
         "activity_bias": ["wildlife", "game_drive", "photography"],
         "transport_bias": "airstrip_or_4x4",
         "accommodation_bias": "camp_or_lodge",
         "pace_bias": "early_start",
         "risk_flags": ["distance", "rough_access"],
+        "planning_notes": ["route_cushion", "early_start_pacing", "wildlife_not_guaranteed"],
+        "verification_flags": ["park_access_check", "fee_category_check", "vehicle_fit_check", "stay_availability"],
     },
     "amboseli": {
         "destination_type": "safari",
@@ -375,11 +384,14 @@ DESTINATION_PROFILES: dict[str, dict[str, Any]] = {
     },
     "naivasha": {
         "destination_type": "lake",
+        "profile_category": "lake_rift",
         "activity_bias": ["boat", "nature", "relaxation"],
         "transport_bias": "road_transfer",
         "accommodation_bias": "lodge_or_lakeside",
         "pace_bias": "relaxed",
         "risk_flags": ["weekend_crowds"],
+        "planning_notes": ["weekend_crowd_review", "route_cushion", "water_activity_review"],
+        "verification_flags": ["transport_availability", "stay_availability", "activity_access_check"],
     },
     "lake victoria": {
         "destination_type": "lake",
@@ -503,11 +515,14 @@ DESTINATION_PROFILES: dict[str, dict[str, Any]] = {
     },
     "chalbi desert": {
         "destination_type": "arid",
+        "profile_category": "northern_frontier",
         "activity_bias": ["rugged", "remote", "scenic"],
         "transport_bias": "4x4_required",
         "accommodation_bias": "camp",
         "pace_bias": "steady",
         "risk_flags": ["heat", "remote_access"],
+        "planning_notes": ["remote_access_review", "heat_review", "route_cushion"],
+        "verification_flags": ["vehicle_fit_check", "local_support_check", "safety_conditions_review"],
     },
 }
 
