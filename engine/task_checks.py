@@ -21,6 +21,7 @@ def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
         "Safety & Local Conditions: Review destination safety, weather, road conditions, local regulations, emergency contacts, and local support before final confirmation.",
         "Supplier Readiness: Verify supplier reliability, availability, cancellation terms, refund terms, payment instructions, local support, and backup options before booking.",
         "Activity Readiness: Verify activity feasibility, access requirements, age suitability, weather sensitivity, available time, and backup options before final confirmation.",
+        "Guest Comfort: Verify pacing, rest windows, room setup, mobility needs, child suitability, and guest-specific comfort requirements before final confirmation.",
     ]
     risks = [
         "Plan Integrity Risk: Missing information, contradictions, or mismatched brief details can weaken the plan before handoff.",
@@ -29,6 +30,7 @@ def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
         "Safety Exposure: Weather, road conditions, local rules, or weak emergency support can increase travel friction.",
         "Supplier Reliability Risk: Weak supplier verification can expose the trip to failed bookings, poor communication, payment errors, or limited recovery options.",
         "Activity Constraint Risk: Unchecked activity access, age limits, weather sensitivity, or weak pacing can cause cancellations, guest fatigue, or unsuitable experiences.",
+        "Guest Comfort Risk: Weak pacing, poor room setup, mobility gaps, or ignored traveller needs can reduce trip quality and increase operator rework.",
     ]
 
     if travel_scope == "domestic_kenya":
