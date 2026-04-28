@@ -650,3 +650,48 @@ def test_pre_v1_output_contract_section_order(monkeypatch):
     positions = [output.index(section) for section in section_order]
 
     assert positions == sorted(positions)
+
+def test_complete_trip_output_includes_draft_itinerary_after_risks_before_readiness():
+    output = run_engine("Plan a trip to Diani for 2 people 10 April to 12 April with a budget of 60000")
+
+    assert "Risks:" in output
+    assert "Draft Itinerary:" in output
+    assert "Execution Readiness:" in output
+    assert output.index("Risks:") < output.index("Draft Itinerary:") < output.index("Execution Readiness:")
+
+
+def test_draft_itinerary_uses_safe_non_verified_day_flow():
+    output = run_engine("Plan a relaxed trip to Diani for 2 people 10 April to 12 April")
+
+    assert "Day 1 — Arrival Ease" in output
+    assert "Day 2 — Main Experience" in output
+    assert "Final Day — Departure Ease" in output
+    assert "without naming unverified venues" in output
+    assert "opening hours" not in output.lower()
+    assert "entry fee is" not in output.lower()
+
+
+def test_clarification_output_does_not_include_draft_itinerary():
+    output = format_output({
+        "status": "pass",
+        "errors": [],
+        "task_type": "trip",
+        "goal": "Plan a trip to Diani",
+        "brief": {"destination": "diani", "traveller_count": None, "timing": {"state": "missing_timing"}},
+        "steps": [],
+        "checks": [],
+        "risks": [],
+        "clarification_needed": "traveller_count",
+        "clarification_response": "How many people are travelling?",
+    })
+
+    assert "How many people are travelling?" in output
+    assert "Draft Itinerary:" not in output
+
+
+def test_safari_draft_itinerary_does_not_guarantee_wildlife_sightings():
+    output = run_engine("Plan a safari trip to Maasai Mara for 2 people 10 April to 12 April")
+
+    assert "Draft Itinerary:" in output
+    assert "Do not guarantee wildlife sightings" in output
+    assert "Big Five guaranteed" not in output

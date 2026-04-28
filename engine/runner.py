@@ -340,6 +340,7 @@ def run_engine(request: str) -> str:
         "status": result["status"],
         "errors": result["errors"],
         "goal": plan.get("goal", ""),
+        "task_type": plan.get("task_type"),
         "steps": plan.get("steps", []),
         "checks": plan.get("checks", []),
         "risks": plan.get("risks", []),

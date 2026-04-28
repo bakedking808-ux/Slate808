@@ -1,4 +1,5 @@
 from engine.travel_brief import summarize_timing
+from engine.itinerary_renderer import render_draft_itinerary, should_render_draft_itinerary
 
 
 def format_destination_for_display(destination) -> str:
@@ -136,6 +137,12 @@ def format_output(final_output: dict) -> str:
         lines.append("Risks:")
         for risk in risks:
             lines.append(f"- {risk}")
+        lines.append("")
+
+    if should_render_draft_itinerary(final_output):
+        lines.append("Draft Itinerary:")
+        for item in render_draft_itinerary(final_output):
+            lines.append(item)
         lines.append("")
 
     execution_readiness = final_output.get("execution_readiness")
