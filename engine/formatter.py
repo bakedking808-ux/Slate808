@@ -119,7 +119,7 @@ def format_output(final_output: dict) -> str:
 
     steps = final_output.get("steps", [])
     if steps:
-        lines.append("Steps:")
+        lines.append("Plan Steps:")
         for index, step in enumerate(steps, start=1):
             lines.append(f"{index}. {_polish_rendered_step(step)}")
         lines.append("")

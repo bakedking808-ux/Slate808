@@ -621,7 +621,7 @@ def test_refined_plan_still_renders_with_same_structural_sections(monkeypatch):
     output = format_output({"status": "pass", "errors": [], **refined})
 
     assert "Travel Brief:" in output
-    assert "Steps:" in output
+    assert "Plan Steps:" in output
     assert "Checks:" in output
     assert "Risks:" in output
     assert "Traveller Count: 4" in output
@@ -632,3 +632,21 @@ def test_runner_routes_successful_plan_through_refinement_layer():
 
     assert "Costs should be checked against the stated budget before booking" in output
     assert "The plan may become too complex if family-safe pacing is not preserved" in output
+
+def test_pre_v1_output_contract_section_order(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+    plan = _plan()
+    refined = refine_plan(plan)
+
+    output = format_output({"status": "pass", "errors": [], **refined})
+
+    section_order = [
+        "Travel Brief:",
+        "Plan Steps:",
+        "Checks:",
+        "Risks:",
+    ]
+
+    positions = [output.index(section) for section in section_order]
+
+    assert positions == sorted(positions)
