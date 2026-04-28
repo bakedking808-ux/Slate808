@@ -110,7 +110,7 @@ def render_draft_itinerary(final_output: dict) -> list[str]:
     profile_notes = _profile_itinerary_notes(profile)
     if profile_notes:
         itinerary.append("")
-        itinerary.append("Profile Notes")
+        itinerary.append("Profile Notes:")
         itinerary.extend(profile_notes)
 
     return itinerary

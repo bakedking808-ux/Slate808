@@ -1,6 +1,7 @@
 import re
 
 from engine.formatter import format_destination_for_display, format_output, format_timing_for_display
+from engine.display_language import display_trip_mood
 from engine.generator import build_travel_only_failure, is_travel_intent
 from engine.runner import run_engine, set_execution_observability_context
 from engine.logger import log_event
@@ -1090,7 +1091,7 @@ def _format_clarification_prompt(prompt: str, state: dict | None = None) -> str:
     elif collected.get("budget_level") in {"low", "medium", "high"}:
         brief_lines.append(f"- Budget Level: {collected['budget_level']}")
     if collected.get("trip_mood"):
-        brief_lines.append(f"- Trip Mood: {collected['trip_mood']}")
+        brief_lines.append(f"- Trip Mood: {display_trip_mood(collected['trip_mood'])}")
 
     if brief_lines:
         lines.append("Travel Brief:")

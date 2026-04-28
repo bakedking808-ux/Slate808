@@ -261,14 +261,14 @@ def test_mood_clarification_beach_escape_resolves_relaxed():
     reset_state()
     run("Plan a trip to Watamu 10 April to 12 April for 3 people")
     out = run("beach escape")
-    assert "- Trip Mood: relaxed" in out
+    assert "- Trip Mood: Relaxed" in out
 
 
 def test_mood_clarification_escape_resolves_relaxed():
     reset_state()
     run("Plan a trip to Watamu 10 April to 12 April for 3 people")
     out = run("escape")
-    assert "- Trip Mood: relaxed" in out
+    assert "- Trip Mood: Relaxed" in out
 
 
 def test_solo_does_not_resolve_as_mood():
@@ -992,7 +992,7 @@ def test_corporate_destination_shift_recomputes_state_cleanly():
 
     assert "How many travellers?" in result
     assert "- Destination: Nairobi" in result
-    assert "- Trip Mood: corporate" in result
+    assert "- Trip Mood: Corporate" in result
     assert "this is now for a corporate retreat in nairobi" not in result.lower()
 
 
@@ -2390,4 +2390,12 @@ def test_mood_extraction_all_moods_visible_in_output():
     for mood, request in moods_and_requests:
         reset_state()
         result = run(request)
-        assert f"- Trip Mood: {mood}" in result, f"Expected mood '{mood}' not found in output for request: {request}"
+        expected_mood = {
+            "relaxed": "Relaxed",
+            "adventure": "Adventure",
+            "luxury": "Luxury",
+            "romantic": "Romantic",
+            "family": "Family",
+            "corporate": "Corporate",
+        }[mood]
+        assert f"- Trip Mood: {expected_mood}" in result, f"Expected mood '{expected_mood}' not found in output for request: {request}"

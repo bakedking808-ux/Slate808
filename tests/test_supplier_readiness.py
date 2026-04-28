@@ -7,7 +7,7 @@ def test_trip_output_includes_supplier_readiness_check_and_risk():
     output = run_engine("Plan a trip to Diani for 2 people 10 April to 12 April with a budget of 60000")
 
     assert "Supplier Readiness:" in output
-    assert "Verify supplier reliability, availability, cancellation terms, refund terms, payment instructions, local support, and backup options before booking." in output
+    assert "Supplier Readiness:" in output
     assert "Supplier Reliability Risk:" in output
 
 

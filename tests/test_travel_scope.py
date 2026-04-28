@@ -24,19 +24,19 @@ def test_travel_scope_unknown_for_unprofiled_destination():
 def test_domestic_trip_uses_domestic_document_check():
     output = run_engine("Plan a trip to Diani for 2 people 10 April to 12 April")
 
-    assert "Travel Documents: Confirm guest identification, booking names, and any child travel documents before domestic booking." in output
+    assert "Travel Documents: Confirm guest identification, booking names, and any child travel documents before domestic booking confirmation." in output
     assert "passport validity" not in output.lower()
 
 
 def test_international_trip_uses_international_document_check():
     output = run_engine("Plan a trip to Dubai for 2 people 10 April to 12 April")
 
-    assert "Travel Documents: Verify passport validity, visa or eTA requirements, transit rules, health documents, insurance, and booking-name accuracy before booking." in output
+    assert "Travel Documents: Verify passport validity, visa or eTA requirements, transit rules, health documents, insurance, and booking-name accuracy before booking confirmation." in output
     assert "Document Gap: International travel may be blocked" in output
 
 
 def test_regional_trip_uses_cross_border_document_check():
     output = run_engine("Plan a trip to Rwanda for 2 people 10 April to 12 April")
 
-    assert "Travel Documents: Verify passport, entry clearance, health, insurance, and cross-border requirements before booking." in output
+    assert "Travel Documents: Verify passport, entry clearance, health, insurance, and cross-border requirements before booking confirmation." in output
     assert "Document Gap: Regional travel may be blocked" in output

@@ -178,8 +178,8 @@ def test_mood_survives_clarification_turns():
     first = run("Plan an adventure trip to Mara for 3 people for 5 days")
     second = run("10 April to 14 April")
 
-    assert "- Trip Mood: adventure" in first
-    assert "- Trip Mood: adventure" in second
+    assert "- Trip Mood: Adventure" in first
+    assert "- Trip Mood: Adventure" in second
 
 
 def test_budget_survives_clarification_turns():
@@ -259,7 +259,7 @@ def test_clean_high_integrity_case_preserves_strong_values_end_to_end():
     assert live["timing"]["state"] == "exact_timing"
     assert live["timing"]["raw_text"] == "21 april"
     assert "What exact dates are you planning?" not in first
-    assert "- Trip Mood: luxury" in first
+    assert "- Trip Mood: Luxury" in first
     assert first == second
 
 
@@ -293,7 +293,7 @@ def test_conflict_heavy_case_blocks_or_clarifies_without_losing_strong_values():
 
     assert state["collected_fields"]["trip_mood"] == "luxury"
     assert state["collected_fields"]["budget_level"] == "high"
-    assert "- Trip Mood: luxury" in result
+    assert "- Trip Mood: Luxury" in result
     assert "- Budget Level: high" in result
     assert "Status: pass" not in follow_up
     assert "What exact dates are you planning" in follow_up

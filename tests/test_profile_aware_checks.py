@@ -4,8 +4,8 @@ from engine.runner import run_engine
 def test_safari_trip_checks_use_profile_metadata():
     output = run_engine("Plan a safari trip to Maasai Mara for 2 people 10 April to 12 April")
 
-    assert "Activity Readiness: Keep wildlife experiences expectation-safe" in output
-    assert "Park & Access: Verify park, conservancy, access, fee-category, vehicle-fit, guide, and access-rule requirements" in output
+    assert "Activity Readiness: Keep wildlife experiences expectation safe" in output
+    assert "Park & Access: Verify park, conservancy, access, fee category, vehicle fit, guide, and access-rule requirements" in output
     assert "wildlife guaranteed" not in output.lower()
 
 
@@ -27,4 +27,4 @@ def test_northern_frontier_trip_checks_use_profile_metadata():
 
     assert "Safety & Local Conditions: Remote-access logistics should be confirmed before committing to the route" in output
     assert "Supplier Readiness: Verify supplier reliability, local support" in output
-    assert "Park & Access: Verify vehicle-fit, access-rule, permit, guide, and route-readiness requirements" in output
+    assert "Park & Access: Verify vehicle fit, access-rule, permit, guide, and route readiness requirements" in output

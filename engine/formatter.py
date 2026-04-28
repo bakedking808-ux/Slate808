@@ -1,16 +1,10 @@
 from engine.travel_brief import summarize_timing
 from engine.itinerary_renderer import render_draft_itinerary, should_render_draft_itinerary
+from engine.display_language import display_trip_mood, polish_display_text, title_label
 
 
 def format_destination_for_display(destination) -> str:
-    if destination is None:
-        return "None"
-
-    words = str(destination).strip().split()
-    if not words:
-        return "None"
-
-    return " ".join(word[:1].upper() + word[1:] for word in words)
+    return title_label(destination)
 
 
 def format_timing_for_display(timing_summary: str) -> str:
@@ -105,7 +99,7 @@ def format_output(final_output: dict) -> str:
         else:
             lines.append(f"- Budget Level: {budget_level}")
         if brief.get("trip_mood"):
-            lines.append(f"- Trip Mood: {brief.get('trip_mood')}")
+            lines.append(f"- Trip Mood: {display_trip_mood(brief.get('trip_mood'))}")
         lines.append("")
 
         gaps = []
@@ -129,20 +123,20 @@ def format_output(final_output: dict) -> str:
     if checks:
         lines.append("Checks:")
         for check in checks:
-            lines.append(f"- {check}")
+            lines.append(f"- {polish_display_text(check)}")
         lines.append("")
 
     risks = final_output.get("risks", [])
     if risks:
         lines.append("Risks:")
         for risk in risks:
-            lines.append(f"- {risk}")
+            lines.append(f"- {polish_display_text(risk)}")
         lines.append("")
 
     if should_render_draft_itinerary(final_output):
         lines.append("Draft Itinerary:")
         for item in render_draft_itinerary(final_output):
-            lines.append(item)
+            lines.append(polish_display_text(item))
         lines.append("")
 
     execution_readiness = final_output.get("execution_readiness")

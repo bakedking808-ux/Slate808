@@ -9,7 +9,7 @@ def setup_function():
 def test_clarification_preserves_trip_mood_in_initial_and_completed_output():
     initial = run("Plan an adventure trip to mara for 3 people for 5 days")
 
-    assert "- Trip Mood: adventure" in initial
+    assert "- Trip Mood: Adventure" in initial
     assert "What exact dates are you planning for those 5 days?" in initial
 
     completed = run("10-14 April")
@@ -19,7 +19,7 @@ def test_clarification_preserves_trip_mood_in_initial_and_completed_output():
     assert "- Destination: Maasai Mara" in completed
     assert "- Traveller Count: 3" in completed
     assert "- Timing: 10 April to 14 April" in completed
-    assert "- Trip Mood: adventure" in completed
+    assert "- Trip Mood: Adventure" in completed
 
 
 def test_clarification_prompts_for_trip_mood_after_hard_fields_complete():
@@ -46,7 +46,7 @@ def test_clarification_trip_mood_answer_completes_preserved_trip():
     assert "- Destination: Maasai Mara" in completed
     assert "- Traveller Count: 3" in completed
     assert "- Timing: 10 April to 14 April" in completed
-    assert "- Trip Mood: relaxed" in completed
+    assert "- Trip Mood: Relaxed" in completed
 
 
 def test_trip_mood_does_not_outrank_hard_missing_destination():
