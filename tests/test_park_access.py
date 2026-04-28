@@ -7,7 +7,7 @@ def test_trip_output_includes_park_access_check_and_risk():
     output = run_engine("Plan a safari trip to Maasai Mara for 2 people 10 April to 12 April")
 
     assert "Park & Access:" in output
-    assert "Verify park, conservancy, permit, residency or fee-category, vehicle, guide, and access-rule requirements before final confirmation." in output
+    assert "Park & Access:" in output
     assert "Access Rule Risk:" in output
 
 

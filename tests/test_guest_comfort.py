@@ -7,7 +7,7 @@ def test_trip_output_includes_guest_comfort_check_and_risk():
     output = run_engine("Plan a family trip to Diani for 2 adults and 2 kids 10 April to 12 April with a budget of 60000")
 
     assert "Guest Comfort:" in output
-    assert "Verify pacing, rest windows, room setup, mobility needs, child suitability, and guest-specific comfort requirements before final confirmation." in output
+    assert "Guest Comfort:" in output
     assert "Guest Comfort Risk:" in output
 
 

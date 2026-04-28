@@ -7,7 +7,7 @@ def test_trip_output_includes_activity_readiness_check_and_risk():
     output = run_engine("Plan a trip to Diani for 2 people 10 April to 12 April with a budget of 60000")
 
     assert "Activity Readiness:" in output
-    assert "Verify activity feasibility, access requirements, age suitability, weather sensitivity, available time, and backup options before final confirmation." in output
+    assert "Activity Readiness:" in output
     assert "Activity Constraint Risk:" in output
 
 

@@ -4,11 +4,17 @@ Task-aware checks layer for Slate808
 """
 
 from engine.travel_scope import classify_travel_scope
+from engine.destination_profiles import get_destination_profile
 
 
 def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
     brief = plan.get("brief") or {}
-    travel_scope = classify_travel_scope(brief.get("destination"))
+    destination = brief.get("destination")
+    travel_scope = classify_travel_scope(destination)
+    _resolved_destination, destination_profile = get_destination_profile(destination)
+    planning_notes = set((destination_profile or {}).get("planning_notes") or [])
+    verification_flags = set((destination_profile or {}).get("verification_flags") or [])
+    profile_category = (destination_profile or {}).get("profile_category")
     budget_level = brief.get("budget_level")
     trip_mood = brief.get("trip_mood")
     timing_state = ((brief.get("timing") or {}).get("state")) or "missing_timing"
@@ -34,6 +40,27 @@ def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
         "Guest Comfort Risk: Weak pacing, poor room setup, mobility gaps, or ignored traveller needs can reduce trip quality and increase operator rework.",
         "Access Rule Risk: Missed park, conservancy, permit, fee-category, vehicle, or guide requirements can block entry or force last-minute replanning.",
     ]
+
+    if profile_category == "safari":
+        checks[6] = "Activity Readiness: Keep wildlife experiences expectation-safe; verify activity access, available time, early-start pacing, and backup options before final confirmation."
+        checks[8] = "Park & Access: Verify park, conservancy, access, fee-category, vehicle-fit, guide, and access-rule requirements before final confirmation."
+    elif profile_category == "coastal":
+        checks[6] = "Activity Readiness: Verify coastal weather sensitivity, water or outdoor activity access, available time, and backup options before final confirmation."
+        if "meal_basis_check" in planning_notes:
+            checks[7] = "Guest Comfort: Confirm pacing, rest windows, room setup, meal basis, and guest-specific comfort requirements before final confirmation."
+    elif profile_category == "urban":
+        checks[2] = "Transport & Stay: Confirm traffic-sensitive movement windows, route feasibility, accommodation access, check-in timing, and cancellation terms before locking the plan."
+    elif profile_category == "lake_rift":
+        checks[6] = "Activity Readiness: Verify water activity access, weekend crowd pressure, available time, and backup options before final confirmation."
+    elif profile_category == "northern_frontier":
+        checks[4] = "Safety & Local Conditions: Review remote access, heat exposure, safety conditions, local regulations, emergency contacts, and local support before final confirmation."
+        checks[8] = "Park & Access: Verify vehicle-fit, local support, access-rule, permit, guide, and route-readiness requirements before final confirmation."
+
+    if "local_support_check" in verification_flags:
+        checks[5] = "Supplier Readiness: Verify supplier reliability, local support, availability, cancellation terms, refund terms, payment instructions, and backup options before booking."
+
+    if "vehicle_fit_check" in verification_flags and profile_category != "safari":
+        checks[8] = "Park & Access: Verify vehicle-fit, access-rule, permit, guide, and route-readiness requirements before final confirmation."
 
     if travel_scope == "domestic_kenya":
         checks[1] = "Travel Documents: Confirm guest identification, booking names, and any child travel documents before domestic booking."
