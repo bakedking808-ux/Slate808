@@ -193,14 +193,14 @@ def test_destination_survives_clarification_turns():
     run("Plan a trip to Mara for 3 people for 5 days")
     second = run("10 April to 14 April")
 
-    assert "- Destination: maasai mara" in second
+    assert "- Destination: Maasai Mara" in second
 
 
 def test_timing_precision_is_not_reduced_after_clarification_completes():
     run("Plan a luxury trip to Diani for 2 people for 3 days")
     result = run("10 April to 12 April")
 
-    assert "- Timing: 10 april to 12 april" in result
+    assert "- Timing: 10 April to 12 April" in result
     assert "within april" not in result.lower()
 
 

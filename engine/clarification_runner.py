@@ -1,6 +1,6 @@
 import re
 
-from engine.formatter import format_output
+from engine.formatter import format_destination_for_display, format_output, format_timing_for_display
 from engine.generator import build_travel_only_failure, is_travel_intent
 from engine.runner import run_engine, set_execution_observability_context
 from engine.logger import log_event
@@ -1078,11 +1078,11 @@ def _format_clarification_prompt(prompt: str, state: dict | None = None) -> str:
     brief_lines = []
 
     if collected.get("destination"):
-        brief_lines.append(f"- Destination: {collected['destination']}")
+        brief_lines.append(f"- Destination: {format_destination_for_display(collected['destination'])}")
     if collected.get("traveller_count"):
         brief_lines.append(f"- Traveller Count: {collected['traveller_count']}")
     if collected.get("timing") and collected["timing"].get("state") != "missing_timing":
-        brief_lines.append(f"- Timing: {summarize_timing(collected['timing'])}")
+        brief_lines.append(f"- Timing: {format_timing_for_display(summarize_timing(collected['timing']))}")
     if collected.get("budget_amount") is not None:
         brief_lines.append(
             f"- Budget: {collected['budget_amount']} ({collected.get('budget_level', 'unspecified')})"

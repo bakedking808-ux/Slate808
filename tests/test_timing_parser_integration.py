@@ -14,7 +14,8 @@ def _assert_exact_timing(user_input: str, expected_date: str):
     assert brief["timing"]["raw_text"] == expected_date
     assert brief["timing"]["start_date"] == expected_date
     assert brief["timing"]["confidence"] == "high"
-    assert f"- Timing: {expected_date}" in output
+    display_date = expected_date.replace("april", "April").replace("july", "July").replace("january", "January").replace("may", "May")
+    assert f"- Timing: {display_date}" in output
 
 
 def test_live_timing_parser_preserves_kisumu_exact_date():

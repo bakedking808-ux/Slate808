@@ -17,9 +17,9 @@ def test_exact_date_trip_reaches_human_approval_required():
 
     assert "Slate808 Output" in out
     assert "Status: pass" in out
-    assert "- Destination: naivasha" in out
+    assert "- Destination: Naivasha" in out
     assert "- Traveller Count: 2" in out
-    assert "- Timing: 4th may to 8th may" in out
+    assert "- Timing: 4th May to 8th May" in out
     assert "- Trip Mood: relaxed" in out
     assert "- State: human_approval_required" in out
     assert "- Human Approval Required: True" in out

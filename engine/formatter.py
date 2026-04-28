@@ -1,6 +1,33 @@
 from engine.travel_brief import summarize_timing
 
 
+def format_destination_for_display(destination) -> str:
+    if destination is None:
+        return "None"
+
+    words = str(destination).strip().split()
+    if not words:
+        return "None"
+
+    return " ".join(word[:1].upper() + word[1:] for word in words)
+
+
+def format_timing_for_display(timing_summary: str) -> str:
+    month_names = {
+        "january", "february", "march", "april", "may", "june",
+        "july", "august", "september", "october", "november", "december",
+    }
+
+    parts = []
+    for token in str(timing_summary).split(" "):
+        normalized = token.lower()
+        if normalized in month_names:
+            parts.append(normalized[:1].upper() + normalized[1:])
+        else:
+            parts.append(token)
+    return " ".join(parts)
+
+
 def _polish_rendered_step(step: str) -> str:
     replacements = (
         ("and keep the itinerary relaxed keep enough room for rest between activities", "and keep the itinerary relaxed while leaving room for rest between activities"),
@@ -66,9 +93,9 @@ def format_output(final_output: dict) -> str:
     brief = final_output.get("brief")
     if brief:
         lines.append("Travel Brief:")
-        lines.append(f"- Destination: {brief.get('destination')}")
+        lines.append(f"- Destination: {format_destination_for_display(brief.get('destination'))}")
         lines.append(f"- Traveller Count: {brief.get('traveller_count')}")
-        lines.append(f"- Timing: {summarize_timing(brief.get('timing'))}")
+        lines.append(f"- Timing: {format_timing_for_display(summarize_timing(brief.get('timing')))}")
         budget_amount = brief.get("budget_amount")
         budget_level = brief.get("budget_level")
 

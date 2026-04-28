@@ -252,9 +252,9 @@ def test_clarification_flow_trip():
 
     result_5 = run("3 people")
     assert "Slate808 Output" in result_5
-    assert "Destination: naivasha" in result_5
+    assert "Destination: Naivasha" in result_5
     assert "Traveller Count: 3" in result_5
-    assert "Timing: 10 april to 12 april" in result_5
+    assert "Timing: 10 April to 12 April" in result_5
 
 
 def test_mood_clarification_beach_escape_resolves_relaxed():
@@ -305,9 +305,9 @@ def test_timing_range_dash_format_supported():
 def test_direct_complete_trip_request():
     result = run("Plan a trip to diani for 3 couples 10 April to 12 April")
     assert "Slate808 Output" in result
-    assert "Destination: diani" in result
+    assert "Destination: Diani" in result
     assert "Traveller Count: 6" in result
-    assert "Timing: 10 april to 12 april" in result
+    assert "Timing: 10 April to 12 April" in result
 
 
 def test_staycation_routes_to_trip_pipeline():
@@ -327,7 +327,7 @@ def test_relaxed_staycation_routes_to_trip_pipeline():
     assert "Slate808 Output" in result
     assert "Status: pass" in result
     assert "Travel Brief:" in result
-    assert "Destination: kisumu" in result
+    assert "Destination: Kisumu" in result
     assert "Timing: next weekend" in result
 
 
@@ -736,7 +736,7 @@ def test_budget_contract_no_budget_exact_date_request_still_runs():
     result = run("Plan a trip to Diani for 2 people 10 April to 12 April")
 
     assert "Slate808 Output" in result
-    assert "Destination: diani" in result
+    assert "Destination: Diani" in result
     assert "Budget Level: unspecified" in result
 
 
@@ -754,9 +754,9 @@ def test_clarification_with_partial_trip_continues_from_next_missing_field():
 
     result_4 = run("2 people")
     assert "Slate808 Output" in result_4
-    assert "Destination: watamu" in result_4
+    assert "Destination: Watamu" in result_4
     assert "Traveller Count: 2" in result_4
-    assert "Timing: 10 april to 12 april" in result_4
+    assert "Timing: 10 April to 12 April" in result_4
 
 
 def test_destination_clarification_reply_is_routed_to_active_trip():
@@ -838,9 +838,9 @@ def test_destination_clarification_absorbs_multi_field_reply():
     result = run("Diani, 10 April to 12 April, two people")
 
     assert "What kind of trip mood should this have?" in result
-    assert "- Destination: diani" in result
+    assert "- Destination: Diani" in result
     assert "- Traveller Count: 2" in result
-    assert "- Timing: 10 april to 12 april" in result
+    assert "- Timing: 10 April to 12 April" in result
     assert "Where would you like to go?" not in result
     assert "How many travellers?" not in result
 
@@ -859,9 +859,9 @@ def test_timing_clarification_absorbs_exact_timing_with_additional_traveller_cou
     result = run("10 April to 12 April, and we are 3")
 
     assert "What kind of trip mood should this have?" in result
-    assert "- Destination: diani" in result
+    assert "- Destination: Diani" in result
     assert "- Traveller Count: 3" in result
-    assert "- Timing: 10 april to 12 april" in result
+    assert "- Timing: 10 April to 12 April" in result
     assert "How many travellers?" not in result
 
 
@@ -881,8 +881,8 @@ def test_explicit_destination_correction_overrides_stale_state():
 
     assert "What exact dates are you planning?" in result
     assert "How many travellers?" not in result
-    assert "- Destination: watamu" in follow_up
-    assert "- Destination: diani" not in follow_up
+    assert "- Destination: Watamu" in follow_up
+    assert "- Destination: Diani" not in follow_up
 
 
 def test_explicit_correction_also_absorbs_additional_fields():
@@ -892,9 +892,9 @@ def test_explicit_correction_also_absorbs_additional_fields():
 
     assert "What exact dates are you planning?" in result
     assert "How many travellers?" not in result
-    assert "- Destination: watamu" in follow_up
+    assert "- Destination: Watamu" in follow_up
     assert "- Traveller Count: 3" in follow_up
-    assert "- Destination: diani" not in follow_up
+    assert "- Destination: Diani" not in follow_up
 
 
 def test_timing_correction_overrides_stale_timing_state():
@@ -902,7 +902,7 @@ def test_timing_correction_overrides_stale_timing_state():
     result = run("No, not June, make it 15 July to 18 July")
 
     assert "What exact dates are you planning" not in result
-    assert "- Timing: 15 july to 18 july" in result
+    assert "- Timing: 15 July to 18 July" in result
     assert "next month" not in result.lower()
 
 
@@ -912,7 +912,7 @@ def test_correction_style_timing_update_replaces_relative_timing():
     run("next weekend")
     result = run("Wait, actually Aug 23-30")
 
-    assert "23 august to 30 august" in result
+    assert "23 August to 30 August" in result
     assert "What kind of trip mood should this have?" in result
     assert "What exact dates are you planning for next weekend?" not in result
 
@@ -923,7 +923,7 @@ def test_correction_style_timing_update_preserves_destination_and_traveller_coun
     run("next weekend")
     result = run("Wait, actually Aug 23-30")
 
-    assert "- Destination: naivasha" in result
+    assert "- Destination: Naivasha" in result
     assert "- Traveller Count: 3" in result
 
 
@@ -933,7 +933,7 @@ def test_correction_style_timing_update_accepts_actually_prefix():
     run("next weekend")
     result = run("Actually Aug 23-30")
 
-    assert "23 august to 30 august" in result
+    assert "23 August to 30 August" in result
     assert "What kind of trip mood should this have?" in result
 
 
@@ -942,9 +942,9 @@ def test_later_turn_correction_recomputes_state_from_freshest_reply():
     result = run("Actually Watamu, 3 people")
 
     assert "What kind of trip mood should this have?" in result
-    assert "- Destination: watamu" in result
+    assert "- Destination: Watamu" in result
     assert "- Traveller Count: 3" in result
-    assert "- Timing: 10 april to 12 april" in result
+    assert "- Timing: 10 April to 12 April" in result
     assert "How many travellers?" not in result
 
 
@@ -954,13 +954,13 @@ def test_destination_shift_during_clarification_does_not_pollute_destination():
 
     assert "What exact dates are you planning?" in result
     assert "Please give a specific answer." not in result
-    assert "- Destination: zanzibar" not in result
+    assert "- Destination: Zanzibar" not in result
 
     follow_up = run("10 April to 12 April")
     assert "How many travellers?" in follow_up
 
     completed = run("2 people")
-    assert "- Destination: zanzibar" in completed
+    assert "- Destination: Zanzibar" in completed
     assert "- Destination: actually" not in completed
 
 
@@ -972,7 +972,7 @@ def test_descriptive_correction_phrasing_updates_destination_cleanly():
     assert "Please give a specific answer." not in result
 
     follow_up = run("10 April to 12 April")
-    assert "- Destination: mt. kenya" in follow_up
+    assert "- Destination: Mt. Kenya" in follow_up
     assert "forget the coast" not in follow_up.lower()
 
 
@@ -981,7 +981,7 @@ def test_traveller_correction_does_not_corrupt_destination():
     result = run("Actually this is now a solo trip, not a group one")
 
     assert "What kind of trip mood should this have?" in result
-    assert "- Destination: diani" in result
+    assert "- Destination: Diani" in result
     assert "- Traveller Count: 1" in result
     assert "- Destination: actually" not in result
 
@@ -991,7 +991,7 @@ def test_corporate_destination_shift_recomputes_state_cleanly():
     result = run("No, this is now for a corporate retreat in Nairobi")
 
     assert "How many travellers?" in result
-    assert "- Destination: nairobi" in result
+    assert "- Destination: Nairobi" in result
     assert "- Trip Mood: corporate" in result
     assert "this is now for a corporate retreat in nairobi" not in result.lower()
 
@@ -1032,9 +1032,9 @@ def test_exact_date_ready_trip_still_executes():
     result = run("Plan a trip to Diani for 2 people 10 April to 12 April")
 
     assert "Slate808 Output" in result
-    assert "Destination: diani" in result
+    assert "Destination: Diani" in result
     assert "Traveller Count: 2" in result
-    assert "Timing: 10 april to 12 april" in result
+    assert "Timing: 10 April to 12 April" in result
 
 
 def test_completed_plan_destination_correction_updates_cleanly():
@@ -1042,8 +1042,8 @@ def test_completed_plan_destination_correction_updates_cleanly():
     result = run("Actually change the destination to Lamu")
 
     assert "Status: pass" in result
-    assert "Destination: lamu" in result
-    assert "Destination: diani" not in result
+    assert "Destination: Lamu" in result
+    assert "Destination: Diani" not in result
     assert "Slate808 currently supports travel planning only." not in result
 
 
@@ -1062,8 +1062,8 @@ def test_completed_plan_timing_correction_updates_cleanly():
     result = run("No, move the dates to 5 September to 8 September")
 
     assert "Status: pass" in result
-    assert "Timing: 5 september to 8 september" in result
-    assert "Timing: 10 april to 12 april" not in result
+    assert "Timing: 5 September to 8 September" in result
+    assert "Timing: 10 April to 12 April" not in result
     assert "Slate808 currently supports travel planning only." not in result
 
 
@@ -1082,7 +1082,7 @@ def test_completed_plan_polite_destination_correction_enters_update_path():
     result = run("Change the destination to Lamu, please")
 
     assert "Status: pass" in result
-    assert "Destination: lamu" in result
+    assert "Destination: Lamu" in result
     assert "Slate808 currently supports travel planning only." not in result
 
 
@@ -1099,7 +1099,7 @@ def test_unrelated_followup_after_completed_plan_still_rejects_non_travel():
     result = run("Plan a meeting agenda for Monday")
 
     assert "Slate808 currently supports travel planning only." in result
-    assert "Destination: diani" not in result
+    assert "Destination: Diani" not in result
 
 
 def test_completed_run_flow_shapes_are_visible_in_execution_events(monkeypatch):
@@ -1248,9 +1248,9 @@ def test_clarification_preserves_budget_from_followup_answer():
 
     result_3 = run("7 people and a budget of 600000")
     assert "Slate808 Output" in result_3
-    assert "Destination: paris" in result_3
+    assert "Destination: Paris" in result_3
     assert "Traveller Count: 7" in result_3
-    assert "Timing: 10 april to 12 april" in result_3
+    assert "Timing: 10 April to 12 April" in result_3
     assert "- Budget: 600000 (high)" in result_3
 
 
@@ -1298,7 +1298,7 @@ def test_exit_command_does_not_become_destination():
     assert "Session reset. What would you like to plan?" in exit_result
 
     next_trip = run("Plan a trip to diani for 2 people 10 April to 12 April")
-    assert "Destination: diani" in next_trip
+    assert "Destination: Diani" in next_trip
     assert "Destination: exit" not in next_trip
 
 
@@ -1332,7 +1332,7 @@ def test_non_travel_override_exits_clarification_state_cleanly():
 
     follow_up = run("Plan a trip to naivasha for 2 people 10 April to 12 April")
     assert "Status: pass" in follow_up
-    assert "Destination: naivasha" in follow_up
+    assert "Destination: Naivasha" in follow_up
 
 
 def test_incomplete_travel_override_restarts_clarification_safely():
@@ -1558,7 +1558,7 @@ def test_trip_output_regressions_stay_fixed():
     steps = _extract_numbered_steps(result)
 
     assert "Travel Brief:" in result
-    assert "Destination: naivasha" in result
+    assert "Destination: Naivasha" in result
     assert "transport" in result.lower()
     assert "Gather necessary resources" not in result
     assert "Define a smooth arrival" not in result
@@ -1595,7 +1595,7 @@ def test_shorthand_trip_inputs_route_to_trip_pipeline():
     result = run_engine("Coast for 3 nights with a Budget of 120000")
 
     assert "Travel Brief:" in result
-    assert "Destination: coast" in result
+    assert "Destination: Coast" in result
     assert "Timing: 3 nights" in result
 
 
@@ -1723,7 +1723,7 @@ def test_supported_flexible_destinations_still_plan(destination):
     result = run(f"Plan a trip to {destination} for 2 people 10 April to 12 April")
 
     assert "Slate808 Output" in result
-    assert f"Destination: {destination}" in result
+    assert f"Destination: {destination.title()}" in result
     assert "Where would you like to go?" not in result
 
 
@@ -1832,7 +1832,7 @@ def test_comma_shaped_near_place_hint_remains_clarification_safe():
 
     assert brief["destination"] is None
     assert "Where would you like to go?" in result
-    assert "Destination: naivasha" not in result
+    assert "Destination: Naivasha" not in result
 
 
 def test_calm_break_in_place_hint_is_preserved():
@@ -1849,7 +1849,7 @@ def test_quiet_break_near_place_hint_remains_clarification_safe():
 
     assert brief["destination"] is None
     assert "Where would you like to go?" in result
-    assert "Destination: naivasha" not in result
+    assert "Destination: Naivasha" not in result
 
 
 @pytest.mark.parametrize(
@@ -1999,7 +1999,7 @@ def test_runner_falls_back_to_deterministic_when_llm_enabled_but_fails(monkeypat
 
     assert called["count"] == 0
     assert "Slate808 Output" in result
-    assert "Destination: diani" in result
+    assert "Destination: Diani" in result
 
 
 def test_runtime_surfaces_execution_ready_for_exact_timing():

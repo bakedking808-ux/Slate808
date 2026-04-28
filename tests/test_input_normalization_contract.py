@@ -144,10 +144,10 @@ def test_glued_month_date_range_normalizes_to_stable_range_form():
 def test_live_path_just_me_keeps_destination_clean():
     result = run("Plan a trip to Diani just me 10 April to 12 April")
 
-    assert "Destination: diani" in result
-    assert "Destination: diani solo" not in result
+    assert "Destination: Diani" in result
+    assert "Destination: Diani solo" not in result
     assert "Traveller Count: 1" in result
-    assert "Timing: 10 april to 12 april" in result
+    assert "Timing: 10 April to 12 April" in result
 
 
 def test_punctuation_noise_normalizes_into_stable_extractable_form():
