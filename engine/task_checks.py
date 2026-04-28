@@ -3,16 +3,19 @@ engine/task_checks.py
 Task-aware checks layer for Slate808
 """
 
+from engine.travel_scope import classify_travel_scope
+
 
 def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
     brief = plan.get("brief") or {}
+    travel_scope = classify_travel_scope(brief.get("destination"))
     budget_level = brief.get("budget_level")
     trip_mood = brief.get("trip_mood")
     timing_state = ((brief.get("timing") or {}).get("state")) or "missing_timing"
 
     checks = [
         "Plan Integrity: Confirm destination, traveller count, timing, budget, and trip mood remain consistent across the Travel Brief and Plan Steps.",
-        "Travel Documents: Confirm guest identification, booking names, and any passport, visa, entry, health, or insurance requirements before booking.",
+        "Travel Documents: Confirm guest identification and booking names before booking.",
         "Transport & Stay: Confirm transport availability, route feasibility, accommodation availability, room setup, check-in window, and cancellation terms before locking the plan.",
         "Budget & Payments: Confirm the plan aligns with the stated budget, including hidden costs, peak-season surcharges, refund terms, and secure payment channels.",
         "Safety & Local Conditions: Review destination safety, weather, road conditions, local regulations, emergency contacts, and local support before final confirmation.",
@@ -23,6 +26,17 @@ def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
         "Budget Stretch: Hidden costs, peak-season surcharges, or unclear payment terms can push the trip beyond the intended budget.",
         "Safety Exposure: Weather, road conditions, local rules, or weak emergency support can increase travel friction.",
     ]
+
+    if travel_scope == "domestic_kenya":
+        checks[1] = "Travel Documents: Confirm guest identification, booking names, and any child travel documents before domestic booking."
+    elif travel_scope == "regional_cross_border":
+        checks[1] = "Travel Documents: Verify passport, entry clearance, health, insurance, and cross-border requirements before booking."
+        risks.append("Document Gap: Regional travel may be blocked by missing passport, entry, health, insurance, or transit requirements.")
+    elif travel_scope == "international":
+        checks[1] = "Travel Documents: Verify passport validity, visa or eTA requirements, transit rules, health documents, insurance, and booking-name accuracy before booking."
+        risks.append("Document Gap: International travel may be blocked by passport, visa, transit, health, insurance, or entry-clearance issues.")
+    else:
+        checks[1] = "Travel Documents: Confirm whether this trip is domestic or international before deciding ID, passport, visa, health, or insurance checks."
 
     if trip_mood == "family":
         checks[0] = "Plan Integrity: Confirm the family traveller count, child suitability, pacing, and comfort needs remain consistent across the Travel Brief and Plan Steps."
