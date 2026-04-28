@@ -98,6 +98,7 @@ OPERATIONAL_CHECK_LABELS = (
     "Budget & Payments",
     "Safety & Local Conditions",
     "Supplier Readiness",
+    "Activity Readiness",
 )
 
 
@@ -109,6 +110,7 @@ def _default_operational_checks() -> list[str]:
         "Budget & Payments: Confirm the plan aligns with the stated budget, including hidden costs, peak-season surcharges, refund terms, and secure payment channels.",
         "Safety & Local Conditions: Review destination safety, weather, road conditions, local regulations, emergency contacts, and local support before final confirmation.",
         "Supplier Readiness: Verify supplier reliability, availability, cancellation terms, refund terms, payment instructions, local support, and backup options before booking.",
+        "Activity Readiness: Verify activity feasibility, access requirements, age suitability, weather sensitivity, available time, and backup options before final confirmation.",
     ]
 
 
@@ -119,6 +121,7 @@ def _default_operational_risks() -> list[str]:
         "Budget Stretch: Hidden costs, peak-season surcharges, or unclear payment terms can push the trip beyond the intended budget.",
         "Safety Exposure: Weather, road conditions, local rules, or weak emergency support can increase travel friction.",
         "Supplier Reliability Risk: Weak supplier verification can expose the trip to failed bookings, poor communication, payment errors, or limited recovery options.",
+        "Activity Constraint Risk: Unchecked activity access, age limits, weather sensitivity, or weak pacing can cause cancellations, guest fatigue, or unsuitable experiences.",
     ]
 
 
@@ -455,7 +458,7 @@ def refine_plan(
     if not _has_operational_check_categories(checks):
         checks = _default_operational_checks()
 
-    if len(risks) < 5:
+    if len(risks) < 6:
         risks = _default_operational_risks()
 
     refined["checks"], refined["risks"] = _trip_refinement(checks, risks, constraints)
