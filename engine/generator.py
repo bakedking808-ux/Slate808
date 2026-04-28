@@ -517,11 +517,11 @@ def _apply_mood_to_trip_steps(steps: list[str], details: dict) -> list[str]:
 
     if mood == "relaxed":
         steps[2] = _append_destination_suffix(
-            "Choose coastal transport options with simple transfers and heat-aware timing",
+            "Choose transport and stay options with simple transfers and relaxed pacing",
             transport_suffix,
         )
         steps[3] = _append_destination_suffix(
-            "Select relaxed beach and water activities that leave room for light pacing, quiet breaks, and recovery",
+            "Select relaxed activities that leave room for light pacing, quiet breaks, and recovery",
             activity_suffix,
         )
         steps[4] = _build_timing_step(details, mood="relaxed")

@@ -189,8 +189,8 @@ def test_policy_aligned_outputs_for_supported_moods():
     cases = [
         (
             "Plan a relaxed trip to diani for 2 people next weekend",
-            "choose coastal transport options with simple transfers and heat-aware timing",
-            "select relaxed beach and water activities that leave room for light pacing, quiet breaks, and recovery",
+            "choose transport and stay options with simple transfers and relaxed pacing",
+            "select relaxed activities that leave room for light pacing, quiet breaks, and recovery",
         ),
         (
             "Plan an adventure trip to mara for 3 people for 5 days",
