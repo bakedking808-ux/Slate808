@@ -97,6 +97,7 @@ OPERATIONAL_CHECK_LABELS = (
     "Transport & Stay",
     "Budget & Payments",
     "Safety & Local Conditions",
+    "Supplier Readiness",
 )
 
 
@@ -107,6 +108,7 @@ def _default_operational_checks() -> list[str]:
         "Transport & Stay: Confirm transport availability, route feasibility, accommodation availability, room setup, check-in window, and cancellation terms before locking the plan.",
         "Budget & Payments: Confirm the plan aligns with the stated budget, including hidden costs, peak-season surcharges, refund terms, and secure payment channels.",
         "Safety & Local Conditions: Review destination safety, weather, road conditions, local regulations, emergency contacts, and local support before final confirmation.",
+        "Supplier Readiness: Verify supplier reliability, availability, cancellation terms, refund terms, payment instructions, local support, and backup options before booking.",
     ]
 
 
@@ -116,6 +118,7 @@ def _default_operational_risks() -> list[str]:
         "Availability Pressure: Transport, stay, and activity options may narrow if availability is not checked early.",
         "Budget Stretch: Hidden costs, peak-season surcharges, or unclear payment terms can push the trip beyond the intended budget.",
         "Safety Exposure: Weather, road conditions, local rules, or weak emergency support can increase travel friction.",
+        "Supplier Reliability Risk: Weak supplier verification can expose the trip to failed bookings, poor communication, payment errors, or limited recovery options.",
     ]
 
 
@@ -452,7 +455,7 @@ def refine_plan(
     if not _has_operational_check_categories(checks):
         checks = _default_operational_checks()
 
-    if len(risks) < 4:
+    if len(risks) < 5:
         risks = _default_operational_risks()
 
     refined["checks"], refined["risks"] = _trip_refinement(checks, risks, constraints)

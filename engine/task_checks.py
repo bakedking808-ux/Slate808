@@ -19,12 +19,14 @@ def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
         "Transport & Stay: Confirm transport availability, route feasibility, accommodation availability, room setup, check-in window, and cancellation terms before locking the plan.",
         "Budget & Payments: Confirm the plan aligns with the stated budget, including hidden costs, peak-season surcharges, refund terms, and secure payment channels.",
         "Safety & Local Conditions: Review destination safety, weather, road conditions, local regulations, emergency contacts, and local support before final confirmation.",
+        "Supplier Readiness: Verify supplier reliability, availability, cancellation terms, refund terms, payment instructions, local support, and backup options before booking.",
     ]
     risks = [
         "Plan Integrity Risk: Missing information, contradictions, or mismatched brief details can weaken the plan before handoff.",
         "Availability Pressure: Transport, stay, and activity options may narrow if availability is not checked early.",
         "Budget Stretch: Hidden costs, peak-season surcharges, or unclear payment terms can push the trip beyond the intended budget.",
         "Safety Exposure: Weather, road conditions, local rules, or weak emergency support can increase travel friction.",
+        "Supplier Reliability Risk: Weak supplier verification can expose the trip to failed bookings, poor communication, payment errors, or limited recovery options.",
     ]
 
     if travel_scope == "domestic_kenya":
