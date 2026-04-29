@@ -451,6 +451,71 @@
       briefMissing.textContent = missing;
     }
 
+    function outputStateFromSections(output) {
+      const sections = parseSections(output);
+      const readinessLevel = valueFromSection(sections, "Execution Readiness", ["level"]);
+      const workflowStateValue = valueFromSection(sections, "Operator Workflow", ["state"]);
+      const humanApproval = valueFromSection(sections, "Operator Workflow", ["human approval required"]);
+      const executionPrepEligible = valueFromSection(sections, "Operator Workflow", ["execution prep eligible"]);
+      const blockerCount = valueFromSection(sections, "Handoff Summary", ["blockers"]);
+      const executionBlocks = sections.find((item) => item.title === "Execution Blocks");
+      const executionBlockDetails = sections.find((item) => item.title === "Execution Block Details");
+
+      const blockLines = [];
+      if (executionBlocks && executionBlocks.lines.length) {
+        blockLines.push(...executionBlocks.lines);
+      } else if (executionBlockDetails && executionBlockDetails.lines.length) {
+        blockLines.push(...executionBlockDetails.lines);
+      }
+
+      return {
+        readinessLevel,
+        workflowStateValue,
+        humanApproval,
+        executionPrepEligible,
+        blockerCount,
+        blockLines,
+      };
+    }
+
+    function syncStatePanelFromOutput(output) {
+      const derived = outputStateFromSections(output);
+
+      if (derived.workflowStateValue !== "None") {
+        workflowState.textContent = formatStateValue(derived.workflowStateValue);
+        workflowStateMini.textContent = formatStateValue(derived.workflowStateValue);
+      }
+
+      if (derived.readinessLevel !== "None") {
+        readinessState.textContent = formatStateValue(derived.readinessLevel);
+        briefReadiness.textContent = formatStateValue(derived.readinessLevel);
+      }
+
+      if (derived.humanApproval !== "None") {
+        const normalizedApproval = String(derived.humanApproval).toLowerCase();
+        if (normalizedApproval === "false") {
+          approvalState.textContent = "Not Required";
+        } else if (normalizedApproval === "true") {
+          approvalState.textContent = "Required";
+        } else {
+          approvalState.textContent = derived.humanApproval;
+        }
+      }
+
+      if (derived.blockLines.length) {
+        blockersState.textContent = derived.blockLines
+          .map((line) => line.replace(/^[-•]\s*/, ""))
+          .join(", ");
+        blockingMini.textContent = "Yes";
+      } else if (derived.blockerCount !== "None" && derived.blockerCount !== "0") {
+        blockersState.textContent = derived.blockerCount;
+        blockingMini.textContent = "Yes";
+      } else if (derived.blockerCount === "0") {
+        blockersState.textContent = "None";
+        blockingMini.textContent = "No";
+      }
+    }
+
     function renderSectionedOutput(output) {
       const sections = parseSections(output);
 
@@ -482,6 +547,7 @@
       outputBox.textContent = normalizedOutput;
       renderSectionedOutput(normalizedOutput);
       updateBriefFromOutput(normalizedOutput);
+      syncStatePanelFromOutput(normalizedOutput);
     }
 
     function renderState(state) {
@@ -582,8 +648,8 @@
           return;
         }
 
-        setOutput(data.output);
         renderState(data.state);
+        setOutput(data.output);
         input.value = "";
         updateCharCount();
         setStatus("Done.");
