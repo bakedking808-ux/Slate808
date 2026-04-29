@@ -23,7 +23,7 @@ def format_timing_for_display(timing_summary: str) -> str:
     return " ".join(parts)
 
 
-def _polish_rendered_step(step: str) -> str:
+def _polish_rendered_step(step: str, destination=None) -> str:
     replacements = (
         ("and keep the itinerary relaxed keep enough room for rest between activities", "and keep the itinerary relaxed while leaving room for rest between activities"),
         ("and align bookings and align premium bookings", "and align premium bookings"),
@@ -34,8 +34,29 @@ def _polish_rendered_step(step: str) -> str:
         ("with practical and safe movement; using practical and cost-conscious routing", "with safe, cost-conscious routing"),
         ("with safe and practical choices", "with calm, practical choices"),
         ("and keep the itinerary relaxed while leaving room for rest between activities with heat-aware pacing and rest windows", "with a relaxed rhythm and heat-aware buffers"),
+        ("Choose transport and stay options with simple transfers and relaxed pacing with urban transfers and traffic-aware movement planned in advance; using practical and cost-conscious routing; keeping transfers easy and low-strain", "Choose transport and stay options with relaxed pacing, traffic-aware movement, and cost-conscious routing"),
+        ("Select relaxed activities that leave room for light pacing, quiet breaks, and recovery with time for dining, culture, and urban experiences; calm, practical choices; using simple and good-value options; that keep physical effort light; in quieter settings; fewer activities and more recovery time; a lighter arrival-day pace", "Select relaxed dining, culture, and light activities with quiet breaks and simple good-value options"),
+        ("with heat-aware booking buffers and a relaxed rhythm keep enough room for rest between activities; departure transfer margin with transfer buffers for traffic-aware movement", "with relaxed timing, rest buffers, and traffic-aware departure margins"),
     )
     updated = step
+    if destination:
+        display_destination = format_destination_for_display(destination)
+        raw_destination = str(destination).strip()
+        lower_destination = raw_destination.lower()
+        if lower_destination:
+            updated = updated.replace(
+                f"destination to {lower_destination}",
+                f"destination to {display_destination}",
+            )
+            updated = updated.replace(
+                f"for {lower_destination}",
+                f"for {display_destination}",
+            )
+            updated = updated.replace(
+                f"in {lower_destination}",
+                f"in {display_destination}",
+            )
+
     for old, new in replacements:
         updated = updated.replace(old, new)
     return updated
@@ -116,7 +137,7 @@ def format_output(final_output: dict) -> str:
     if steps:
         lines.append("Plan Steps:")
         for index, step in enumerate(steps, start=1):
-            lines.append(f"{index}. {_polish_rendered_step(step)}")
+            lines.append(f"{index}. {_polish_rendered_step(step, (brief or {}).get('destination'))}")
         lines.append("")
 
     checks = final_output.get("checks", [])
