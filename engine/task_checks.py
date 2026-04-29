@@ -5,6 +5,7 @@ Task-aware checks layer for Slate808
 
 from engine.travel_scope import classify_travel_scope
 from engine.destination_profiles import get_destination_profile
+from engine.operational_defaults import default_operational_checks, default_operational_risks
 
 
 def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
@@ -19,27 +20,9 @@ def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
     trip_mood = brief.get("trip_mood")
     timing_state = ((brief.get("timing") or {}).get("state")) or "missing_timing"
 
-    checks = [
-        "Plan Integrity: Confirm destination, traveller count, timing, budget, and trip mood remain consistent across the Travel Brief and Plan Steps.",
-        "Travel Documents: Confirm guest identification and booking names before booking.",
-        "Transport & Stay: Confirm transport availability, route feasibility, accommodation availability, room setup, check-in window, and cancellation terms before locking the plan.",
-        "Budget & Payments: Confirm the plan aligns with the stated budget, including hidden costs, peak-season surcharges, refund terms, and secure payment channels.",
-        "Safety & Local Conditions: Review destination safety, weather, road conditions, local regulations, emergency contacts, and local support before final confirmation.",
-        "Supplier Readiness: Verify supplier reliability, availability, cancellation terms, refund terms, payment instructions, local support, and backup options before booking.",
-        "Activity Readiness: Verify activity feasibility, access requirements, age suitability, weather sensitivity, available time, and backup options before final confirmation.",
-        "Guest Comfort: Verify pacing, rest windows, room setup, mobility needs, child suitability, and guest-specific comfort requirements before final confirmation.",
-        "Park & Access: Verify park, conservancy, permit, residency or fee-category, vehicle, guide, and access-rule requirements before final confirmation.",
-    ]
-    risks = [
-        "Plan Integrity Risk: Missing information, contradictions, or mismatched brief details can weaken the plan before handoff.",
-        "Availability Pressure: Transport, stay, and activity options may narrow if availability is not checked early.",
-        "Budget Stretch: Hidden costs, peak-season surcharges, or unclear payment terms can push the trip beyond the intended budget.",
-        "Safety Exposure: Weather, road conditions, local rules, or weak emergency support can increase travel friction.",
-        "Supplier Reliability Risk: Weak supplier verification can expose the trip to failed bookings, poor communication, payment errors, or limited recovery options.",
-        "Activity Constraint Risk: Unchecked activity access, age limits, weather sensitivity, or weak pacing can cause cancellations, guest fatigue, or unsuitable experiences.",
-        "Guest Comfort Risk: Weak pacing, poor room setup, mobility gaps, or ignored traveller needs can reduce trip quality and increase operator rework.",
-        "Access Rule Risk: Missed park, conservancy, permit, fee-category, vehicle, or guide requirements can block entry or force last-minute replanning.",
-    ]
+    checks = default_operational_checks()
+    checks[1] = "Travel Documents: Confirm guest identification and booking names before booking."
+    risks = default_operational_risks()
 
     if profile_category == "safari":
         checks[6] = "Activity Readiness: Keep wildlife experiences expectation-safe; verify activity access, available time, early-start pacing, and backup options before final confirmation."
