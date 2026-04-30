@@ -1,0 +1,71 @@
+from pathlib import Path
+
+
+HTML_PATH = Path("ui/static/operator_console.html")
+
+
+def _html() -> str:
+    return HTML_PATH.read_text()
+
+
+def test_operator_console_syncs_state_panel_from_rendered_output():
+    html = _html()
+
+    assert "function outputStateFromSections(output)" in html
+    assert "function syncStatePanelFromOutput(output)" in html
+    assert 'valueFromSection(sections, "Execution Readiness", ["level"])' in html
+    assert 'valueFromSection(sections, "Operator Workflow", ["state"])' in html
+    assert 'valueFromSection(sections, "Handoff Summary", ["blockers"])' in html
+
+
+def test_operator_console_set_output_syncs_after_rendering_output():
+    html = _html()
+
+    set_output_start = html.index("function setOutput(output)")
+    set_output_end = html.index("function renderState(state)", set_output_start)
+    set_output_block = html[set_output_start:set_output_end]
+
+    assert "renderSectionedOutput(normalizedOutput);" in set_output_block
+    assert "updateBriefFromOutput(normalizedOutput);" in set_output_block
+    assert "syncStatePanelFromOutput(normalizedOutput);" in set_output_block
+
+    assert set_output_block.index("renderSectionedOutput(normalizedOutput);") < set_output_block.index(
+        "syncStatePanelFromOutput(normalizedOutput);"
+    )
+
+
+def test_operator_console_does_not_mix_execution_block_details_with_raw_blocks():
+    html = _html()
+
+    helper_start = html.index("function outputStateFromSections(output)")
+    helper_end = html.index("function syncStatePanelFromOutput(output)", helper_start)
+    helper_block = html[helper_start:helper_end]
+
+    assert 'const executionBlocks = sections.find((item) => item.title === "Execution Blocks");' in helper_block
+    assert 'const executionBlockDetails = sections.find((item) => item.title === "Execution Block Details");' in helper_block
+    assert "if (executionBlocks && executionBlocks.lines.length)" in helper_block
+    assert "} else if (executionBlockDetails && executionBlockDetails.lines.length)" in helper_block
+
+
+def test_operator_console_displays_boolean_approval_as_operator_language():
+    html = _html()
+
+    assert 'approvalState.textContent = "Not Required";' in html
+    assert 'approvalState.textContent = "Required";' in html
+    assert 'normalizedApproval === "false"' in html
+    assert 'normalizedApproval === "true"' in html
+
+
+def test_operator_console_prefers_raw_execution_blocks_over_block_details():
+    html = _html()
+
+    helper_start = html.index("function outputStateFromSections(output)")
+    helper_end = html.index("function syncStatePanelFromOutput(output)", helper_start)
+    helper_block = html[helper_start:helper_end]
+
+    assert 'const executionBlocks = sections.find((item) => item.title === "Execution Blocks");' in helper_block
+    assert 'const executionBlockDetails = sections.find((item) => item.title === "Execution Block Details");' in helper_block
+    assert "if (executionBlocks && executionBlocks.lines.length)" in helper_block
+    assert "} else if (executionBlockDetails && executionBlockDetails.lines.length)" in helper_block
+    assert "blockLines.push(...executionBlocks.lines);" in helper_block
+    assert "blockLines.push(...executionBlockDetails.lines);" in helper_block
