@@ -254,6 +254,10 @@ def _strengthen_timing_step(step: str, destination_policy: dict[str, Any]) -> st
         "heat-aware" in suffix and "heat-aware" in step
     ):
         return step
+    if suffix == "with heat-aware pacing and rest windows" and "relaxed rhythm" in step:
+        return step.replace("booking buffers", "heat-aware booking buffers")
+    if suffix == "with transfer buffers for traffic-aware movement" and "relaxed rhythm" in step:
+        return step.replace("booking buffers", "traffic-aware booking buffers")
     compacted_suffixes = {
         "with transfer buffers for traffic-aware movement": "with departure and transfer buffers for traffic-aware movement",
         "with drive-time buffers for access conditions": "with departure and drive-time buffers for access conditions",

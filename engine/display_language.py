@@ -1,3 +1,5 @@
+import re
+
 """
 Display-language helpers for Slate808.
 
@@ -30,6 +32,40 @@ def display_trip_mood(value) -> str:
     if value is None:
         return "None"
     return labels.get(str(value).strip().lower(), title_label(value))
+
+
+def compact_plan_step(step: str, destination: str | None = None) -> str:
+    updated = str(step).strip()
+
+    if (
+        updated.startswith("Choose transport and stay options")
+        and "relaxed pacing" in updated
+        and "shared meeting points and aligned movement" in updated
+    ):
+        updated = "Choose transport and stay options with relaxed pacing and coordinated movement"
+
+    if (
+        updated.startswith("Select relaxed activities")
+        and "with time for" not in updated
+        and ("that keep physical effort light" in updated or "fewer activities and more recovery time" in updated)
+    ):
+        group = " and group-friendly pacing" if "group coordinated" in updated else ""
+        updated = f"Select relaxed, light activities with quiet breaks{group}"
+
+    if updated.startswith("Confirm the trip timing") and "relaxed rhythm" in updated and "rest between activities" in updated:
+        updated = re.sub(
+            r"; align bookings.*$",
+            " with a relaxed rhythm, booking buffers, and rest between activities",
+            updated,
+        )
+
+    if destination:
+        display_destination = title_label(destination)
+        raw_destination = str(destination).strip().lower()
+        if raw_destination:
+            updated = updated.replace(f"destination to {raw_destination}", f"destination to {display_destination}")
+
+    return updated
 
 
 def polish_display_text(text: str) -> str:
