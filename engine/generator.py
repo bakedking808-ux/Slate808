@@ -3,6 +3,7 @@ import uuid
 
 from contracts.input_normalization_contract import normalize_travel_input
 from engine.goal_normalizer import normalize_goal
+from engine.display_language import compact_plan_step
 from engine.planning_policy import build_planning_constraints, validate_planning_constraints
 import engine.travel_brief as travel_brief
 from engine.travel_brief import MONTHS, summarize_timing
@@ -645,7 +646,8 @@ def _finalize_trip_steps(steps: list[str], details: dict) -> list[str]:
     if len(steps) != 5:
         raise ValueError("Trip plans must produce exactly 5 non-empty steps")
 
-    finalized_steps = [step.strip() for step in steps]
+    destination = (details.get("brief") or {}).get("destination")
+    finalized_steps = [compact_plan_step(step, destination) for step in steps]
     if not finalized_steps[3]:
         finalized_steps[3] = _append_destination_suffix(
             "Select activities that match your travel goals",
