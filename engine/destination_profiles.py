@@ -18,9 +18,25 @@ DESTINATION_ALIASES: dict[str, str] = {
     "lake naivasha": "naivasha",
     "lake nakuru": "nakuru",
     "ngare dare": "ngare ndare",
+    "ol kalau": "ol kalou",
 }
 
 DESTINATION_PROFILES: dict[str, dict[str, Any]] = {
+    "ol kalou": {
+        "destination_type": "highland_town",
+        "profile_category": "highland",
+        "activity_bias": ["scenic", "relaxation", "local_exploration"],
+        "transport_bias": "road_transfer",
+        "accommodation_bias": "hotel_or_guesthouse",
+        "pace_bias": "relaxed",
+        "risk_flags": ["weather", "road_timing"],
+        "planning_notes": ["route_cushion", "weather_review", "stay_availability_check"],
+        "verification_flags": [
+            "transport_availability",
+            "stay_availability",
+            "local_access_check",
+        ],
+    },
     "diani": {
         "destination_type": "coastal",
         "profile_category": "coastal",
