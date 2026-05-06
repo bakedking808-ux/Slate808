@@ -1384,7 +1384,29 @@ def test_timing_current_behavior_matches_engine_behavior(text, expected_state, e
 @pytest.mark.parametrize(
     "text",
     [
+        "7th August through the 15th Aug",
+        "from 7th August through the 15th Aug",
+        "7 August through 15 August",
+        "August 7 through August 15",
+        "August 7 through 15",
+        "from August 7 through the 15th",
+    ],
+)
+def test_through_date_ranges_parse_as_exact_timing(text):
+    timing = extract_timing(text)
+
+    assert timing["state"] == "exact_timing"
+    assert timing["start_date"] == "7 august"
+    assert timing["end_date"] == "15 august"
+    assert summarize_timing(timing) == "7 august to 15 august"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
         "4th july - 31st september",
+        "4th july through 31st september",
+        "30th february through 31st february",
         "31st september",
         "3rd to 4th",
         "30th february",

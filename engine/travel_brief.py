@@ -1215,6 +1215,8 @@ def _exact_timing_from_single_date(day_text: str, month_text: str) -> Dict[str, 
 
 
 def _detect_exact_timing(text: str, decision_log=None) -> Optional[Dict[str, Any]]:
+    through_connector = r"\s+through(?:\s+the)?\s+"
+
     match = re.search(
         rf"\b({MONTHS})\s+(\d{{1,2}}(?:st|nd|rd|th)?)\s+to\s+({MONTHS})\s+(\d{{1,2}}(?:st|nd|rd|th)?)\b",
         text,
@@ -1237,6 +1239,54 @@ def _detect_exact_timing(text: str, decision_log=None) -> Optional[Dict[str, Any
             match.group(2),
             match.group(3),
             match.group(4),
+        )
+
+    match = re.search(
+        rf"\b(?:from\s+)?(\d{{1,2}}(?:st|nd|rd|th)?)\s+({MONTHS}){through_connector}(\d{{1,2}}(?:st|nd|rd|th)?)\s+({MONTHS})\b",
+        text,
+    )
+    if match:
+        return _exact_timing_from_range(
+            str(_extract_day_from_token(match.group(1))),
+            match.group(2),
+            str(_extract_day_from_token(match.group(3))),
+            match.group(4),
+        )
+
+    match = re.search(
+        rf"\b(?:from\s+)?({MONTHS})\s+(\d{{1,2}}(?:st|nd|rd|th)?){through_connector}({MONTHS})\s+(\d{{1,2}}(?:st|nd|rd|th)?)\b",
+        text,
+    )
+    if match:
+        return _exact_timing_from_range(
+            str(_extract_day_from_token(match.group(2))),
+            match.group(1),
+            str(_extract_day_from_token(match.group(4))),
+            match.group(3),
+        )
+
+    match = re.search(
+        rf"\b(?:from\s+)?(\d{{1,2}}(?:st|nd|rd|th)?)\s+({MONTHS}){through_connector}(\d{{1,2}}(?:st|nd|rd|th)?)\b",
+        text,
+    )
+    if match:
+        return _exact_timing_from_range(
+            str(_extract_day_from_token(match.group(1))),
+            match.group(2),
+            str(_extract_day_from_token(match.group(3))),
+            match.group(2),
+        )
+
+    match = re.search(
+        rf"\b(?:from\s+)?({MONTHS})\s+(\d{{1,2}}(?:st|nd|rd|th)?){through_connector}(\d{{1,2}}(?:st|nd|rd|th)?)\b",
+        text,
+    )
+    if match:
+        return _exact_timing_from_range(
+            str(_extract_day_from_token(match.group(2))),
+            match.group(1),
+            str(_extract_day_from_token(match.group(3))),
+            match.group(1),
         )
 
     match = re.search(
