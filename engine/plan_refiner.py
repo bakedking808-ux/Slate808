@@ -238,6 +238,18 @@ def _compact_step(step: str) -> str:
             "with departure transfer margin with transfer buffers for traffic-aware movement",
             "with departure and transfer buffers for traffic-aware movement",
         ),
+        (
+            "; align bookings with rest windows and traffic-aware transfer buffers; departure transfer margin",
+            "; align bookings with rest windows, traffic-aware transfer buffers, and departure margin",
+        ),
+        (
+            "; align bookings with relaxed rest between activities; departure transfer margin",
+            "; align bookings with relaxed rest between activities and departure margin",
+        ),
+        (
+            "; align bookings with relaxed rest and traffic-aware transfer buffers; departure transfer margin",
+            "; align bookings with relaxed rest, traffic-aware transfer buffers, and departure margin",
+        ),
     ]
 
     for old, new in replacements:
@@ -258,6 +270,21 @@ def _strengthen_timing_step(step: str, destination_policy: dict[str, Any]) -> st
         return step.replace("booking buffers", "heat-aware booking buffers")
     if suffix == "with transfer buffers for traffic-aware movement" and "relaxed rhythm" in step:
         return step.replace("booking buffers", "traffic-aware booking buffers")
+    if suffix == "with heat-aware pacing and rest windows" and "relaxed rest between activities" in step:
+        return step.replace(
+            "relaxed rest between activities",
+            "relaxed, heat-aware rest between activities",
+        )
+    if suffix == "with transfer buffers for traffic-aware movement" and "relaxed rest between activities" in step:
+        return step.replace(
+            "relaxed rest between activities",
+            "relaxed rest and traffic-aware transfer buffers",
+        )
+    if suffix == "with transfer buffers for traffic-aware movement" and "rest windows between activities" in step:
+        return step.replace(
+            "rest windows between activities",
+            "rest windows and traffic-aware transfer buffers",
+        )
     compacted_suffixes = {
         "with transfer buffers for traffic-aware movement": "with departure and transfer buffers for traffic-aware movement",
         "with drive-time buffers for access conditions": "with departure and drive-time buffers for access conditions",

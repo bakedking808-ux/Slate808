@@ -150,6 +150,8 @@ def _destination_activity_suffix(details: dict) -> str:
 def _append_destination_suffix(step: str, suffix: str) -> str:
     if not suffix:
         return step
+    if " with " in step and suffix.startswith("with "):
+        return f"{step} and {suffix.removeprefix('with ')}"
     return f"{step} {suffix}"
 
 
@@ -159,6 +161,66 @@ def _append_constraint_suffix(step: str, suffix: str) -> str:
     return f"{step} {suffix}"
 
 
+def _append_compact_clause(step: str, clause: str) -> str:
+    if not clause or clause in step:
+        return step
+    if step.startswith("Confirm the trip timing") and "; align bookings" in step:
+        return re.sub(r"; align bookings.*$", f"; {clause}", step)
+    if step.endswith("."):
+        return f"{step[:-1]}; {clause}."
+    return f"{step}; {clause}"
+
+
+def _compact_transport_constraint_clause(constraint_policy: dict) -> str:
+    if constraint_policy.get("family_safe") or constraint_policy.get("kids_present"):
+        return "keep family movement safe, comfortable, and coordinated"
+    if constraint_policy.get("low_mobility"):
+        return "keep movement low-strain and coordinated"
+    if constraint_policy.get("group_coordination") and (
+        constraint_policy.get("value_focused") or constraint_policy.get("low_risk")
+    ):
+        return "keep movement practical, safe, and coordinated"
+    if constraint_policy.get("group_coordination"):
+        return "keep movement coordinated"
+    if constraint_policy.get("value_focused") or constraint_policy.get("low_risk"):
+        return "keep movement practical and safe"
+    if constraint_policy.get("high_activity"):
+        return "keep movement structured for active segments"
+    return ""
+
+
+def _compact_activity_constraint_clause(constraint_policy: dict) -> str:
+    if constraint_policy.get("family_safe") or constraint_policy.get("kids_present"):
+        if constraint_policy.get("slow_pace") or constraint_policy.get("group_coordination"):
+            return "keep pacing light, coordinated, and recovery-aware"
+        return "keep choices family-friendly, comfortable, and practical"
+    if constraint_policy.get("low_mobility") and constraint_policy.get("slow_pace"):
+        return "keep activities calm, low-strain, and recovery-aware"
+    if constraint_policy.get("quiet_preferred") and constraint_policy.get("slow_pace"):
+        if constraint_policy.get("value_focused"):
+            return "keep choices calm, recovery-aware, and good-value"
+        return "keep activities calm, quieter, and recovery-aware"
+    if constraint_policy.get("value_focused"):
+        return "keep choices simple, practical, and good-value"
+    if constraint_policy.get("low_risk"):
+        return "keep choices calm and practical"
+    if constraint_policy.get("high_activity"):
+        return "keep activities active and well structured"
+    return ""
+
+
+def _compact_timing_constraint_clause(constraint_policy: dict) -> str:
+    if constraint_policy.get("family_safe") or constraint_policy.get("kids_present"):
+        return "align bookings, transport, accommodation, and rest windows for the group"
+    if constraint_policy.get("group_coordination") and constraint_policy.get("slow_pace"):
+        return "align bookings, shared schedule, and rest windows for the group"
+    if constraint_policy.get("group_coordination"):
+        return "align bookings and confirm the shared schedule for the group"
+    if constraint_policy.get("slow_pace"):
+        return "align bookings with relaxed rest between activities"
+    return ""
+
+
 def _merge_constraint_suffixes(step: str, suffixes: list[str]) -> str:
     merged_suffixes: list[str] = []
     normalized_suffixes: list[str] = []
@@ -166,6 +228,11 @@ def _merge_constraint_suffixes(step: str, suffixes: list[str]) -> str:
     for suffix in suffixes:
         normalized_suffix = re.sub(r"^(with|while|and)\s+", "", suffix).strip(" ;,.")
         if not normalized_suffix or suffix in step:
+            continue
+        if "recovery-aware" in step and (
+            "recovery-aware" in normalized_suffix
+            or "lighter arrival-day" in normalized_suffix
+        ):
             continue
         if any(
             normalized_suffix == existing
@@ -255,10 +322,6 @@ def _apply_constraint_policy(steps: list[str], details: dict) -> list[str]:
             ],
         )
 
-    transport_suffixes: list[str] = []
-    activity_suffixes: list[str] = []
-    timing_suffixes: list[str] = []
-
     if constraint_policy.get("family_safe") or constraint_policy.get("kids_present"):
         steps[2] = _replace_step_terms(
             steps[2],
@@ -272,41 +335,18 @@ def _apply_constraint_policy(steps: list[str], details: dict) -> list[str]:
             steps[4],
             [("reserve time for active excursions", "reserve time for manageable excursions")],
         )
-        transport_suffixes.append("with safe and comfortable movement for everyone")
-        activity_suffixes.append("with family-friendly and comfortable options")
-        timing_suffixes.append("while keeping the schedule easy for families")
-
-    if constraint_policy.get("low_risk"):
-        transport_suffixes.append("with practical and safe movement")
-        activity_suffixes.append("with calm, practical choices")
-
-    if constraint_policy.get("value_focused"):
-        transport_suffixes.append("using practical and cost-conscious routing")
-        activity_suffixes.append("using simple and good-value options")
-
-    if constraint_policy.get("group_coordination"):
-        transport_suffixes.append("with shared meeting points and aligned movement")
-        activity_suffixes.append("with logistics that keep the group coordinated")
-        timing_suffixes.append("while confirming the shared schedule for the group")
-
-    if constraint_policy.get("low_mobility"):
-        transport_suffixes.append("while keeping transfers easy and low-strain")
-        activity_suffixes.append("that keep physical effort light")
-
-    if constraint_policy.get("quiet_preferred"):
-        activity_suffixes.append("in calm and quieter settings")
-
-    if constraint_policy.get("slow_pace"):
-        activity_suffixes.append("with fewer activities and more recovery time")
-        timing_suffixes.append("keep enough room for rest between activities")
-
-    if constraint_policy.get("high_activity"):
-        transport_suffixes.append("while keeping movement structured for active segments")
-        activity_suffixes.append("with active and well-structured movement")
-
-    steps[2] = _merge_constraint_suffixes(steps[2], transport_suffixes)
-    steps[3] = _merge_constraint_suffixes(steps[3], activity_suffixes)
-    steps[4] = _merge_constraint_suffixes(steps[4], timing_suffixes)
+    steps[2] = _append_compact_clause(
+        steps[2],
+        _compact_transport_constraint_clause(constraint_policy),
+    )
+    steps[3] = _append_compact_clause(
+        steps[3],
+        _compact_activity_constraint_clause(constraint_policy),
+    )
+    steps[4] = _append_compact_clause(
+        steps[4],
+        _compact_timing_constraint_clause(constraint_policy),
+    )
 
     return steps
 
@@ -468,7 +508,7 @@ def _build_timing_step(details: dict, mood: str | None = None) -> str:
         "adventure": "and reserve time for active excursions",
         "luxury": "and align premium bookings",
         "romantic": "and protect shared time for special moments",
-        "family": "and align transport and accommodation for the family",
+        "family": "",
         "corporate": "and align team logistics efficiently",
     }
 

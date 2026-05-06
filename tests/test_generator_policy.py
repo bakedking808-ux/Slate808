@@ -299,8 +299,8 @@ def test_family_sequence_policy_adds_recovery_pacing():
     brief = _brief(traveller_count=4, trip_mood="family", has_children=True)
     steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
 
-    assert "lighter arrival-day and recovery-aware family pacing" in steps[3].lower()
-    assert "recovery-aware family pacing" in steps[3].lower()
+    assert "keep pacing light, coordinated, and recovery-aware" in steps[3].lower()
+    assert steps[3].lower().count("recovery-aware") == 1
 
 
 def test_mountain_sequence_policy_keeps_arrival_light_and_base_first():
@@ -339,7 +339,7 @@ def test_group_timing_suffix_uses_connector_safe_join():
     steps = generator.build_steps("trip", {"brief": brief, "planning_constraints": build_planning_constraints(brief)})
 
     assert "align bookings confirm" not in steps[4].lower()
-    assert "while confirming the shared schedule for the group" in steps[4].lower()
+    assert "align bookings and confirm the shared schedule for the group" in steps[4].lower()
 
 
 def test_sequence_policy_preserves_trip_step_count_and_order():
