@@ -461,10 +461,7 @@ def _looks_like_trip_shorthand(text: str) -> bool:
     if timing.get("state") in {"exact_timing", "relative_timing", "duration_only", "month_only"}:
         support_signals += 1
 
-    if (
-        budget_info.get("budget_amount") is not None
-        or budget_info.get("budget_level") != "unspecified"
-    ):
+    if travel_brief.has_budget_signal(budget_info):
         support_signals += 1
 
     if (

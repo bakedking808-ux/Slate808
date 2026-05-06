@@ -1549,6 +1549,102 @@ def test_numeric_separation_does_not_contaminate_timing_or_budget():
     assert brief["timing"]["raw_text"] == "next weekend"
 
 
+def test_budget_extracts_kes_total_with_k_shorthand():
+    budget = extract_budget_info("with a budget of KSH 60k")
+
+    assert budget["budget_amount"] == 60000
+    assert budget["budget_currency"] == "KES"
+    assert budget["budget_basis"] in {"total", "group"}
+    assert budget["budget_level"] != "unspecified"
+
+
+def test_budget_extracts_usd_per_person_without_local_total():
+    budget = extract_budget_info("$2500 per person")
+
+    assert budget["budget_currency"] == "USD"
+    assert budget["budget_per_person"] == 2500
+    assert budget["budget_basis"] == "per_person"
+    assert budget["budget_level"] != "unspecified"
+    assert budget["budget_amount"] is None
+
+
+def test_budget_extracts_decimal_k_and_usd_wording():
+    budget = extract_budget_info("budget is USD 2.5k pp")
+
+    assert budget["budget_currency"] == "USD"
+    assert budget["budget_per_person"] == 2500
+    assert budget["budget_level"] == "specified"
+
+
+def test_budget_extracts_usd_per_adult_and_child():
+    budget = extract_budget_info("$2500 per adult and $1500 per child")
+
+    assert budget["budget_currency"] == "USD"
+    assert budget["budget_per_adult"] == 2500
+    assert budget["budget_per_child"] == 1500
+    assert budget["budget_basis"] == "per_adult_child"
+    assert budget["budget_level"] != "unspecified"
+
+
+def test_budget_extracts_kid_wording_as_structured_budget():
+    budget = extract_budget_info("$2500 per person and $1500 for every kid")
+
+    assert budget["budget_currency"] == "USD"
+    assert budget["budget_per_person"] == 2500
+    assert budget["budget_per_child"] == 1500
+    assert budget["budget_basis"] in {"mixed", "per_adult_child"}
+    assert budget["budget_level"] != "unspecified"
+
+
+def test_budget_extracts_eur_pp():
+    budget = extract_budget_info("budget is €2000 pp")
+
+    assert budget["budget_currency"] == "EUR"
+    assert budget["budget_per_person"] == 2000
+    assert budget["budget_level"] != "unspecified"
+
+
+def test_budget_extracts_gbp_adult_child():
+    budget = extract_budget_info("budget is £1800 per adult and £1000 per child")
+
+    assert budget["budget_currency"] == "GBP"
+    assert budget["budget_per_adult"] == 1800
+    assert budget["budget_per_child"] == 1000
+    assert budget["budget_level"] != "unspecified"
+
+
+def test_budget_does_not_extract_dates_as_amounts():
+    budget = extract_budget_info("from 7th August through the 15th Aug")
+
+    assert budget["budget_amount"] is None
+    assert budget["budget_currency"] is None
+    assert budget["budget_per_person"] is None
+    assert budget["budget_per_child"] is None
+    assert budget["budget_level"] == "unspecified"
+
+
+def test_mumbai_worldly_budget_phrase_stays_structured_and_known():
+    request = (
+        "hey Slate let's plan a trip to Mumbai this summer for 4 adults and 2 minors, "
+        "they need a relaxing beach type vacation from 7th August through the 15th Aug. "
+        "They are looking to spend $2500 per person and $1500 for every kid."
+    )
+    brief = build_travel_brief(request)
+    result = run_engine(request)
+
+    assert brief["destination"] == "mumbai"
+    assert brief["timing"]["start_date"] == "7 august"
+    assert brief["timing"]["end_date"] == "15 august"
+    assert brief["traveller_count"] == 4
+    assert brief["has_children"] is True
+    assert brief["budget_currency"] == "USD"
+    assert brief["budget_per_person"] == 2500
+    assert brief["budget_per_child"] == 1500
+    assert brief["budget_level"] != "unspecified"
+    assert "Budget Gap Risk" not in result
+    assert "Budget Level: unspecified" not in result
+
+
 def test_budget_visibility_numeric_budget_and_level_appear_in_output():
     result = run("Plan a trip to diani for 2 people 10 April to 12 April budget is 45000")
 
