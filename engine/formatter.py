@@ -143,15 +143,15 @@ def format_output(final_output: dict) -> str:
     checks = final_output.get("checks", [])
     if checks:
         lines.append("Checks:")
-        for check in checks:
-            lines.append(f"- {polish_display_text(check)}")
+        for index, check in enumerate(checks, start=1):
+            lines.append(f"{index}. {polish_display_text(check)}")
         lines.append("")
 
     risks = final_output.get("risks", [])
     if risks:
         lines.append("Risks:")
-        for risk in risks:
-            lines.append(f"- {polish_display_text(risk)}")
+        for index, risk in enumerate(risks, start=1):
+            lines.append(f"{index}. {polish_display_text(risk)}")
         lines.append("")
 
     if should_render_draft_itinerary(final_output):

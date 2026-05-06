@@ -28,14 +28,24 @@ def setup_function():
 
 
 def _extract_numbered_steps(output: str) -> list[str]:
-    return re.findall(r"^\d+\.\s+(.+)$", output, re.MULTILINE)
+    match = re.search(r"Plan Steps:\n((?:\d+\. .+\n)+)", output)
+    if not match:
+        return []
+    return re.findall(r"^\d+\.\s+(.+)$", match.group(1), re.MULTILINE)
 
 
 def _extract_bullet_section(output: str, heading: str) -> list[str]:
-    match = re.search(rf"{heading}:\n((?:- .+\n)+)", output)
+    match = re.search(rf"{heading}:\n((?:(?:-|\d+\.) .+\n)+)", output)
     if not match:
         return []
-    return re.findall(r"^- (.+)$", match.group(1), re.MULTILINE)
+    return re.findall(r"^(?:-|\d+\.) (.+)$", match.group(1), re.MULTILINE)
+
+
+def _extract_numbered_section(output: str, heading: str) -> list[str]:
+    match = re.search(rf"{heading}:\n((?:\d+\. .+\n)+)", output)
+    if not match:
+        return []
+    return re.findall(r"^\d+\. (.+)$", match.group(1), re.MULTILINE)
 
 
 def test_timing_model_exact_timing_payload_validates():
@@ -2224,6 +2234,27 @@ def test_shaped_trip_checks_and_risks_are_not_generic_clones():
     assert family_risks != corporate_risks
     assert any("family" in check.lower() for check in family_checks)
     assert any("team" in check.lower() or "group" in check.lower() for check in corporate_checks)
+
+
+def test_trip_output_numbers_checks_and_risks():
+    result = run_engine("Plan a family trip to Naivasha for 4 people at 12th May")
+
+    checks = _extract_numbered_section(result, "Checks")
+    risks = _extract_numbered_section(result, "Risks")
+
+    assert checks
+    assert risks
+    assert re.search(r"Checks:\n1\. [^\n]+:", result)
+    assert re.search(r"Risks:\n1\. [^\n]+:", result)
+
+
+def test_trip_output_keeps_draft_itinerary_between_risks_and_readiness():
+    result = run_engine("Plan a family trip to Naivasha for 4 people at 12th May")
+
+    assert "Draft Itinerary:" in result
+    assert result.index("Risks:") < result.index("Draft Itinerary:") < result.index("Execution Readiness:")
+    risks_body = result[result.index("Risks:"):result.index("Draft Itinerary:")]
+    assert "Day 1" not in risks_body
 
 
 def test_relaxed_trip_step_wording_suppresses_old_repeated_phrases():

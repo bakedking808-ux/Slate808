@@ -2,10 +2,15 @@ from pathlib import Path
 
 
 HTML_PATH = Path("ui/static/operator_console.html")
+CSS_PATH = Path("ui/static/operator_console.css")
 
 
 def _html() -> str:
     return HTML_PATH.read_text()
+
+
+def _css() -> str:
+    return CSS_PATH.read_text()
 
 
 def test_operator_console_syncs_state_panel_from_rendered_output():
@@ -69,3 +74,17 @@ def test_operator_console_prefers_raw_execution_blocks_over_block_details():
     assert "} else if (executionBlockDetails && executionBlockDetails.lines.length)" in helper_block
     assert "blockLines.push(...executionBlocks.lines);" in helper_block
     assert "blockLines.push(...executionBlockDetails.lines);" in helper_block
+
+
+def test_operator_console_recognizes_draft_itinerary_as_own_section():
+    html = _html()
+
+    assert '"Draft Itinerary:"' in html
+    assert '"Draft Itinerary": "list"' in html
+
+
+def test_operator_console_visually_separates_draft_itinerary_section():
+    css = _css()
+
+    assert ".output-section.draft-itinerary" in css
+    assert "margin-top: 10px;" in css

@@ -574,6 +574,18 @@ textarea::placeholder {
   color: var(--yellow);
 }
 
+.output-section.draft-itinerary {
+  margin-top: 10px;
+  padding: 14px;
+  border: 1px solid rgba(135, 221, 217, 0.38);
+  border-radius: 7px;
+  background: rgba(135, 221, 217, 0.045);
+}
+
+.output-section.draft-itinerary .output-title svg {
+  color: var(--blue);
+}
+
 .output-section.execution-readiness,
 .output-section.execution-block-details,
 .output-section.execution-blocks {
