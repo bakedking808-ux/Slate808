@@ -2114,6 +2114,7 @@ def test_planning_policy_logs_decision_trace(monkeypatch):
     assert logged
     assert logged[0][0] == "decisions.log"
     assert "'trace_id': 'trace-engine-1'" in logged[0][1]
+    assert "'trace_origin': 'manual_run'" in logged[0][1]
     assert "constraint_policy" in logged[0][1]
     assert "conflict_flags" in logged[0][1]
     assert "refinement_flags" in logged[0][1]

@@ -18,6 +18,25 @@ SUPPORTED_MOODS = {
     "corporate",
 }
 
+VALID_TRACE_ORIGINS = {
+    "manual_run",
+    "operator_console",
+    "test_run",
+    "direct_policy_call",
+    "unknown",
+}
+
+
+def _resolve_trace_origin(trace_id: str | None, trace_origin: str | None) -> str:
+    if trace_origin in VALID_TRACE_ORIGINS:
+        return trace_origin
+    if trace_origin is not None:
+        return "unknown"
+    if trace_id:
+        return "manual_run"
+    return "direct_policy_call"
+
+
 def _safe_int(value: Any) -> int | None:
     if isinstance(value, bool):
         return None
@@ -569,7 +588,9 @@ def validate_planning_constraints(planning_constraints: Dict[str, Any]) -> Plann
 def build_planning_constraints(
     brief: Dict[str, Any],
     trace_id: str | None = None,
+    trace_origin: str | None = None,
 ) -> Dict[str, Any]:
+    resolved_trace_origin = _resolve_trace_origin(trace_id, trace_origin)
     destination_policy = derive_destination_policy(brief)
     budget_policy = derive_budget_policy(brief)
     traveller_policy = derive_traveller_policy(brief)
@@ -628,6 +649,7 @@ def build_planning_constraints(
         str(
             {
                 "trace_id": trace_id,
+                "trace_origin": resolved_trace_origin,
                 "constraint_policy": planning_constraints_dict["constraint_policy"],
                 "conflict_flags": planning_constraints_dict["global_flags"]["conflict_flags"],
                 "resolved_constraints": planning_constraints_dict["global_flags"]["resolved_constraints"],
@@ -641,5 +663,6 @@ def build_planning_constraints(
 def derive_planning_constraints(
     brief: Dict[str, Any],
     trace_id: str | None = None,
+    trace_origin: str | None = None,
 ) -> Dict[str, Any]:
-    return build_planning_constraints(brief, trace_id=trace_id)
+    return build_planning_constraints(brief, trace_id=trace_id, trace_origin=trace_origin)
