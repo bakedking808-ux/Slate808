@@ -18,11 +18,22 @@ def _operator_action() -> OperatorStateAction:
     )
 
 
-def _admission_request(readiness: str) -> OperatorRuntimeAdmissionRequest:
+def _admission_request(readiness: str, **overrides) -> OperatorRuntimeAdmissionRequest:
+    data = {
+        "operator_action": _operator_action(),
+        "operator_class": "execution_triggering",
+        "readiness": readiness,
+        "requested_action": "booking_prep",
+        "action_allowed": True,
+        "workflow_state": "execution_prep_ready",
+        "approval_state": "approved",
+        "requires_human_approval": True,
+        "blocked_actions": [],
+        "blockers": [],
+    }
+    data.update(overrides)
     return OperatorRuntimeAdmissionRequest(
-        operator_action=_operator_action(),
-        operator_class="execution_triggering",
-        readiness=readiness,
+        **data,
     )
 
 
@@ -82,6 +93,43 @@ def test_admitted_path_invokes_downstream_operator_exactly_once():
     assert len(calls) == 1
 
 
+def test_complete_flow_does_not_execute_without_full_admission_gate():
+    calls: list[ItineraryRequest] = []
+
+    def downstream(request: ItineraryRequest) -> ItineraryPlan:
+        calls.append(request)
+        return build_itinerary_plan(request)
+
+    result = execute_admitted_itinerary_operator(
+        _admission_request("ready", requested_action=None),
+        _itinerary_request(),
+        downstream,
+    )
+
+    assert result.status == "blocked"
+    assert result.transition == "blocked"
+    assert result.admission.allowed is False
+    assert calls == []
+
+
+def test_complete_flow_executes_only_after_full_valid_admission():
+    calls: list[ItineraryRequest] = []
+
+    def downstream(request: ItineraryRequest) -> ItineraryPlan:
+        calls.append(request)
+        return build_itinerary_plan(request)
+
+    result = execute_admitted_itinerary_operator(
+        _admission_request("execution_ready"),
+        _itinerary_request(),
+        downstream,
+    )
+
+    assert result.status == "success"
+    assert result.transition == "succeeded"
+    assert len(calls) == 1
+
+
 def test_admitted_non_complete_flow_action_does_not_invoke_downstream():
     calls: list[ItineraryRequest] = []
     action = OperatorStateAction(
@@ -101,6 +149,13 @@ def test_admitted_non_complete_flow_action_does_not_invoke_downstream():
             operator_action=action,
             operator_class="execution_triggering",
             readiness="ready",
+            requested_action="booking_prep",
+            action_allowed=True,
+            workflow_state="execution_prep_ready",
+            approval_state="approved",
+            requires_human_approval=True,
+            blocked_actions=[],
+            blockers=[],
         ),
         _itinerary_request(),
         downstream,
@@ -175,3 +230,32 @@ def test_repeated_call_determinism_for_identical_inputs():
     )
 
     assert first.model_dump() == second.model_dump()
+
+
+def test_state_shaping_does_not_execute_downstream():
+    calls: list[ItineraryRequest] = []
+    action = OperatorStateAction(
+        action="supply_field",
+        target_field="traveller_count",
+        reset_required=False,
+        resume_allowed=True,
+        reason="test action",
+    )
+
+    def downstream(request: ItineraryRequest) -> ItineraryPlan:
+        calls.append(request)
+        return build_itinerary_plan(request)
+
+    result = execute_admitted_itinerary_operator(
+        OperatorRuntimeAdmissionRequest(
+            operator_action=action,
+            operator_class="state_shaping",
+            readiness="not_ready",
+        ),
+        _itinerary_request(),
+        downstream,
+    )
+
+    assert result.status == "failure"
+    assert result.transition == "rejected_by_action_guard"
+    assert calls == []
