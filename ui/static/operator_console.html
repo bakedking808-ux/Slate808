@@ -235,12 +235,31 @@
           <div class="side-card-header">
             <div>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3Z"></path><path d="M12 12 3 7.5"></path><path d="M12 12v9"></path><path d="m12 12 9-4.5"></path></svg>
-              <h2>Raw State</h2>
+              <h2>Clarification Session State</h2>
             </div>
             <span>⌃</span>
           </div>
           <pre id="stateDump" class="state-dump">{}</pre>
-          <p class="note">Structured backend state. No fabricated UI data.</p>
+          <p class="note">Raw clarification/session state. Separate from latest run readiness.</p>
+        </section>
+
+        <section class="console-card raw-card">
+          <div class="side-card-header">
+            <div>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg>
+              <h2>Latest Run State</h2>
+            </div>
+            <span>⌃</span>
+          </div>
+          <pre id="latestRunStateRaw" class="state-dump">{
+  "workflow_state": "unknown",
+  "readiness_level": null,
+  "approval_state": "not_requested",
+  "blockers": [],
+  "execution_prep_eligible": false,
+  "requires_human_approval": false
+}</pre>
+          <p class="note">Parsed latest output readiness state. Separate from clarification/session state.</p>
         </section>
 
         <section class="console-card notes-card">
@@ -293,6 +312,7 @@
     const workflowStateMini = document.getElementById("workflowStateMini");
     const blockingMini = document.getElementById("blockingMini");
     const stateDump = document.getElementById("stateDump");
+    const latestRunStateRaw = document.getElementById("latestRunStateRaw");
 
     let showingRaw = false;
 
@@ -455,6 +475,14 @@
       briefMissing.textContent = missing;
     }
 
+    function normalizeStateToken(value, fallback = null) {
+      if (value === "None" || value === null || value === undefined || value === "") {
+        return fallback;
+      }
+
+      return String(value).trim().toLowerCase().replaceAll(" ", "_");
+    }
+
     function outputStateFromSections(output) {
       const sections = parseSections(output);
       const readinessLevel = valueFromSection(sections, "Execution Readiness", ["level"]);
@@ -482,8 +510,40 @@
       };
     }
 
+    function buildLatestRunState(derived) {
+      const hasLatestRunState = derived.workflowStateValue !== "None" || derived.readinessLevel !== "None";
+      const requiresHumanApproval = normalizeStateToken(derived.humanApproval, "false") === "true";
+      const executionPrepEligible = normalizeStateToken(derived.executionPrepEligible, "false") === "true";
+      const blockers = derived.blockLines.map((line) => line.replace(/^[-•]\s*/, "").trim()).filter(Boolean);
+
+      if (!hasLatestRunState) {
+        return {
+          workflow_state: "unknown",
+          readiness_level: null,
+          approval_state: "not_requested",
+          blockers: [],
+          execution_prep_eligible: false,
+          requires_human_approval: false,
+        };
+      }
+
+      return {
+        workflow_state: normalizeStateToken(derived.workflowStateValue, "unknown"),
+        readiness_level: normalizeStateToken(derived.readinessLevel, null),
+        approval_state: requiresHumanApproval ? "not_requested" : "not_required",
+        blockers,
+        execution_prep_eligible: executionPrepEligible,
+        requires_human_approval: requiresHumanApproval,
+      };
+    }
+
+    function renderLatestRunState(derived) {
+      latestRunStateRaw.textContent = JSON.stringify(buildLatestRunState(derived), null, 2);
+    }
+
     function syncStatePanelFromOutput(output) {
       const derived = outputStateFromSections(output);
+      renderLatestRunState(derived);
 
       if (derived.workflowStateValue !== "None") {
         workflowState.textContent = formatStateValue(derived.workflowStateValue);

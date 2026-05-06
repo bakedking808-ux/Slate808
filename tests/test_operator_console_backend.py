@@ -83,7 +83,8 @@ def test_operator_console_root_serves_frontend_html():
         assert "Request Workspace" in body
         assert "Plan Output" in body
         assert "System State" in body
-        assert "Structured backend state" in body
+        assert "Raw clarification/session state" in body
+        assert "Latest Run State" in body
         assert "sectionedOutput" in body
         assert "Show raw" in body
     finally:

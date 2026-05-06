@@ -18,9 +18,37 @@ def test_operator_console_syncs_state_panel_from_rendered_output():
 
     assert "function outputStateFromSections(output)" in html
     assert "function syncStatePanelFromOutput(output)" in html
+    assert "function buildLatestRunState(derived)" in html
+    assert "function renderLatestRunState(derived)" in html
     assert 'valueFromSection(sections, "Execution Readiness", ["level"])' in html
     assert 'valueFromSection(sections, "Operator Workflow", ["state"])' in html
     assert 'valueFromSection(sections, "Handoff Summary", ["blockers"])' in html
+
+
+def test_operator_console_labels_state_sources_separately():
+    html = _html()
+
+    assert "Clarification Session State" in html
+    assert "Latest Run State" in html
+    assert "Raw clarification/session state" in html
+    assert "<h2>Raw State</h2>" not in html
+    assert "latestRunStateRaw" in html
+
+
+def test_operator_console_latest_run_state_uses_output_source():
+    html = _html()
+
+    helper_start = html.index("function buildLatestRunState(derived)")
+    helper_end = html.index("function renderLatestRunState(derived)", helper_start)
+    helper_block = html[helper_start:helper_end]
+
+    assert "workflow_state: normalizeStateToken(derived.workflowStateValue" in helper_block
+    assert 'workflow_state: "unknown"' in helper_block
+    assert "readiness_level: normalizeStateToken(derived.readinessLevel" in helper_block
+    assert "approval_state: \"not_requested\"" in helper_block
+    assert "requires_human_approval: requiresHumanApproval" in helper_block
+    assert "execution_prep_eligible: executionPrepEligible" in helper_block
+    assert "blockers" in helper_block
 
 
 def test_operator_console_set_output_syncs_after_rendering_output():
@@ -33,6 +61,7 @@ def test_operator_console_set_output_syncs_after_rendering_output():
     assert "renderSectionedOutput(normalizedOutput);" in set_output_block
     assert "updateBriefFromOutput(normalizedOutput);" in set_output_block
     assert "syncStatePanelFromOutput(normalizedOutput);" in set_output_block
+    assert "renderState(data.state);" not in set_output_block
 
     assert set_output_block.index("renderSectionedOutput(normalizedOutput);") < set_output_block.index(
         "syncStatePanelFromOutput(normalizedOutput);"
