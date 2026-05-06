@@ -220,12 +220,13 @@ def test_sequence_suffix_compaction_cleans_rendered_multi_flag_outputs(monkeypat
     remote = run_engine("Plan a trip to Chalbi Desert for 4 people next weekend with a medium budget")
     short = run_engine("Plan a trip to Diani for 2 people for 2 days with a medium budget")
 
-    assert "family-friendly, comfortable, and practical options" in family
-    assert "lighter arrival-day pacing, and recovery-aware family time" in family
+    assert "keep pacing light, coordinated, and recovery-aware" in family
+    assert "safe, comfortable, and coordinated" in family
     assert "base-first, daylight-aware movement" in safari
     assert "with departure and drive-time buffers for access conditions" in safari
     assert "align bookings confirm" not in remote
-    assert "with shared schedule confirmed, departure margin, and conservative remote-access timing" in remote
+    assert "align bookings and confirm the shared schedule for the group" in remote
+    assert "with departure margin and conservative remote-access timing" in remote
     assert "essential experiences prioritized" in short
     assert "relaxation experiences focused on essential experiences" not in short
 

@@ -47,12 +47,11 @@ def test_generator_applies_value_group_and_slow_constraints_deterministically():
     assert first == second
     assert len(first) == 5
     assert "cost-conscious budget" in first[1].lower()
-    assert "practical and safe movement" in first[2].lower()
-    assert "shared meeting points and aligned movement" in first[2].lower()
-    assert "good-value options" in first[3].lower()
-    assert "calm and quieter settings" in first[3].lower()
-    assert "more recovery time" in first[3].lower()
-    assert "shared schedule for the group" in first[4].lower()
+    assert "practical, safe, and coordinated" in first[2].lower()
+    assert "good-value" in first[3].lower()
+    assert "recovery-aware" in first[3].lower()
+    assert "shared schedule" in first[4].lower()
+    assert "rest windows" in first[4].lower()
     assert "planned clearly" not in first[2].lower()
     assert "with shared meeting points" not in first[2].lower()
 
@@ -117,5 +116,5 @@ def test_generator_constraint_suffix_merge_avoids_repeated_segments():
         },
     )
 
-    assert steps[2].lower().count("shared meeting points and aligned movement") == 1
-    assert steps[3].lower().count("family-friendly and comfortable options") == 1
+    assert steps[2].lower().count("coordinated") == 1
+    assert steps[3].lower().count("family-friendly") == 1

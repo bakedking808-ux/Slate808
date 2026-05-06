@@ -28,14 +28,29 @@ def setup_function():
 
 
 def _extract_numbered_steps(output: str) -> list[str]:
-    return re.findall(r"^\d+\.\s+(.+)$", output, re.MULTILINE)
+    match = re.search(r"Plan Steps:\n((?:\d+\. .+\n)+)", output)
+    if not match:
+        return []
+    return re.findall(r"^\d+\.\s+(.+)$", match.group(1), re.MULTILINE)
 
 
 def _extract_bullet_section(output: str, heading: str) -> list[str]:
-    match = re.search(rf"{heading}:\n((?:- .+\n)+)", output)
+    match = re.search(rf"{heading}:\n((?:(?:-|\d+\.) .+\n)+)", output)
     if not match:
         return []
-    return re.findall(r"^- (.+)$", match.group(1), re.MULTILINE)
+    return re.findall(r"^(?:-|\d+\.) (.+)$", match.group(1), re.MULTILINE)
+
+
+def _extract_numbered_section(output: str, heading: str) -> list[str]:
+    match = re.search(rf"{heading}:\n((?:\d+\. .+\n)+)", output)
+    if not match:
+        return []
+    return re.findall(r"^\d+\. (.+)$", match.group(1), re.MULTILINE)
+
+
+def _risk_labels(output: str) -> list[str]:
+    risks = _extract_numbered_section(output, "Risks")
+    return [risk.split(":", maxsplit=1)[0] for risk in risks if ":" in risk]
 
 
 def test_timing_model_exact_timing_payload_validates():
@@ -1374,7 +1389,29 @@ def test_timing_current_behavior_matches_engine_behavior(text, expected_state, e
 @pytest.mark.parametrize(
     "text",
     [
+        "7th August through the 15th Aug",
+        "from 7th August through the 15th Aug",
+        "7 August through 15 August",
+        "August 7 through August 15",
+        "August 7 through 15",
+        "from August 7 through the 15th",
+    ],
+)
+def test_through_date_ranges_parse_as_exact_timing(text):
+    timing = extract_timing(text)
+
+    assert timing["state"] == "exact_timing"
+    assert timing["start_date"] == "7 august"
+    assert timing["end_date"] == "15 august"
+    assert summarize_timing(timing) == "7 august to 15 august"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
         "4th july - 31st september",
+        "4th july through 31st september",
+        "30th february through 31st february",
         "31st september",
         "3rd to 4th",
         "30th february",
@@ -1510,6 +1547,102 @@ def test_numeric_separation_does_not_contaminate_timing_or_budget():
     assert brief["budget_amount"] == 45000
     assert brief["timing"]["state"] == "relative_timing"
     assert brief["timing"]["raw_text"] == "next weekend"
+
+
+def test_budget_extracts_kes_total_with_k_shorthand():
+    budget = extract_budget_info("with a budget of KSH 60k")
+
+    assert budget["budget_amount"] == 60000
+    assert budget["budget_currency"] == "KES"
+    assert budget["budget_basis"] in {"total", "group"}
+    assert budget["budget_level"] != "unspecified"
+
+
+def test_budget_extracts_usd_per_person_without_local_total():
+    budget = extract_budget_info("$2500 per person")
+
+    assert budget["budget_currency"] == "USD"
+    assert budget["budget_per_person"] == 2500
+    assert budget["budget_basis"] == "per_person"
+    assert budget["budget_level"] != "unspecified"
+    assert budget["budget_amount"] is None
+
+
+def test_budget_extracts_decimal_k_and_usd_wording():
+    budget = extract_budget_info("budget is USD 2.5k pp")
+
+    assert budget["budget_currency"] == "USD"
+    assert budget["budget_per_person"] == 2500
+    assert budget["budget_level"] == "specified"
+
+
+def test_budget_extracts_usd_per_adult_and_child():
+    budget = extract_budget_info("$2500 per adult and $1500 per child")
+
+    assert budget["budget_currency"] == "USD"
+    assert budget["budget_per_adult"] == 2500
+    assert budget["budget_per_child"] == 1500
+    assert budget["budget_basis"] == "per_adult_child"
+    assert budget["budget_level"] != "unspecified"
+
+
+def test_budget_extracts_kid_wording_as_structured_budget():
+    budget = extract_budget_info("$2500 per person and $1500 for every kid")
+
+    assert budget["budget_currency"] == "USD"
+    assert budget["budget_per_person"] == 2500
+    assert budget["budget_per_child"] == 1500
+    assert budget["budget_basis"] in {"mixed", "per_adult_child"}
+    assert budget["budget_level"] != "unspecified"
+
+
+def test_budget_extracts_eur_pp():
+    budget = extract_budget_info("budget is €2000 pp")
+
+    assert budget["budget_currency"] == "EUR"
+    assert budget["budget_per_person"] == 2000
+    assert budget["budget_level"] != "unspecified"
+
+
+def test_budget_extracts_gbp_adult_child():
+    budget = extract_budget_info("budget is £1800 per adult and £1000 per child")
+
+    assert budget["budget_currency"] == "GBP"
+    assert budget["budget_per_adult"] == 1800
+    assert budget["budget_per_child"] == 1000
+    assert budget["budget_level"] != "unspecified"
+
+
+def test_budget_does_not_extract_dates_as_amounts():
+    budget = extract_budget_info("from 7th August through the 15th Aug")
+
+    assert budget["budget_amount"] is None
+    assert budget["budget_currency"] is None
+    assert budget["budget_per_person"] is None
+    assert budget["budget_per_child"] is None
+    assert budget["budget_level"] == "unspecified"
+
+
+def test_mumbai_worldly_budget_phrase_stays_structured_and_known():
+    request = (
+        "hey Slate let's plan a trip to Mumbai this summer for 4 adults and 2 minors, "
+        "they need a relaxing beach type vacation from 7th August through the 15th Aug. "
+        "They are looking to spend $2500 per person and $1500 for every kid."
+    )
+    brief = build_travel_brief(request)
+    result = run_engine(request)
+
+    assert brief["destination"] == "mumbai"
+    assert brief["timing"]["start_date"] == "7 august"
+    assert brief["timing"]["end_date"] == "15 august"
+    assert brief["traveller_count"] == 4
+    assert brief["has_children"] is True
+    assert brief["budget_currency"] == "USD"
+    assert brief["budget_per_person"] == 2500
+    assert brief["budget_per_child"] == 1500
+    assert brief["budget_level"] != "unspecified"
+    assert "Budget Gap Risk" not in result
+    assert "Budget Level: unspecified" not in result
 
 
 def test_budget_visibility_numeric_budget_and_level_appear_in_output():
@@ -2224,6 +2357,54 @@ def test_shaped_trip_checks_and_risks_are_not_generic_clones():
     assert family_risks != corporate_risks
     assert any("family" in check.lower() for check in family_checks)
     assert any("team" in check.lower() or "group" in check.lower() for check in corporate_checks)
+
+
+def test_trip_output_numbers_checks_and_risks():
+    result = run_engine("Plan a family trip to Naivasha for 4 people at 12th May")
+
+    checks = _extract_numbered_section(result, "Checks")
+    risks = _extract_numbered_section(result, "Risks")
+
+    assert checks
+    assert risks
+    assert re.search(r"Checks:\n1\. [^\n]+:", result)
+    assert re.search(r"Risks:\n1\. [^\n]+:", result)
+
+
+def test_missing_budget_risks_use_distinct_labels():
+    result = run_engine("Plan a family trip to Naivasha for 4 people at 12th May")
+    labels = _risk_labels(result)
+
+    assert "Budget Coordination Risk" in labels
+    assert "Budget Gap Risk" in labels
+    assert labels.count("Budget Stretch") <= 1
+    assert len(labels) == len(set(labels))
+
+
+def test_known_budget_risks_do_not_duplicate_budget_stretch_label():
+    result = run_engine("Plan a trip to Diani for 2 people 10 April to 12 April with a budget of 60000")
+    labels = _risk_labels(result)
+
+    assert "Budget Coordination Risk" in labels
+    assert "Budget Stretch" in labels
+    assert labels.count("Budget Stretch") == 1
+    assert len(labels) == len(set(labels))
+
+
+def test_risk_labels_remain_deterministically_ordered():
+    first = _risk_labels(run_engine("Plan a family trip to Naivasha for 4 people at 12th May"))
+    second = _risk_labels(run_engine("Plan a family trip to Naivasha for 4 people at 12th May"))
+
+    assert first == second
+
+
+def test_trip_output_keeps_draft_itinerary_between_risks_and_readiness():
+    result = run_engine("Plan a family trip to Naivasha for 4 people at 12th May")
+
+    assert "Draft Itinerary:" in result
+    assert result.index("Risks:") < result.index("Draft Itinerary:") < result.index("Execution Readiness:")
+    risks_body = result[result.index("Risks:"):result.index("Draft Itinerary:")]
+    assert "Day 1" not in risks_body
 
 
 def test_relaxed_trip_step_wording_suppresses_old_repeated_phrases():

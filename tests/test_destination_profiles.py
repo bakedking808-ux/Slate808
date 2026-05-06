@@ -84,3 +84,17 @@ def test_unknown_destination_draft_itinerary_does_not_add_profile_notes():
     }))
 
     assert "Profile Notes" not in itinerary
+
+
+def test_ol_kalou_destination_profile_and_alias_resolve():
+    resolved, profile = get_destination_profile("Ol Kalou")
+
+    assert resolved == "ol kalou"
+    assert profile is not None
+    assert profile["destination_type"] == "highland_town"
+    assert profile["profile_category"] == "highland"
+
+    alias_resolved, alias_profile = get_destination_profile("Ol Kalau")
+
+    assert alias_resolved == "ol kalou"
+    assert alias_profile == profile

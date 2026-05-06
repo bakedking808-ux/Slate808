@@ -1,4 +1,4 @@
-from engine.travel_brief import summarize_timing
+from engine.travel_brief import has_budget_signal, summarize_timing
 from engine.itinerary_renderer import render_draft_itinerary, should_render_draft_itinerary
 from engine.display_language import display_trip_mood, polish_display_text, title_label
 
@@ -119,12 +119,23 @@ def format_output(final_output: dict) -> str:
             lines.append(f"- Budget: {budget_amount} ({budget_level})")
         else:
             lines.append(f"- Budget Level: {budget_level}")
+        if brief.get("budget_currency"):
+            lines.append(f"- Budget Currency: {brief.get('budget_currency')}")
+        if brief.get("budget_basis"):
+            lines.append(f"- Budget Basis: {brief.get('budget_basis')}")
+        for label, key in (
+            ("Budget Per Person", "budget_per_person"),
+            ("Budget Per Adult", "budget_per_adult"),
+            ("Budget Per Child", "budget_per_child"),
+        ):
+            if brief.get(key) is not None:
+                lines.append(f"- {label}: {brief.get(key)}")
         if brief.get("trip_mood"):
             lines.append(f"- Trip Mood: {display_trip_mood(brief.get('trip_mood'))}")
         lines.append("")
 
         gaps = []
-        if brief.get("budget_level") == "unspecified":
+        if not has_budget_signal(brief):
             gaps.append("Budget Level is unspecified")
 
         if gaps:
@@ -143,15 +154,15 @@ def format_output(final_output: dict) -> str:
     checks = final_output.get("checks", [])
     if checks:
         lines.append("Checks:")
-        for check in checks:
-            lines.append(f"- {polish_display_text(check)}")
+        for index, check in enumerate(checks, start=1):
+            lines.append(f"{index}. {polish_display_text(check)}")
         lines.append("")
 
     risks = final_output.get("risks", [])
     if risks:
         lines.append("Risks:")
-        for risk in risks:
-            lines.append(f"- {polish_display_text(risk)}")
+        for index, risk in enumerate(risks, start=1):
+            lines.append(f"{index}. {polish_display_text(risk)}")
         lines.append("")
 
     if should_render_draft_itinerary(final_output):

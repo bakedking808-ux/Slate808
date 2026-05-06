@@ -66,8 +66,8 @@ def test_coastal_slow_pace_and_value_focused_strengthen_calm_value_signals(monke
     joined = " ".join(steps).lower()
 
     assert "good-value" in joined
-    assert "calm and quieter settings" in joined
-    assert "recovery time" in joined
+    assert "recovery-aware" in joined
+    assert "keep pacing light, coordinated" in joined
 
 
 def test_city_quiet_preferred_bias_suppresses_loud_direction(monkeypatch):
@@ -94,7 +94,8 @@ def test_city_quiet_preferred_bias_suppresses_loud_direction(monkeypatch):
     )
     joined = " ".join(steps).lower()
 
-    assert "calm and quieter settings" in joined
+    assert "calm" in joined
+    assert "recovery-aware" in joined
     assert "party" not in joined
     assert "nightlife" not in joined
 
@@ -122,7 +123,7 @@ def test_safari_group_coordination_strengthens_coordination_signals(monkeypatch)
     )
     joined = " ".join(steps).lower()
 
-    assert "shared meeting points and aligned movement" in joined
+    assert "keep movement practical, safe, and coordinated" in joined
 
 
 def test_generator_output_stays_deterministic_with_destination_refinement(monkeypatch):
