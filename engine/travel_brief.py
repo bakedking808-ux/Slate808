@@ -19,7 +19,18 @@ TimingState = Literal[
 ]
 TimingFlexibility = Literal["fixed", "flexible", "unknown"]
 TimingConfidence = Literal["low", "medium", "high"]
-BudgetLevel = Literal["low", "medium", "high", "unspecified"]
+BudgetLevel = Literal["low", "medium", "high", "specified", "unspecified"]
+BudgetCurrency = Literal["KES", "USD", "EUR", "GBP"]
+BudgetBasis = Literal[
+    "total",
+    "group",
+    "per_person",
+    "per_adult",
+    "per_child",
+    "per_adult_child",
+    "mixed",
+    "qualitative",
+]
 TripMood = Literal["relaxed", "adventure", "luxury", "romantic", "family", "corporate"]
 
 TIMING_USABLE_STATES = frozenset(
@@ -98,6 +109,12 @@ class TravelBriefModel(BaseModel):
     timing: TimingModel
     budget_amount: Optional[int] = Field(ge=0)
     budget_level: BudgetLevel
+    budget_currency: Optional[BudgetCurrency] = None
+    budget_basis: Optional[BudgetBasis] = None
+    budget_raw_text: Optional[str] = None
+    budget_per_person: Optional[int] = Field(default=None, ge=0)
+    budget_per_adult: Optional[int] = Field(default=None, ge=0)
+    budget_per_child: Optional[int] = Field(default=None, ge=0)
     trip_mood: Optional[TripMood]
     has_children: bool = False
 
@@ -803,6 +820,68 @@ def _budget_amount_is_date_token(text: str, amount_end: int) -> bool:
     return bool(re.match(rf"\s+(?:{MONTHS})\b", text[amount_end:]))
 
 
+def _empty_budget_info() -> Dict[str, Any]:
+    return {
+        "budget_amount": None,
+        "budget_level": "unspecified",
+        "budget_currency": None,
+        "budget_basis": None,
+        "budget_raw_text": None,
+        "budget_per_person": None,
+        "budget_per_adult": None,
+        "budget_per_child": None,
+    }
+
+
+def _parse_budget_amount(raw_amount: str, suffix: str = "") -> int:
+    amount_text = raw_amount.replace(",", "")
+    amount = float(amount_text) if "." in amount_text else int(amount_text)
+    if suffix.lower() == "k":
+        amount *= 1000
+    return int(amount)
+
+
+def _normalize_budget_currency(raw_currency: str | None) -> Optional[str]:
+    if not raw_currency:
+        return None
+    value = raw_currency.lower()
+    if value in {"$", "us$", "usd", "dollar", "dollars"}:
+        return "USD"
+    if value in {"€", "eur", "euro", "euros"}:
+        return "EUR"
+    if value in {"£", "gbp", "pound", "pounds"}:
+        return "GBP"
+    if value in {"kes", "ksh", "sh", "shilling", "shillings", "bob", "k"}:
+        return "KES"
+    return None
+
+
+def _budget_basis_from_context(context: str) -> str:
+    if re.search(r"\b(?:per|for\s+every|for\s+each)\s+(?:kid|kids|child|children|minor|minors)\b", context):
+        return "per_child"
+    if re.search(r"\b(?:per|for\s+every|for\s+each)\s+adult\b", context):
+        return "per_adult"
+    if re.search(r"\b(?:per\s+person|each|pp|per\s+pax|per\s+travell?er)\b", context):
+        return "per_person"
+    if re.search(r"\b(?:total|all\s+in|for\s+the\s+group|group\s+budget|overall\s+budget|total\s+budget|for\s+everyone)\b", context):
+        return "group"
+    return "total"
+
+
+def has_budget_signal(budget_info: Dict[str, Any]) -> bool:
+    return (
+        budget_info.get("budget_amount") is not None
+        or budget_info.get("budget_level") != "unspecified"
+        or budget_info.get("budget_per_person") is not None
+        or budget_info.get("budget_per_adult") is not None
+        or budget_info.get("budget_per_child") is not None
+        or (
+            budget_info.get("budget_currency") is not None
+            and budget_info.get("budget_basis") is not None
+        )
+    )
+
+
 CANONICAL_MONTH_TO_NUMBER = {
     "january": 1,
     "february": 2,
@@ -978,54 +1057,108 @@ def _resolve_single_month_dash_range(
 def extract_budget_info(text: str, decision_log=None) -> Dict[str, Any]:
     text = normalize_travel_text(text)
     text_lower = text.lower()
+    budget_info = _empty_budget_info()
 
     if re.search(r"\b(?:no\s+budget\s+(?:yet|for\s+now)|budget\s+not\s+decided)\b", text_lower):
-        return {"budget_amount": None, "budget_level": "unspecified"}
+        return budget_info
 
-    amount_patterns = [
-        r"\bbudget(?:\s+is|\s+of|\s+for)?\s+(?:kes|ksh|sh)?\s*(\d[\d,]*)\b",
-        r"\bwith\s+(?:a\s+budget\s+(?:of|is)\s+)?(?:kes|ksh|sh)\s*(\d[\d,]*)\b",
-        r"\b(?:kes|ksh|sh)\s*(\d[\d,]*)\b",
-        r"\b(\d[\d,]*)\s*(?:kes|ksh|sh)\b",
-        r"\bunder\s+(\d[\d,]*)\b",
-        r"\b(\d[\d,]*)\s+budget\b",
-        r"\b(\d[\d,]*)k\b",
+    currency_token = r"(?:us\$|\$|€|£|usd|dollars?|eur|euros?|gbp|pounds?|kes|ksh|shillings?|shilling|bob|sh)"
+    amount_token = r"(\d[\d,]*(?:\.\d+)?)(k)?"
+    currency_amount_patterns = [
+        rf"(?<!\w)(?P<currency>{currency_token})\s*(?P<amount>\d[\d,]*(?:\.\d+)?)(?P<suffix>k)?\b",
+        rf"\b(?P<amount>\d[\d,]*(?:\.\d+)?)(?P<suffix>k)?\s*(?P<currency>{currency_token})\b",
     ]
 
-    for pattern in amount_patterns:
+    for pattern in currency_amount_patterns:
+        for match in re.finditer(pattern, text_lower):
+            if _budget_amount_is_date_token(text_lower, match.end("amount")):
+                continue
+            currency = _normalize_budget_currency(match.group("currency"))
+            if currency is None:
+                continue
+            amount = _parse_budget_amount(match.group("amount"), match.group("suffix") or "")
+            context_after = text_lower[match.end():match.end() + 36]
+            context_after = re.split(rf"\s+(?:and\s+)?{currency_token}\s*\d", context_after, maxsplit=1)[0]
+            context = text_lower[max(0, match.start() - 24):match.end()] + context_after
+            basis = _budget_basis_from_context(context)
+
+            budget_info["budget_currency"] = budget_info["budget_currency"] or currency
+            budget_info["budget_raw_text"] = context.strip(" .,")
+            budget_info["budget_level"] = _infer_budget_level_from_amount(amount) if currency == "KES" and basis in {"total", "group"} else "specified"
+
+            if basis == "per_person":
+                budget_info["budget_per_person"] = amount
+            elif basis == "per_adult":
+                budget_info["budget_per_adult"] = amount
+            elif basis == "per_child":
+                budget_info["budget_per_child"] = amount
+            elif budget_info["budget_amount"] is None:
+                budget_info["budget_amount"] = amount
+
+    if has_budget_signal(budget_info):
+        bases = {
+            key
+            for key, field in (
+                ("per_person", "budget_per_person"),
+                ("per_adult", "budget_per_adult"),
+                ("per_child", "budget_per_child"),
+                ("total", "budget_amount"),
+            )
+            if budget_info.get(field) is not None
+        }
+        if {"per_adult", "per_child"}.issubset(bases):
+            budget_info["budget_basis"] = "per_adult_child"
+        elif {"per_person", "per_child"}.issubset(bases):
+            budget_info["budget_basis"] = "mixed"
+        elif "per_person" in bases:
+            budget_info["budget_basis"] = "per_person"
+        elif "per_adult" in bases:
+            budget_info["budget_basis"] = "per_adult"
+        elif "per_child" in bases:
+            budget_info["budget_basis"] = "per_child"
+        else:
+            budget_info["budget_basis"] = _budget_basis_from_context(budget_info.get("budget_raw_text") or "")
+
+        if decision_log:
+            decision_log(f"BUDGET_EXTRACTED: {budget_info}")
+        return budget_info
+
+    legacy_amount_patterns = [
+        (r"\bbudget(?:\s+is|\s+of|\s+for)?\s+(?:kes|ksh|sh)?\s*" + amount_token + r"\b", True),
+        (r"\bwith\s+(?:a\s+budget\s+(?:of|is)\s+)?(?:kes|ksh|sh)\s*" + amount_token + r"\b", True),
+        (r"\bunder\s+" + amount_token + r"\b", True),
+        (r"\b" + amount_token + r"\s+budget\b", True),
+        (r"\b(\d[\d,]*)k\b", True),
+    ]
+
+    for pattern, default_kes in legacy_amount_patterns:
         match = re.search(pattern, text_lower)
         if match:
             if _budget_amount_is_date_token(text_lower, match.end(1)):
                 continue
-
-            raw = match.group(1).replace(",", "")
-            if not raw:
-                continue
-            amount = int(raw)
-
-            if pattern == r"\b(\d[\d,]*)k\b":
-                amount *= 1000
-
+            amount = _parse_budget_amount(match.group(1), (match.group(2) if len(match.groups()) > 1 else "k") or "")
             level = _infer_budget_level_from_amount(amount)
-
             if decision_log:
                 decision_log(f"BUDGET_EXTRACTED: amount={amount}, level={level}")
-
             return {
+                **_empty_budget_info(),
                 "budget_amount": amount,
                 "budget_level": level,
+                "budget_currency": "KES" if default_kes else None,
+                "budget_basis": "total",
+                "budget_raw_text": match.group(0).strip(),
             }
 
     if re.search(r"\b(?:luxury|premium|high-end|high\s+budget)\b", text_lower):
-        return {"budget_amount": None, "budget_level": "high"}
+        return {**budget_info, "budget_level": "high", "budget_basis": "qualitative"}
 
     if re.search(r"\b(?:comfortable|mid-range|moderate|medium\s+budget)\b", text_lower):
-        return {"budget_amount": None, "budget_level": "medium"}
+        return {**budget_info, "budget_level": "medium", "budget_basis": "qualitative"}
 
     if re.search(r"\b(?:cheap|low\s+budget|affordable|budget[-\s]+friendly)\b", text_lower):
-        return {"budget_amount": None, "budget_level": "low"}
+        return {**budget_info, "budget_level": "low", "budget_basis": "qualitative"}
 
-    return {"budget_amount": None, "budget_level": "unspecified"}
+    return budget_info
 
 WEEKDAYS = "monday|tuesday|wednesday|thursday|friday|saturday|sunday"
 
@@ -1215,6 +1348,8 @@ def _exact_timing_from_single_date(day_text: str, month_text: str) -> Dict[str, 
 
 
 def _detect_exact_timing(text: str, decision_log=None) -> Optional[Dict[str, Any]]:
+    through_connector = r"\s+through(?:\s+the)?\s+"
+
     match = re.search(
         rf"\b({MONTHS})\s+(\d{{1,2}}(?:st|nd|rd|th)?)\s+to\s+({MONTHS})\s+(\d{{1,2}}(?:st|nd|rd|th)?)\b",
         text,
@@ -1237,6 +1372,54 @@ def _detect_exact_timing(text: str, decision_log=None) -> Optional[Dict[str, Any
             match.group(2),
             match.group(3),
             match.group(4),
+        )
+
+    match = re.search(
+        rf"\b(?:from\s+)?(\d{{1,2}}(?:st|nd|rd|th)?)\s+({MONTHS}){through_connector}(\d{{1,2}}(?:st|nd|rd|th)?)\s+({MONTHS})\b",
+        text,
+    )
+    if match:
+        return _exact_timing_from_range(
+            str(_extract_day_from_token(match.group(1))),
+            match.group(2),
+            str(_extract_day_from_token(match.group(3))),
+            match.group(4),
+        )
+
+    match = re.search(
+        rf"\b(?:from\s+)?({MONTHS})\s+(\d{{1,2}}(?:st|nd|rd|th)?){through_connector}({MONTHS})\s+(\d{{1,2}}(?:st|nd|rd|th)?)\b",
+        text,
+    )
+    if match:
+        return _exact_timing_from_range(
+            str(_extract_day_from_token(match.group(2))),
+            match.group(1),
+            str(_extract_day_from_token(match.group(4))),
+            match.group(3),
+        )
+
+    match = re.search(
+        rf"\b(?:from\s+)?(\d{{1,2}}(?:st|nd|rd|th)?)\s+({MONTHS}){through_connector}(\d{{1,2}}(?:st|nd|rd|th)?)\b",
+        text,
+    )
+    if match:
+        return _exact_timing_from_range(
+            str(_extract_day_from_token(match.group(1))),
+            match.group(2),
+            str(_extract_day_from_token(match.group(3))),
+            match.group(2),
+        )
+
+    match = re.search(
+        rf"\b(?:from\s+)?({MONTHS})\s+(\d{{1,2}}(?:st|nd|rd|th)?){through_connector}(\d{{1,2}}(?:st|nd|rd|th)?)\b",
+        text,
+    )
+    if match:
+        return _exact_timing_from_range(
+            str(_extract_day_from_token(match.group(2))),
+            match.group(1),
+            str(_extract_day_from_token(match.group(3))),
+            match.group(1),
         )
 
     match = re.search(
@@ -1594,6 +1777,12 @@ def build_travel_brief(text: str, decision_log=None) -> Dict[str, Any]:
         timing=extract_timing(normalized, decision_log=decision_log),
         budget_amount=budget_info["budget_amount"],
         budget_level=budget_info["budget_level"],
+        budget_currency=budget_info.get("budget_currency"),
+        budget_basis=budget_info.get("budget_basis"),
+        budget_raw_text=budget_info.get("budget_raw_text"),
+        budget_per_person=budget_info.get("budget_per_person"),
+        budget_per_adult=budget_info.get("budget_per_adult"),
+        budget_per_child=budget_info.get("budget_per_child"),
         trip_mood=extract_trip_mood(normalized, decision_log=decision_log),
         has_children=extract_has_children(normalized, decision_log=decision_log),
     )

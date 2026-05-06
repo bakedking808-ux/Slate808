@@ -53,3 +53,20 @@ def test_live_timing_parser_exact_date_is_deterministic():
     second = build_travel_brief(user_input)
 
     assert first["timing"] == second["timing"]
+
+
+def test_live_timing_parser_extracts_through_date_range_from_trip_request():
+    user_input = (
+        "hey Slate let's plan a trip to Mumbai this summer for 4 adults and 2 minors, "
+        "they need a relaxing beach type vacation from 7th August through the 15th Aug. "
+        "They are looking to spend $2500 per person and $1500 for every kid."
+    )
+
+    brief = build_travel_brief(user_input)
+    output = run(user_input)
+
+    assert brief["timing"]["state"] == "exact_timing"
+    assert brief["timing"]["start_date"] == "7 august"
+    assert brief["timing"]["end_date"] == "15 august"
+    assert brief["timing"]["raw_text"] == "7 august to 15 august"
+    assert "execution_timing_missing_date_range" not in output

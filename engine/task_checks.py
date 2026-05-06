@@ -6,6 +6,7 @@ Task-aware checks layer for Slate808
 from engine.travel_scope import classify_travel_scope
 from engine.destination_profiles import get_destination_profile
 from engine.operational_defaults import default_operational_checks, default_operational_risks
+from engine.travel_brief import has_budget_signal
 
 
 def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
@@ -75,9 +76,9 @@ def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
     elif budget_level == "high":
         checks[3] = "Budget & Payments: Confirm premium spending maps cleanly to the trip priorities, supplier quality, refund terms, and secure payment channels."
         risks[2] = "Budget Stretch: Premium bookings may require early confirmation to avoid last-minute compromises."
-    elif budget_level == "unspecified":
+    elif budget_level == "unspecified" and not has_budget_signal(brief):
         checks[3] = "Budget & Payments: Confirm the working budget, hidden costs, refund terms, and payment method before supplier shortlisting."
-        risks[2] = "Budget Stretch: Costs may drift quickly while the budget remains unspecified."
+        risks[2] = "Budget Gap Risk: Costs may drift quickly while the budget remains unspecified."
 
     if timing_state != "exact_timing":
         checks[2] = "Transport & Stay: Keep transport, accommodation, and transfer decisions provisional until exact travel dates are confirmed."

@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 from engine.constraints import ConstraintPolicy
 from engine.planning_constraints import PlanningConstraints
 from engine.logger import append_log
-from engine.travel_brief import is_timing_usable, summarize_timing
+from engine.travel_brief import has_budget_signal, is_timing_usable, summarize_timing
 from engine.destination_profiles import get_destination_profile, normalize_destination_name
 
 
@@ -62,11 +62,13 @@ def _derive_budget_posture(budget_level: str, budget_amount: int | None) -> str:
 
 
 def derive_budget_policy(brief: Dict[str, Any]) -> Dict[str, Any]:
-    budget_amount = _safe_int(brief.get("budget_amount"))
+    raw_budget_amount = _safe_int(brief.get("budget_amount"))
+    budget_currency = _normalize_text(brief.get("budget_currency"))
+    budget_amount = raw_budget_amount if budget_currency in {None, "", "kes"} else None
     budget_level = _normalize_text(brief.get("budget_level")) or "unspecified"
     posture = _derive_budget_posture(budget_level, budget_amount)
 
-    is_budget_known = budget_amount is not None or budget_level != "unspecified"
+    is_budget_known = has_budget_signal(brief)
 
     should_avoid_premium = posture in {"cost_sensitive", "balanced"}
     should_require_cost_check = posture in {"cost_sensitive", "balanced", "unknown"}
@@ -75,7 +77,7 @@ def derive_budget_policy(brief: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "is_budget_known": is_budget_known,
-        "budget_amount": budget_amount,
+        "budget_amount": raw_budget_amount,
         "budget_level": budget_level,
         "budget_amount_band": _budget_amount_band(budget_amount),
         "budget_posture": posture,
@@ -303,7 +305,9 @@ def derive_constraint_policy(brief: Dict[str, Any]) -> Dict[str, Any]:
     traveller_count = _safe_int(brief.get("traveller_count"))
     trip_mood = _normalize_text(brief.get("trip_mood"))
     has_children = bool(brief.get("has_children")) or trip_mood == "family"
-    budget_amount = _safe_int(brief.get("budget_amount"))
+    raw_budget_amount = _safe_int(brief.get("budget_amount"))
+    budget_currency = _normalize_text(brief.get("budget_currency"))
+    budget_amount = raw_budget_amount if budget_currency in {None, "", "kes"} else None
     budget_level = _normalize_text(brief.get("budget_level")) or "unspecified"
     budget_posture = _derive_budget_posture(budget_level, budget_amount)
     timing = brief.get("timing") or {}

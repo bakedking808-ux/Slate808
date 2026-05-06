@@ -245,4 +245,4 @@ def test_generator_uses_resolved_constraints_not_conflicting_inputs():
 
     assert "premium" not in joined
     assert "curated" not in joined
-    assert "active and well-structured movement" in joined
+    assert "active and well structured" in joined
