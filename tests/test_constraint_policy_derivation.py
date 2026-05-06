@@ -97,3 +97,21 @@ def test_constraint_policy_derives_expected_flags_from_relaxed_and_adventure_cas
     assert adventure_policy["avoid_premium"] is False
     assert adventure_policy["low_risk"] is False
     assert adventure_policy["slow_pace"] is False
+
+
+def test_specified_budget_is_known_but_unranked(monkeypatch):
+    monkeypatch.setattr("engine.planning_policy.append_log", lambda filename, line: None)
+
+    constraints = derive_planning_constraints(
+        _brief(
+            budget_level="specified",
+            budget_currency="USD",
+            budget_basis="per_person",
+            budget_per_person=2500,
+        )
+    )
+
+    assert constraints["budget_policy"]["is_budget_known"] is True
+    assert constraints["budget_policy"]["budget_posture"] == "unknown"
+    assert constraints["constraint_policy"]["avoid_premium"] is False
+    assert constraints["constraint_policy"]["value_focused"] is False

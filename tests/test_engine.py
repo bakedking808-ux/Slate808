@@ -1645,6 +1645,31 @@ def test_mumbai_worldly_budget_phrase_stays_structured_and_known():
     assert "Budget Level: unspecified" not in result
 
 
+def test_foreign_structured_budget_suppresses_budget_gap_and_displays_fields():
+    result = run_engine(
+        "Plan a trip to Mumbai for 4 adults and 2 minors from 7th August through the 15th Aug "
+        "with $2500 per person and $1500 per child"
+    )
+
+    assert "Budget Gap Risk" not in result
+    assert "- Budget Level: specified" in result
+    assert "- Budget Currency: USD" in result
+    assert "- Budget Per Person: 2500" in result
+    assert "- Budget Per Child: 1500" in result
+
+
+def test_specified_budget_does_not_infer_low_budget_wording():
+    result = run_engine(
+        "Plan a trip to Mumbai for 2 people from 7th August through 15th August "
+        "with $2500 per person"
+    )
+    joined_steps = " ".join(_extract_numbered_steps(result)).lower()
+
+    assert "while keeping spending practical" not in joined_steps
+    assert "value-focused" not in joined_steps
+    assert "avoid premium" not in joined_steps
+
+
 def test_budget_visibility_numeric_budget_and_level_appear_in_output():
     result = run("Plan a trip to diani for 2 people 10 April to 12 April budget is 45000")
 
@@ -2389,6 +2414,22 @@ def test_known_budget_risks_do_not_duplicate_budget_stretch_label():
     assert "Budget Stretch" in labels
     assert labels.count("Budget Stretch") == 1
     assert len(labels) == len(set(labels))
+
+
+def test_kes_budget_still_uses_existing_thresholds():
+    brief = build_travel_brief(
+        "Plan a trip to Diani for 2 people 10 April to 12 April with a budget of KSH 60000"
+    )
+
+    assert brief["budget_currency"] == "KES"
+    assert brief["budget_amount"] == 60000
+    assert brief["budget_level"] == "medium"
+
+
+def test_unspecified_budget_still_triggers_budget_gap_risk():
+    labels = _risk_labels(run_engine("Plan a family trip to Naivasha for 4 people at 12th May"))
+
+    assert "Budget Gap Risk" in labels
 
 
 def test_risk_labels_remain_deterministically_ordered():
