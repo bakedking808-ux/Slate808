@@ -48,6 +48,11 @@ def _extract_numbered_section(output: str, heading: str) -> list[str]:
     return re.findall(r"^\d+\. (.+)$", match.group(1), re.MULTILINE)
 
 
+def _risk_labels(output: str) -> list[str]:
+    risks = _extract_numbered_section(output, "Risks")
+    return [risk.split(":", maxsplit=1)[0] for risk in risks if ":" in risk]
+
+
 def test_timing_model_exact_timing_payload_validates():
     timing = TimingModel(
         raw_text="10 april to 14 april",
@@ -2268,6 +2273,33 @@ def test_trip_output_numbers_checks_and_risks():
     assert risks
     assert re.search(r"Checks:\n1\. [^\n]+:", result)
     assert re.search(r"Risks:\n1\. [^\n]+:", result)
+
+
+def test_missing_budget_risks_use_distinct_labels():
+    result = run_engine("Plan a family trip to Naivasha for 4 people at 12th May")
+    labels = _risk_labels(result)
+
+    assert "Budget Coordination Risk" in labels
+    assert "Budget Gap Risk" in labels
+    assert labels.count("Budget Stretch") <= 1
+    assert len(labels) == len(set(labels))
+
+
+def test_known_budget_risks_do_not_duplicate_budget_stretch_label():
+    result = run_engine("Plan a trip to Diani for 2 people 10 April to 12 April with a budget of 60000")
+    labels = _risk_labels(result)
+
+    assert "Budget Coordination Risk" in labels
+    assert "Budget Stretch" in labels
+    assert labels.count("Budget Stretch") == 1
+    assert len(labels) == len(set(labels))
+
+
+def test_risk_labels_remain_deterministically_ordered():
+    first = _risk_labels(run_engine("Plan a family trip to Naivasha for 4 people at 12th May"))
+    second = _risk_labels(run_engine("Plan a family trip to Naivasha for 4 people at 12th May"))
+
+    assert first == second
 
 
 def test_trip_output_keeps_draft_itinerary_between_risks_and_readiness():

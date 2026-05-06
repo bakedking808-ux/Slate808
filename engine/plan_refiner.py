@@ -121,7 +121,7 @@ def _trip_refinement(checks: list[str], risks: list[str], constraints: dict[str,
             "Budget & Payments",
             "Budget & Payments: Confirm stated costs across transport, stay, activities, hidden fees, refund terms, and secure payment channels before booking.",
         )
-        risks[0] = "Budget Stretch: Costs may drift if transport, lodging, activities, and payment terms are not priced together."
+        risks[0] = "Budget Coordination Risk: Costs may drift if transport, lodging, activities, and payment terms are not priced together."
 
     if constraints["constraint_policy"].get("avoid_premium"):
         checks = [

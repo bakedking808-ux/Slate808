@@ -77,7 +77,7 @@ def _trip_checks_and_risks(plan: dict) -> tuple[list[str], list[str]]:
         risks[2] = "Budget Stretch: Premium bookings may require early confirmation to avoid last-minute compromises."
     elif budget_level == "unspecified":
         checks[3] = "Budget & Payments: Confirm the working budget, hidden costs, refund terms, and payment method before supplier shortlisting."
-        risks[2] = "Budget Stretch: Costs may drift quickly while the budget remains unspecified."
+        risks[2] = "Budget Gap Risk: Costs may drift quickly while the budget remains unspecified."
 
     if timing_state != "exact_timing":
         checks[2] = "Transport & Stay: Keep transport, accommodation, and transfer decisions provisional until exact travel dates are confirmed."
