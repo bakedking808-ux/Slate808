@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 
 from engine.formatter import format_destination_for_display, format_output, format_timing_for_display
 from engine.display_language import display_trip_mood
@@ -69,7 +70,7 @@ def reset_state() -> None:
     recent_completed_trip = None
 
 
-def run(user_input: str) -> str:
+def run(user_input: str, session_dir: Path | None = None) -> str:
     normalized_input = normalize_travel_input(user_input)
     text = normalized_input.normalized_input.strip().lower()
 
@@ -82,9 +83,9 @@ def run(user_input: str) -> str:
     if state_manager.has_active_state():
         if _looks_like_new_request(text):
             state_manager.clear()
-            return _start(user_input, normalized_input.normalized_input)
+            return _start(user_input, normalized_input.normalized_input, session_dir=session_dir)
 
-        return _resume(user_input, normalized_input.normalized_input)
+        return _resume(user_input, normalized_input.normalized_input, session_dir=session_dir)
 
     completed_update = _resume_completed_trip_update(user_input, normalized_input.normalized_input)
     if completed_update is not None:
@@ -94,10 +95,10 @@ def run(user_input: str) -> str:
     if approval_update is not None:
         return approval_update
 
-    return _start(user_input, normalized_input.normalized_input)
+    return _start(user_input, normalized_input.normalized_input, session_dir=session_dir)
 
 
-def _start(user_input: str, normalized_input: str) -> str:
+def _start(user_input: str, normalized_input: str, session_dir: Path | None = None) -> str:
     if _is_trip_request(normalized_input):
         brief = build_travel_brief(normalized_input)
         missing_fields = get_missing_critical_fields(brief)
@@ -137,29 +138,30 @@ def _start(user_input: str, normalized_input: str) -> str:
                     "missing_fields": missing_fields,
                     "collected_fields_count": len(collected_fields),
                     "collected_field_names": sorted(collected_fields),
-                }
+                },
+                session_dir=session_dir,
             )
             
             return _next_prompt(missing_fields[0], state)
 
         _remember_completed_trip(user_input, brief)
 
-    return _run_with_travel_boundary(normalized_input)
+    return _run_with_travel_boundary(normalized_input, session_dir=session_dir)
 
 
 def _is_trip_request(user_input: str) -> bool:
     return is_travel_intent(user_input)
 
 
-def _run_with_travel_boundary(user_input: str) -> str:
+def _run_with_travel_boundary(user_input: str, session_dir: Path | None = None) -> str:
     if _is_trip_request(user_input):
         set_execution_observability_context(flow_shape="direct_ready_completion")
-        return run_engine(user_input)
+        return run_engine(user_input, session_dir=session_dir)
 
     return format_output(build_travel_only_failure(user_input))
 
 
-def _resume(user_input: str, normalized_input: str) -> str:
+def _resume(user_input: str, normalized_input: str, session_dir: Path | None = None) -> str:
     state = state_manager.get_state()
     current_field = state["current_field"]
 
@@ -282,6 +284,7 @@ def _resume(user_input: str, normalized_input: str) -> str:
                 "current_state": value.get("state"),
                 "retry_count": state_manager.get_state()["retry_count"],
             },
+            session_dir=session_dir,
         )
 
         return _retry_prompt(current_field, state_manager.get_state())
@@ -326,7 +329,7 @@ def _resume(user_input: str, normalized_input: str) -> str:
         full_input = _rebuild_input(state)
         state_manager.clear()
         set_execution_observability_context(flow_shape="clarification_resume_completion")
-        return run_engine(full_input)
+        return run_engine(full_input, session_dir=session_dir)
 
     return _next_prompt(state["current_field"], state)
 

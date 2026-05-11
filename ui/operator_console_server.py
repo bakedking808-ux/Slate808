@@ -130,7 +130,7 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
             )
             return
 
-        output = run(user_input.strip())
+        output = run(user_input.strip(), session_dir=SERVER_SESSION_DIR)
 
         _json_response(
             self,

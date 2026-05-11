@@ -14,6 +14,7 @@ from contracts.operator_workflow_contract import (
     map_operator_workflow,
 )
 from uuid import uuid4
+from pathlib import Path
 
 
 _PENDING_EXECUTION_CONTEXT: dict | None = None
@@ -60,7 +61,7 @@ def _operator_workflow_payload(**kwargs) -> dict:
     return map_operator_workflow(OperatorWorkflowInput(**kwargs)).model_dump()
 
 
-def run_engine(request: str) -> str:
+def run_engine(request: str, session_dir: Path | None = None) -> str:
     fixer_actions = []
     llm_used = False
     llm_raw_steps = None
@@ -113,10 +114,11 @@ def run_engine(request: str) -> str:
                 "decision_path": _decision_path("input_gate", "blocked_input_hard_stop"),
                 "transition": "blocked_input_hard_stop",
                 "pipeline_stop": "blocked_input_hard_stop",
-            }
+            },
+            session_dir=session_dir,
         )
 
-        log_run(log_entry)
+        log_run(log_entry, session_dir=session_dir)
         return format_output(final_output)
 
     if gate["status"] == "reject":
@@ -162,10 +164,11 @@ def run_engine(request: str) -> str:
                 "decision_path": _decision_path("input_gate", "rejected_input_hard_stop"),
                 "transition": "rejected_input_hard_stop",
                 "pipeline_stop": "rejected_input_hard_stop",
-            }
+            },
+            session_dir=session_dir,
         )
 
-        log_run(log_entry)
+        log_run(log_entry, session_dir=session_dir)
         return format_output(final_output)
 
     if gate["status"] == "weak":
@@ -211,10 +214,11 @@ def run_engine(request: str) -> str:
                 "decision_path": _decision_path("input_gate", "weak_input_hard_stop"),
                 "transition": "weak_input_hard_stop",
                 "pipeline_stop": "weak_input_hard_stop",
-            }
+            },
+            session_dir=session_dir,
         )
 
-        log_run(log_entry)
+        log_run(log_entry, session_dir=session_dir)
         return format_output(final_output)
 
     plan = generate_plan(request)
@@ -263,10 +267,11 @@ def run_engine(request: str) -> str:
                 "decision_path": _decision_path("input_gate", "generate_plan", "unsupported_non_travel_hard_stop"),
                 "transition": "unsupported_non_travel_hard_stop",
                 "pipeline_stop": "unsupported_non_travel_hard_stop",
-            }
+            },
+            session_dir=session_dir,
         )
 
-        log_run(log_entry)
+        log_run(log_entry, session_dir=session_dir)
         return format_output(final_output)
 
     result = check_plan(plan)
@@ -395,9 +400,10 @@ def run_engine(request: str) -> str:
             "decision_path": _decision_path(*decision_path),
             "final_status": result["status"],
             "transition": "execution_completed",
-        }
+        },
+        session_dir=session_dir,
     )
 
-    log_run(log_entry)
+    log_run(log_entry, session_dir=session_dir)
 
     return format_output(final_output)

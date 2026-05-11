@@ -250,7 +250,7 @@ def test_action_blocked_status_still_maps_to_execution_blocked():
 
 def test_runtime_logs_operator_workflow_for_plan_ready_only(monkeypatch):
     entries = []
-    monkeypatch.setattr("engine.runner.log_run", lambda entry: entries.append(entry))
+    monkeypatch.setattr("engine.runner.log_run", lambda entry, **kwargs: entries.append(entry))
     monkeypatch.setattr("engine.runner.log_event", lambda **_: None)
 
     run_engine("Plan a trip to diani for 2 people next weekend")
@@ -267,7 +267,7 @@ def test_runtime_logs_operator_workflow_for_plan_ready_only(monkeypatch):
 
 def test_runtime_logs_human_approval_required_for_exact_timing(monkeypatch):
     entries = []
-    monkeypatch.setattr("engine.runner.log_run", lambda entry: entries.append(entry))
+    monkeypatch.setattr("engine.runner.log_run", lambda entry, **kwargs: entries.append(entry))
     monkeypatch.setattr("engine.runner.log_event", lambda **_: None)
 
     run_engine("Plan a trip to diani for 2 people 10 April to 12 April")
@@ -283,7 +283,7 @@ def test_runtime_logs_human_approval_required_for_exact_timing(monkeypatch):
 
 def test_runtime_logs_execution_blocked_for_booking_with_relative_timing(monkeypatch):
     entries = []
-    monkeypatch.setattr("engine.runner.log_run", lambda entry: entries.append(entry))
+    monkeypatch.setattr("engine.runner.log_run", lambda entry, **kwargs: entries.append(entry))
     monkeypatch.setattr("engine.runner.log_event", lambda **_: None)
 
     run_engine("Plan a trip to diani for 2 people next weekend and book it")
@@ -302,7 +302,7 @@ def test_runtime_logs_execution_blocked_for_booking_with_relative_timing(monkeyp
 
 def test_runtime_calendar_review_allowed_but_schedule_gets_recovery_guidance(monkeypatch):
     entries = []
-    monkeypatch.setattr("engine.runner.log_run", lambda entry: entries.append(entry))
+    monkeypatch.setattr("engine.runner.log_run", lambda entry, **kwargs: entries.append(entry))
     monkeypatch.setattr("engine.runner.log_event", lambda **_: None)
 
     run_engine("Plan a trip to diani for 2 people next weekend and check my calendar")
