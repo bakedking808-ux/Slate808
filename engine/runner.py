@@ -102,7 +102,7 @@ def run_engine(request: str) -> str:
         log_entry["pipeline_stop"] = "blocked_input_hard_stop"
 
         log_event(
-            filename="engine.log",
+            filename="execution.log",
             source="runner",
             layer="execution",
             event="execution_blocked",
@@ -151,7 +151,7 @@ def run_engine(request: str) -> str:
         log_entry["pipeline_stop"] = "rejected_input_hard_stop"
 
         log_event(
-            filename="engine.log",
+            filename="execution.log",
             source="runner",
             layer="execution",
             event="execution_rejected",
@@ -200,7 +200,7 @@ def run_engine(request: str) -> str:
         log_entry["pipeline_stop"] = "weak_input_hard_stop"
 
         log_event(
-            filename="engine.log",
+            filename="execution.log",
             source="runner",
             layer="execution",
             event="execution_weak",
@@ -251,7 +251,7 @@ def run_engine(request: str) -> str:
         log_entry["pipeline_stop"] = "unsupported_non_travel_hard_stop"
 
         log_event(
-            filename="engine.log",
+            filename="execution.log",
             source="runner",
             layer="execution",
             event="execution_blocked",
@@ -382,7 +382,7 @@ def run_engine(request: str) -> str:
     log_entry["pipeline_stop"] = None
 
     log_event(
-        filename="engine.log",
+        filename="execution.log",
         source="runner",
         layer="execution",
         event="execution_completed",

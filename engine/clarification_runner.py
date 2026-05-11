@@ -127,7 +127,7 @@ def _start(user_input: str, normalized_input: str) -> str:
             
             # Emit clarification routing metric
             log_event(
-                filename="engine.log",
+                filename="clarification.log",
                 source="clarification_runner",
                 layer="clarification",
                 event="clarification_routed",
@@ -272,7 +272,7 @@ def _resume(user_input: str, normalized_input: str) -> str:
         state_manager.increment_retry()
 
         log_event(
-            filename="engine.log",
+            filename="clarification.log",
             source="clarification_runner",
             layer="clarification",
             event="relative_timing_exact_date_refinement",
