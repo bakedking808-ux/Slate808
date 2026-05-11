@@ -7,11 +7,13 @@ from typing import Any
 from urllib.parse import urlparse
 
 from engine.clarification_runner import get_console_state, reset_state, run
+from engine.logger import create_session_log_dir
 
 
 HOST = "127.0.0.1"
 PORT = 8080
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+SERVER_SESSION_DIR = create_session_log_dir()
 
 
 def _json_response(
@@ -54,6 +56,7 @@ class OperatorConsoleHandler(BaseHTTPRequestHandler):
                 {
                     "status": "ok",
                     "service": "slate808-operator-console-backend",
+                    "session_dir": str(SERVER_SESSION_DIR),
                 },
             )
             return
@@ -187,6 +190,7 @@ def create_server(host: str = HOST, port: int = PORT) -> HTTPServer:
 def main() -> None:
     server = create_server()
     print(f"Slate808 operator console backend running at http://{HOST}:{PORT}")
+    print(f"Session log directory: {SERVER_SESSION_DIR}")
     print("Press CTRL+C to stop.")
 
     try:
